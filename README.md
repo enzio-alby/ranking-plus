@@ -74,7 +74,7 @@ Ranking+ é uma aplicação web interativa desenvolvida como parte do Projeto In
 ### Instalação:
 
 ```bash
-git clone https://github.com/seuusuario/ranking-plus.git
+git clone https://github.com/enzio-alby/ranking-plus.git
 cd ranking-plus/backend
 npm install
 node api.js
