@@ -12,10 +12,10 @@ app.use(cors());
 
 // Conexão com o banco de dados (Google Cloud SQL - IP público)
 const db = mysql.createPool({
-  host: '34.21.16.113',           // IP público da instância
-  user: 'user1',                  // usuário do banco
-  password: 'projrank25',         // senha do banco
-  database: 'universidade_ranking',          // nome do banco de dados
+  host: 'ipbanco',           // IP público da instância
+  user: 'user',                  // usuário do banco
+  password: 'senha',         // senha do banco
+  database: 'banco',          // nome do banco de dados
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
