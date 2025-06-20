@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking+</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/styleindex.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="sidebar-overlay"></div>
+
+    <div class="topbar">
+        <button id="toggleSidebarBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+        <img src="../images/logo3.png" alt="Logo" class="logo">
+        <div class="topbar-actions"></div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <h4 class="sidebar-title"></h4>
+        <a class="nav-link" href="#"><i class="fas fa-home"></i> Home</a>
+        <a class="nav-link" href="#"><i class="fas fa-book"></i> Sobre nós</a>
+        <a class="nav-link" href="#" onclick="showTab('materias'); return false;"><i class="fas fa-database"></i> Matérias</a>
+        <a class="nav-link" href="#"><i class="fas fa-coins"></i> Bonificações</a>
+        <a class="nav-link" href="#" id="comunicacao-link"><i class="fas fa-comments"></i>Contate-nos</a>
+        <a class="nav-link" href="configuser.html"><i class="fas fa-user-cog"></i> Configurações de usuário</a>
+        <a class="nav-link logout-link" href="login.html">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </div>
+
+    <div class="content">
+        <div class="welcome-box">
+            <div class="welcome-title">Bem-vindo ao seu Ranking+</div>
+            <div class="welcome-desc">Aqui você acompanha seu ranking, desempenho, faltas e muito mais.</div>
+            <div class="welcome-path">Home</div>
+        </div>
+
+        <!-- NOVO CONTAINER CENTRAL DE PERFIL E MÉTRICAS -->
+        <div class="profile-container">
+            <!-- Lado esquerdo: Dados do aluno -->
+            <div class="profile-left">
+                <img id="aluno-foto" src="../images/aluno_perfil.jpg" alt="Foto do Aluno">
+                <div class="profile-info">
+                    <p><strong>Nome:</strong> <div class="value" id="nome"></div></p>
+                    <p><strong>Email:</strong> <div class="value" id="email"></div></p>
+                    <p><strong>Campus:</strong> <div class="value" id="campus"></div></p>
+                    <p><strong>Turno:</strong> <div class="value" id="turno"></div></p>
+                    <p><strong>Matrícula:</strong> <div class="value" id="matricula"></div></p>
+                    <p><strong>Curso:</strong> <div class="value" id="curso"></div></p>
+                </div>
+            </div>
+            <!-- Lado direito: Gráfico de métricas -->
+            <div class="profile-right">
+                <div class="card">
+                    <h3>Suas Métricas:</h3>
+                    <canvas id="metricsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Adicione a nova aba na navegação -->
+        <div class="nav-tabs">
+            <a class="nav-link active" href="#" onclick="showTab('ranking')" id="tab-ranking">Ranking</a>
+            <a class="nav-link" href="#" onclick="showTab('materias')" id="tab-materias">Matérias</a>
+            <a class="nav-link" href="#" onclick="showTab('faltas')" id="tab-faltas">Faltas e Menções</a>
+            <a class="nav-link" href="#" onclick="showTab('calendario')" id="tab-calendario">Eventos</a>
+            <a class="nav-link" href="#" onclick="showTab('recomendacao')" id="tab-recomendacao">Recomendação</a>
+        </div>
+        
+        <div id="content-ranking" class="tab-content" style="display:none">
+          <h5 class="mt-4">Ranking Geral dos Alunos</h5>
+          <!-- Novo container de filtros acima da tabela -->
+          <div id="filtros-mencoes-container" style="margin-bottom:18px; display:flex; gap:18px; align-items:center;">
+            <div id="filtros-mencoes" style="margin-bottom:0;">
+              <label for="filtro-curso"><b>Curso:</b></label>
+              <select id="filtro-curso"></select>
+              <label for="filtro-turma" style="margin-left:12px;"><b>Turma:</b></label>
+              <select id="filtro-turma"></select>
+            </div>
+          </div>
+          <div class="tabela-ranking-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Posição</th>
+                  <th>Nome</th>
+                  <th>Curso</th>
+                  <th>Média</th>
+                  <th>Avaliação</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-ranking-alunos">
+                <!-- Dados do ranking serão inseridos aqui -->
+              </tbody>
+            </table>
+            <div style="display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between; margin-top: 24px;">
+            </div>
+            <!-- Novo gráfico de colunas -->
+            <div id="ranking-bar-chart-container" style="margin-top:32px;">
+              <h3 style="margin-bottom:16px; text-align:center;">Gráfico de Médias dos Alunos</h3>
+              <canvas id="rankingBarChart" style="width:100%;min-height:400px;max-height:900px;"></canvas>
+            </div>
+            <!-- Mova os filtros de pizza para antes do gráfico de pizza -->
+            <div id="ranking-pizza-chart-container" style="margin-top:32px;">
+            <h3 style="margin-bottom:16px; text-align:center;">Distribuição de Menções por Matéria</h3>
+
+            <!-- Filtros de gráfico de pizza -->
+            <div style="margin-bottom:16px; text-align:center;">
+                <label for="filtro-curso-pizza"><b>Curso:</b></label>
+                <select id="filtro-curso-pizza"></select>
+                <label for="filtro-professor-pizza" style="margin-left:12px;"><b>Professor:</b></label>
+                <select id="filtro-professor-pizza"></select>
+            </div>
+
+            <!-- Gráfico -->
+            <canvas id="aproveitamentoChart" style="width:100%;min-height:400px;max-height:900px;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        
+
+
+        <div id="content-materias" class="tab-content" style="display:none">
+            <h5 class="mt-4">Matérias</h5>
+            <div class="materias-instrucoes">
+                <b>Instruções:</b> Clique em uma matéria para ver a descrição e os conteúdos postados pelo professor.
+            </div>
+            <!-- Caixa de horários das matérias -->
+            <div class="materias-horarios-box">
+            <h3>Horários das Matérias</h3>
+            <div class="materias-horarios-tabela" id="materias-horarios-tabela">
+                <!-- Os blocos serão preenchidos via JS -->
+            </div>
+            </div>
+            <!-- Fim da caixa de horários das matérias -->
+            <div id="materias-lista">
+                <!-- ...restante da lista de matérias... -->
+            </div>
+            <div id="materia-detalhe" style="display:none;">
+                <button id="fechar-materia-detalhe" class="btn-close-materia">&times;</button>
+                <h6 id="materia-nome"></h6>
+                <p id="materia-prof"></p>
+                <div id="materia-conteudo"></div>
+            </div>
+        </div>
+
+        <div id="content-faltas" class="tab-content" style="display:none">
+            <h5 class="mt-4">Faltas e Menções</h5>
+            <div style="display: flex; gap: 32px; align-items: flex-start;">
+                <div id="faltas-mencoes" style="flex:2;">
+                    <div id="faltas-mencoes-header">
+                        <i class="fa-solid fa-pen"></i>
+                        <span>FALTAS E MENÇÕES</span>
+                        <span style="flex:1"></span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                    <div class="faltas-select"></div>
+                    <div id="faltas-mencoes-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Disciplinas</th>
+                                    <th>Faltas</th>
+                                    <th>Menções</th>
+                                    <th>Menção Final</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Conteúdo dinâmico gerado via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- LEGENDA DAS MENÇÕES ao lado direito -->
+                <div class="legenda-mencoes" style="flex:1; min-width:220px;">
+                    <h6 style="margin-bottom:8px;">Legenda das Menções</h6>
+                    <table style="border-collapse:collapse;">
+                        <tr>
+                            <td class="sr" style="padding:4px 12px; border:1px solid #ccc;">SR</td>
+                            <td>Sem rendimento</td>
+                        </tr>
+                        <tr>
+                            <td class="ii" style="padding:4px 12px; border:1px solid #ccc;">II</td>
+                            <td>Insuficiente</td>
+                        </tr>
+                        <tr>
+                            <td class="mi" style="padding:4px 12px; border:1px solid #ccc;">MI</td>
+                            <td>Muito insuficiente</td>
+                        </tr>
+                        <tr>
+                            <td class="mm" style="padding:4px 12px; border:1px solid #ccc;">MM</td>
+                            <td>Médio</td>
+                        </tr>
+                        <tr>
+                            <td class="ms" style="padding:4px 12px; border:1px solid #ccc;">MS</td>
+                            <td>Muito Satisfatório</td>
+                        </tr>
+                        <tr>
+                            <td class="ss" style="padding:4px 12px; border:1px solid #ccc;">SS</td>
+                            <td>Sobressalente</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="content-calendario" class="tab-content" style="display:none">
+            <div class="calendario-dicas dicas-modernas">
+                <i class="fa-solid fa-lightbulb"></i>
+                <span>
+                    <b>Dicas de uso:</b><br>
+                    <ul>
+                        <li><i class="fa-solid fa-arrow-right"></i> Navegue entre os meses usando as setas.</li>
+                        <li><i class="fa-solid fa-plus"></i> Clique em um dia para adicionar um evento.</li>
+                        <li><i class="fa-solid fa-trash"></i> Clique em <b>Remover</b> para excluir um evento.</li>
+                    </ul>
+                </span>
+            </div>
+            <div id="event-list"></div>
+            <div id="calendar-container">
+                <div class="calendar-header">
+                    <button id="prev-month" aria-label="Mês anterior">&lt;</button>
+                    <span id="calendar-month-year"></span>
+                    <button id="next-month" aria-label="Próximo mês">&gt;</button>
+                </div>
+                <table id="calendar">
+                    <thead>
+                        <tr>
+                            <th>Dom</th>
+                            <th>Seg</th>
+                            <th>Ter</th>
+                            <th>Qua</th>
+                            <th>Qui</th>
+                            <th>Sex</th>
+                            <th>Sáb</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dias serão preenchidos via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+ 
+        </div>
+        <!-- NOVA ABA DE RECOMENDAÇÃO -->
+        <div id="content-recomendacao" class="tab-content" style="display:none">
+            <div id="recomendacoes-professores" style="margin-top:36px;">
+                <h4 style="color:#6A0DAD;margin-bottom:12px;">Recomendações dos Professores</h4>
+
+                <!-- Adicione este bloco acima da tabela de recomendações, dentro da div #recomendacoes-professores -->
+                <div id="avaliacao-professor-box" style="margin-bottom: 24px; background: #f8f4fd; border-radius: 10px; padding: 18px 18px 10px 18px; box-shadow: 0 2px 10px #6a0dad11;">
+                    <h5 style="color:#6A0DAD;margin-bottom:10px;">Avaliação Semestral do Professor</h5>
+                    <form id="form-avaliar-prof" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
+                        <label for="select-professor" style="font-weight:600;">Professor:</label>
+                        <select id="select-professor" style="padding:5px 12px;border-radius:6px;">
+                            <!-- JS preenche -->
+                        </select>
+                        <label for="select-materia" style="font-weight:600;">Matéria:</label>
+                        <select id="select-materia" style="padding:5px 12px;border-radius:6px;">
+                            <!-- JS preenche -->
+                        </select>
+                        <span id="avaliacao-estrelas" style="font-size:1.6em;margin-left:10px;cursor:pointer;">
+                            <!-- JS preenche -->
+                        </span>
+                        <button type="submit" style="background:#6A0DAD;color:#fff;border:none;padding:7px 18px;border-radius:6px;font-weight:600;cursor:pointer;">
+                            Enviar Avaliação
+                        </button>
+                    </form>
+                    <div id="avaliacao-feedback" style="margin-top:8px;font-size:1em;color:#4CAF50;display:none;">Avaliação enviada!</div>
+                </div>
+
+                <table id="tabela-recomendacoes" style="width:100%;border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(106,13,173,0.07);margin-bottom:18px;">
+                    <thead>
+                        <tr>
+                            <th>Professor</th>
+                            <th>Matéria</th>
+                            <th>Média Recomendada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- JS preenche -->
+                    </tbody>
+                </table>
+
+                <canvas id="graficoRecomendacoes" height="180"></canvas>
+            </div>
+        </div>
+
+    <!-- Modal para adicionar evento -->
+    <div id="modal-evento" class="modal-evento-overlay">
+        <div class="modal-evento-box">
+            <button class="modal-evento-close" id="fechar-modal-evento">&times;</button>
+            <h2>Adicionar Evento</h2>
+            <form id="form-evento">
+                <label for="evento-data">Data</label>
+                <input type="text" id="evento-data" name="evento-data" readonly>
+                <label for="evento-titulo">Título do Evento</label>
+                <input type="text" id="evento-titulo" name="evento-titulo" maxlength="60" required placeholder="Digite o título do evento">
+                <label for="evento-descricao">Descrição</label>
+                <textarea id="evento-descricao" name="evento-descricao" maxlength="200" placeholder="Digite uma descrição (opcional)" style="width:100%;min-height:50px;margin-bottom:10px;border-radius:5px;border:1px solid #ccc;padding:8px;box-sizing:border-box;"></textarea>
+                <div class="modal-evento-actions">
+                    <button type="submit" class="btn-criar-evento">Adicionar</button>
+                    <button type="button" class="btn-fechar-evento" id="cancelar-modal-evento">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Comunicação -->
+    <div id="comunicacao-modal" class="comunicacao-modal">
+        <div class="comunicacao-modal-content">
+            <button id="fechar-comunicacao-modal" class="comunicacao-modal-close">&times;</button>
+            <h2 style="margin-bottom: 8px;">Entre em contato:</h2>
+            <hr style="width: 120px; border: 1px solid #b39ddb; margin: 0 auto 18px auto;">
+            <div style="text-align:center; color:#222; font-size:1.08em;">
+                <div style="margin-bottom:10px;">
+                    - WhatsApp/telefone: 
+                    <a href="tel:+556139661201" style="color:#3b3be6; text-decoration:underline;">(61) 3966-1201</a>
+                </div>
+                <div style="margin-bottom:10px;">
+                    - E-mail: 
+                    <a href="mailto:ouvidoria@uniceub.br" style="color:#3b3be6; text-decoration:underline;">ouvidoria@uniceub.br</a>
+                    e
+                    <a href="mailto:ouvidoria.taguatinga@uniceub.br" style="color:#3b3be6; text-decoration:underline;">ouvidoria.taguatinga@uniceub.br</a>
+                </div>
+                <div>
+                    - Regulamento da Ouvidoria : 
+                    <a href="https://www.uniceub.br/ouvidoria" target="_blank" style="color:#3b3be6; text-decoration:underline;">Clique aqui</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- Modal Sobre Nós -->
+<div id="sobre-nos-modal" class="comunicacao-modal">
+    <div class="comunicacao-modal-content">
+        <button id="fechar-sobre-nos-modal" class="comunicacao-modal-close">&times;</button>
+        <h2 style="margin-bottom: 8px;">💻 Sobre Nós</h2>
+        <hr style="width: 120px; border: 1px solid #b39ddb; margin: 0 auto 18px auto;">
+        <div style="text-align:left; color:#222; font-size:1.08em; line-height:1.6;">
+            Somos uma equipe formada por estudantes de Ciência da Computação apaixonados por inovação, tecnologia e educação. Nossa missão é transformar o ambiente acadêmico em um espaço mais dinâmico, justo e motivador por meio da nossa plataforma de Ranking de Alunos.<br><br>
+            Desenvolvemos essa solução com o objetivo de incentivar a competitividade de forma saudável, promovendo o reconhecimento de alunos que se destacam em notas, presença e participação. Acreditamos que, com gamificação e feedback constante, é possível tornar a jornada acadêmica mais envolvente e gratificante.<br><br>
+            A plataforma foi criada com foco na transparência, engajamento e evolução contínua, tanto para alunos quanto para professores. Cada funcionalidade foi pensada para valorizar o esforço dos estudantes e criar oportunidades reais de crescimento dentro e fora da sala de aula.<br><br>
+            <b>Seja bem-vindo(a) ao novo jeito de acompanhar desempenho!</b>
+        </div>
+    </div>
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../javascript/index.js"></script>
+    <script src="../javascript/comunicacao.js"></script>
+    <script src="../javascript/sobrenos.js"></script>
+
+    <script>
+// Chame ao carregar a página
+if (typeof renderRecomendacoesProfessores === 'function') {
+    renderRecomendacoesProfessores();
+}
+
+function showTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    document.getElementById('content-' + tab).style.display = '';
+    document.getElementById('tab-' + tab).classList.add('active');
+    // Redesenha o gráfico de recomendações ao abrir a aba recomendação
+    if(tab === 'recomendacao' && typeof renderRecomendacoesProfessores === 'function') {
+        setTimeout(renderRecomendacoesProfessores, 100);
+    }
+}
+    </script>
+</body>
+
+</html>

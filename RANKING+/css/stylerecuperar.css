@@ -1,0 +1,191 @@
+body {
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    background: url('../images/fundologin.png') no-repeat center center fixed;
+    background-size: cover;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: inherit;
+    filter: blur(8px) brightness(0.85);
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Container central */
+.recuperar-container {
+    position: relative;
+    z-index: 1;
+    background: rgba(255,255,255,0.98);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+    padding: 40px 32px 32px 32px;
+    min-width: 320px;
+    max-width: 370px;
+    width: 100%;
+    text-align: center;
+    transition: box-shadow 0.2s;
+}
+
+/* Título */
+.recuperar-container h2 {
+    margin-bottom: 10px;
+    color: #4B0082;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+/* Texto */
+.recuperar-container p {
+    margin-bottom: 22px;
+    color: #444;
+    font-size: 1.05em;
+}
+
+/* Formulário */
+#recuperarForm label {
+    display: block;
+    text-align: left;
+    margin-bottom: 6px;
+    color: #4B0082;
+    font-weight: 600;
+    font-size: 1em;
+    letter-spacing: 0.5px;
+}
+
+#recuperarForm input[type="email"] {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #b39ddb;
+    border-radius: 8px;
+    font-size: 1.08em;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+    outline: none;
+    background: #f8f8ff;
+    color: #4B0082;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#recuperarForm input[type="email"]:focus {
+    border-color: #4B0082;
+    box-shadow: 0 2px 8px rgba(106,13,173,0.10);
+    background: #fff;
+}
+
+/* Botão */
+.btn-recuperar {
+    width: 100%;
+    padding: 13px 0;
+    background: linear-gradient(90deg, #4f8cff 0%, #38b6ff 100%);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1.12em;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    box-shadow: 0 2px 8px rgba(31,38,135,0.10);
+    transition: background 0.2s, box-shadow 0.2s;
+}
+
+.btn-recuperar:hover, .btn-recuperar:focus {
+    background: linear-gradient(90deg, #38b6ff 0%, #4f8cff 100%);
+    box-shadow: 0 4px 16px rgba(106,13,173,0.13);
+    outline: none;
+}
+
+/* Link voltar */
+.voltar-login {
+    margin-top: 22px;
+}
+
+.voltar-login a {
+    color: #4B0082;
+    text-decoration: none;
+    font-size: 1em;
+    font-weight: 500;
+    transition: color 0.2s, text-decoration 0.2s;
+}
+
+.voltar-login a:hover, .voltar-login a:focus {
+    color: #38b6ff;
+    text-decoration: underline;
+}
+
+/* Botões e menu de acessibilidade */
+.accessibility {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.accessibility-icons {
+    display: flex;
+    gap: 12px;
+}
+
+/* Ícones de acessibilidade com fundo transparente e roxo no hover, igual cadastro */
+.icone-acessibilidade {
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: none;
+    transition: background 0.2s, box-shadow 0.2s;
+    object-fit: cover;
+    padding: 4px;
+    border: 2px solid #6A0DAD;
+}
+.icone-acessibilidade:hover {
+    background: #6A0DAD;
+    box-shadow: 0 4px 16px rgba(106,13,173,0.18);
+}
+
+/* Botões do menu de acessibilidade roxos */
+.vision-menu button {
+    background: linear-gradient(90deg, #6A0DAD 60%, #4B0082 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 1em;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 2px;
+    transition: background 0.2s, transform 0.2s;
+}
+.vision-menu button:hover {
+    background: linear-gradient(90deg, #4B0082 0%, #6A0DAD 100%);
+    transform: scale(1.04);
+}
+
+/* Responsivo para telas menores */
+@media (max-width: 430px) {
+    .recuperar-container {
+        padding: 28px 8vw 24px 8vw;
+        min-width: unset;
+        max-width: 98vw;
+    }
+    #recuperarForm input[type="email"] {
+        font-size: 1em;
+    }
+}

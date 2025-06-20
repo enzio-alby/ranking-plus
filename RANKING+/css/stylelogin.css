@@ -1,0 +1,285 @@
+/* Box-sizing global */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* Fundo com imagem e efeito de desfoque */
+body {
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    background: url('../images/fundologin.png') no-repeat center center fixed;
+    background-size: cover;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    position: relative;
+    overflow: hidden;
+}
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: inherit;
+    filter: blur(8px) brightness(0.85);
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Container central transparente e com blur */
+.container#mainContainer {
+    position: relative;
+    z-index: 10000;
+    max-width: 400px;
+    width: 96vw;
+    margin: 32px auto 0 auto;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+    padding: 28px 18px 20px 18px;
+    color: #6A0DAD !important;
+}
+.container#mainContainer h1,
+.container#mainContainer h2,
+.container#mainContainer label,
+.container#mainContainer p,
+.container#mainContainer a,
+.container#mainContainer span,
+.container#mainContainer hr {
+    color: #6A0DAD !important;
+}
+.container#mainContainer h1 {
+    font-size: 2em;
+    margin-bottom: 8px;
+    text-align: center;
+    font-weight: 700;
+}
+.container#mainContainer h2 {
+    color: #4B0082 !important;
+    font-size: 1.2em;
+    margin-bottom: 18px;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Formulário de login */
+#loginForm {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+}
+#loginForm input[type="text"],
+#loginForm input[type="password"],
+#loginForm select#tipoUsuario {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #b39ddb;
+    border-radius: 8px;
+    background: #fff;
+    color: #6A0DAD;
+    font-size: 1.08em;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(31,38,135,0.10);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, color 0.2s;
+    box-sizing: border-box;
+}
+#loginForm input[type="text"]:focus,
+#loginForm input[type="password"]:focus,
+#loginForm select#tipoUsuario:focus {
+    border-color: #4B0082;
+    box-shadow: 0 4px 16px rgba(106,13,173,0.13);
+    color: #4B0082;
+}
+#loginForm input::placeholder {
+    color: #b39ddb;
+    opacity: 1;
+}
+#loginForm select#tipoUsuario option {
+    color: #6A0DAD;
+    background: #fff;
+}
+
+/* Checkbox e label */
+#loginForm input[type="checkbox"] {
+    accent-color: #38b6ff;
+    margin-right: 6px;
+}
+#loginForm label[for="lembrar"] {
+    font-weight: 400;
+    font-size: 1em;
+}
+
+/* Botões principais */
+.btn-secondary,
+#loginForm button[type="submit"] {
+    width: 100%;
+    padding: 12px 0;
+    background: linear-gradient(90deg, #6A0DAD 0%, #4B0082 100%);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(31,38,135,0.10);
+    transition: background 0.2s, transform 0.2s;
+}
+.btn-secondary:hover,
+#loginForm button[type="submit"]:hover {
+    background: linear-gradient(90deg, #4B0082 0%, #6A0DAD 100%);
+    transform: translateY(-2px) scale(1.03);
+}
+
+/* Botão "Cadastrar-se" */
+button.btn-secondary:last-of-type {
+    margin-top: 0;
+    background: linear-gradient(90deg, #38b6ff 0%, #4f8cff 100%);
+}
+button.btn-secondary:last-of-type:hover {
+    background: linear-gradient(90deg, #4f8cff 0%, #38b6ff 100%);
+}
+
+/* Link "Esqueceu sua senha?" */
+#loginForm .link {
+    color: #4B0082;
+    opacity: 0.85;
+    text-align: right;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.98em;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+#loginForm .link:hover {
+    color: #38b6ff;
+    opacity: 1;
+}
+
+/* Logo (remova se não usar) */
+.login-logo {
+    width: 48px;
+    height: 48px;
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #5e60ce;
+    font-size: 1.5rem;
+}
+
+/* Input-group para campo de senha */
+.input-group {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+}
+.input-group .form-control {
+    flex: 1 1 auto;
+    min-width: 0;
+    border-radius: 8px;
+    margin-bottom: 0;
+    border-right: 2px solid #b39ddb;
+}
+
+/* Ajuste do <hr> */
+.container#mainContainer hr {
+    border: 0;
+    border-top: 1.5px solid rgba(106,13,173,0.13);
+    margin: 18px 0;
+}
+
+/* Botões e menu de acessibilidade fixos no canto inferior direito */
+.accessibility {
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 10px !important;
+    pointer-events: auto !important;
+}
+.accessibility-icons {
+    display: flex;
+    gap: 12px;
+}
+.icone-acessibilidade {
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: none;
+    transition: background 0.2s, box-shadow 0.2s;
+    object-fit: cover;
+    padding: 4px;
+    border: 2px solid #6A0DAD;
+}
+.icone-acessibilidade:hover {
+    background: #6A0DAD;
+    box-shadow: 0 4px 16px rgba(106,13,173,0.18);
+}
+
+/* Botões do menu de acessibilidade roxos */
+.vision-menu button {
+    background: linear-gradient(90deg, #6A0DAD 60%, #4B0082 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 1em;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 2px;
+    transition: background 0.2s, transform 0.2s;
+}
+.vision-menu button:hover {
+    background: linear-gradient(90deg, #4B0082 0%, #6A0DAD 100%);
+    transform: scale(1.04);
+}
+
+/* Responsividade */
+@media (max-width: 600px) {
+    .container#mainContainer {
+        max-width: 99vw;
+        padding: 18px 4vw 14px 4vw;
+        margin: 12px auto 0 auto;
+    }
+    #loginForm input[type="text"],
+    #loginForm input[type="password"],
+    #loginForm select#tipoUsuario {
+        font-size: 1em;
+        padding: 10px 8px;
+    }
+    .input-group .btn {
+        padding: 0 10px;
+        font-size: 1em;
+    }
+}
+@media (max-width: 430px) {
+    .container#mainContainer {
+        padding: 24px 2vw 18px 2vw;
+        max-width: 98vw;
+    }
+    #loginForm input[type="text"],
+    #loginForm input[type="password"],
+    #loginForm select#tipoUsuario {
+        font-size: 1em;
+        padding: 10px 8px;
+    }
+}
+@media (max-width: 400px) {
+    .container#mainContainer {
+        padding: 8px 1vw 8px 1vw;
+    }
+}
+

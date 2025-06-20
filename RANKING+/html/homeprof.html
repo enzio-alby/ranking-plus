@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking+</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/stylehomeprof.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="sidebar-overlay"></div>
+
+    <div class="topbar">
+        <button id="toggleSidebarBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+        <img src="../images/logo3.png" alt="Logo" class="logo">
+        <div class="topbar-actions"></div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <h4 class="sidebar-title"></h4>
+        <a class="nav-link" href="#"><i class="fas fa-home"></i> Home</a>
+        <a class="nav-link" href="#"><i class="fas fa-book"></i> Sobre nós</a>
+        <a class="nav-link" href="#" id="comunicacao-link"><i class="fas fa-comments"></i>Contate-nos</a>
+        <a class="nav-link" href="areadoprofessor.html"><i class="fas fa-graduation-cap"></i> Área do Professor</a>
+        <a class="nav-link" href="configprof.html"><i class="fas fa-user-cog"></i> Configurações</a>
+        <a class="nav-link logout-link" href="login.html">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </div>
+
+    <div class="content">
+        <div class="welcome-box">
+            <div class="welcome-title">Bem-vindo ao Ranking dos Alunos</div>
+            <div class="welcome-desc">Aqui você acompanha o ranking e desempenho dos alunos.</div>
+            <div class="welcome-path">Home</div>
+        </div>
+        
+        <!-- Adicione a nova aba na navegação -->
+        <div class="nav-tabs">
+            <a class="nav-link active" href="#" onclick="showTab('ranking')" id="tab-ranking">Ranking</a>
+            <a class="nav-link" href="#" onclick="showTab('calendario')" id="tab-calendario">Eventos</a>
+            <a class="nav-link" href="#" onclick="showTab('recomendacao')" id="tab-recomendacao">Recomendações</a>
+        </div>
+
+        <div id="content-ranking" class="tab-content">
+            <h3 class="mt-4">Ranking Geral dos Alunos</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:32px;flex-direction:column;">
+                <div style="width:100%;">
+                    <label for="turma-select"><b>Turma:</b></label>
+                    <select id="turma-select"></select>
+                    <label for="materia-select" style="margin-left:16px;"><b>Matéria:</b></label>
+                    <select id="materia-select"></select>
+                    <table id="ranking-table" style="width:100%;margin-top:16px;border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                <th>Posição</th>
+                                <th>Aluno</th>
+                                <th>Turma</th>
+                                <th>Média</th>
+                                <th>Faltas</th>
+                                <th>Avaliação Prof.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dados JS -->
+                        </tbody>
+                    </table>
+                    <div style="display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between;">
+                        <div style="flex:2;min-width:320px;">
+                            <canvas id="rankingChart"></canvas>
+                        </div>
+                        <div style="flex:1;min-width:220px;">
+                            <div id="filtros-mencoes" style="margin-bottom:12px;">
+                                <label for="filtro-turma"><b>Turma:</b></label>
+                                <select id="filtro-turma"></select>
+                                <label for="filtro-professor" style="margin-left:12px;"><b>Professor:</b></label>
+                                <select id="filtro-professor"></select>
+                            </div>
+                            <canvas id="aproveitamentoChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="content-calendario" class="tab-content" style="display:none">
+            <div class="calendario-dicas dicas-modernas">
+                <i class="fa-solid fa-lightbulb"></i>
+                <span>
+                    <b>Dicas de uso:</b><br>
+                    <ul>
+                        <li><i class="fa-solid fa-arrow-right"></i> Navegue entre os meses usando as setas.</li>
+                        <li><i class="fa-solid fa-plus"></i> Clique em um dia para adicionar um evento.</li>
+                        <li><i class="fa-solid fa-trash"></i> Clique em <b>Remover</b> para excluir um evento.</li>
+                    </ul>
+                </span>
+            </div>
+            <div id="event-list"></div>
+            <div id="calendar-container">
+                <div class="calendar-header">
+                    <button id="prev-month" aria-label="Mês anterior">&lt;</button>
+                    <span id="calendar-month-year"></span>
+                    <button id="next-month" aria-label="Próximo mês">&gt;</button>
+                </div>
+                <table id="calendar">
+                    <thead>
+                        <tr>
+                            <th>Dom</th>
+                            <th>Seg</th>
+                            <th>Ter</th>
+                            <th>Qua</th>
+                            <th>Qui</th>
+                            <th>Sex</th>
+                            <th>Sáb</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dias serão preenchidos via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- NOVA ABA DE RECOMENDAÇÃO -->
+        <div id="content-recomendacao" class="tab-content" style="display:none">
+
+                <table id="tabela-recomendacoes" style="width:100%;border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(106,13,173,0.07);margin-bottom:18px;">
+                    <thead>
+                        <tr>
+                            <th>Professor</th>
+                            <th>Matéria</th>
+                            <th>Média Recomendada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- JS preenche -->
+                    </tbody>
+                </table>
+                <canvas id="graficoRecomendacoes" height="180"></canvas>
+            </div>
+        </div>
+ 
+    </div>
+    <!-- Modal para adicionar evento -->
+    <div id="modal-evento" class="modal-evento-overlay">
+        <div class="modal-evento-box">
+            <button class="modal-evento-close" id="fechar-modal-evento">&times;</button>
+            <h2>Adicionar Evento</h2>
+            <form id="form-evento">
+                <label for="evento-data">Data</label>
+                <input type="text" id="evento-data" name="evento-data" readonly>
+                <label for="evento-titulo">Título do Evento</label>
+                <input type="text" id="evento-titulo" name="evento-titulo" maxlength="60" required placeholder="Digite o título do evento">
+                <label for="evento-descricao">Descrição</label>
+                <textarea id="evento-descricao" name="evento-descricao" maxlength="200" placeholder="Digite uma descrição (opcional)" style="width:100%;min-height:50px;margin-bottom:10px;border-radius:5px;border:1px solid #ccc;padding:8px;box-sizing:border-box;"></textarea>
+                <div class="modal-evento-actions">
+                    <button type="submit" class="btn-criar-evento">Adicionar</button>
+                    <button type="button" class="btn-fechar-evento" id="cancelar-modal-evento">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Comunicação -->
+    <div id="comunicacao-modal" class="comunicacao-modal">
+        <div class="comunicacao-modal-content">
+            <button id="fechar-comunicacao-modal" class="comunicacao-modal-close">&times;</button>
+            <h2 style="margin-bottom: 8px;">Entre em contato:</h2>
+            <hr style="width: 120px; border: 1px solid #b39ddb; margin: 0 auto 18px auto;">
+            <div style="text-align:center; color:#222; font-size:1.08em;">
+                <div style="margin-bottom:10px;">
+                    - WhatsApp/telefone: 
+                    <a href="tel:+556139661201" style="color:#3b3be6; text-decoration:underline;">(61) 3966-1201</a>
+                </div>
+                <div style="margin-bottom:10px;">
+                    - E-mail: 
+                    <a href="mailto:ouvidoria@uniceub.br" style="color:#3b3be6; text-decoration:underline;">ouvidoria@uniceub.br</a>
+                    e
+                    <a href="mailto:ouvidoria.taguatinga@uniceub.br" style="color:#3b3be6; text-decoration:underline;">ouvidoria.taguatinga@uniceub.br</a>
+                </div>
+                <div>
+                    - Regulamento da Ouvidoria : 
+                    <a href="https://www.uniceub.br/ouvidoria" target="_blank" style="color:#3b3be6; text-decoration:underline;">Clique aqui</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Sobre Nós -->
+<div id="sobre-nos-modal" class="comunicacao-modal">
+    <div class="comunicacao-modal-content">
+        <button id="fechar-sobre-nos-modal" class="comunicacao-modal-close">&times;</button>
+        <h2 style="margin-bottom: 8px;">💻 Sobre Nós</h2>
+        <hr style="width: 120px; border: 1px solid #b39ddb; margin: 0 auto 18px auto;">
+        <div style="text-align:left; color:#222; font-size:1.08em; line-height:1.6;">
+            Somos uma equipe formada por estudantes de Ciência da Computação apaixonados por inovação, tecnologia e educação. Nossa missão é transformar o ambiente acadêmico em um espaço mais dinâmico, justo e motivador por meio da nossa plataforma de Ranking de Alunos.<br><br>
+            Desenvolvemos essa solução com o objetivo de incentivar a competitividade de forma saudável, promovendo o reconhecimento de alunos que se destacam em notas, presença e participação. Acreditamos que, com gamificação e feedback constante, é possível tornar a jornada acadêmica mais envolvente e gratificante.<br><br>
+            A plataforma foi criada com foco na transparência, engajamento e evolução contínua, tanto para alunos quanto para professores. Cada funcionalidade foi pensada para valorizar o esforço dos estudantes e criar oportunidades reais de crescimento dentro e fora da sala de aula.<br><br>
+            <b>Seja bem-vindo(a) ao novo jeito de acompanhar desempenho!</b>
+        </div>
+    </div>
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../javascript/homeprof.js"></script>
+    <script src="../javascript/comunicacao.js"></script>
+    <script src="../javascript/sobrenos.js"></script>
+    <script>
+        // Simulação de recomendações (0 a 5) para cada professor/matéria
+const recomendacoes = {};
+Object.entries(professoresPorMateria).forEach(([materia, professor]) => {
+    // Simula média de recomendação de 0 a 5
+    recomendacoes[materia] = +(Math.random() * 2 + 3).toFixed(2);
+});
+
+// Renderiza tabela e gráfico de recomendações
+function renderRecomendacoesProfessores() {
+    const tbody = document.getElementById('tabela-recomendacoes').querySelector('tbody');
+    tbody.innerHTML = '';
+    const labels = [];
+    const medias = [];
+    Object.entries(professoresPorMateria).forEach(([materia, professor]) => {
+        const media = recomendacoes[materia];
+        labels.push(professor);
+        medias.push(media);
+        // Estrelas visuais
+        let stars = '';
+        for (let i = 1; i <= 5; i++) {
+            stars += `<span style="color:#FFD700;font-size:1.1em;">${i <= Math.round(media) ? '★' : '☆'}</span>`;
+        }
+        tbody.innerHTML += `
+            <tr>
+                <td>
+                    ${professor}
+                    <button class="avaliar-prof-btn" data-materia="${materia}" data-professor="${professor}" style="margin-left:8px;background:none;border:none;cursor:pointer;color:#6A0DAD;" title="Avaliar professor">   
+                    </button>
+                </td>
+                <td>${materia}</td>
+                 <td style="text-align:center">${stars} <span style="color:#888;font-size:0.95em;">(${media.toFixed(2)})</span></td>
+            </tr>
+        `;
+    });
+
+    // Gráfico de barras horizontal
+    if (window.graficoRecomendacoes) window.graficoRecomendacoes.destroy();
+    window.graficoRecomendacoes = new Chart(document.getElementById('graficoRecomendacoes'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Média de Recomendação',
+                data: medias,
+                backgroundColor: '#6A0DAD'
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            scales: {
+                x: { min: 0, max: 5, beginAtZero: true }
+            },
+            plugins: {
+                legend: { display: false },
+                title: { display: false }
+            }
+        }
+    });
+}
+
+// Chame ao carregar a página
+renderRecomendacoesProfessores();
+
+function showTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    document.getElementById('content-' + tab).style.display = '';
+    document.getElementById('tab-' + tab).classList.add('active');
+    // Redesenha o gráfico de recomendações ao abrir a aba recomendação
+    if(tab === 'recomendacao' && typeof renderRecomendacoesProfessores === 'function') {
+        setTimeout(renderRecomendacoesProfessores, 100);
+    }
+}
+
+
+
+// Logout funcional
+document.getElementById('logout-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    window.location.href = 'login.html';
+});
+    </script>
+</body>
+
+</html>

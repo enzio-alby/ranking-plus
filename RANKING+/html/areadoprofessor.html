@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Área do Professor</title>
+    <link rel="stylesheet" href="../css/styleprof.css">
+</head>
+<body>
+    <header class="topbar-prof">
+        <img src="../images/logo3.png" alt="Logo" class="logo-prof">
+        <h1 class="titulo-prof">Área do Professor</h1>
+        <nav class="header-nav">
+            <a href="homeprof.html">Página Inicial</a>
+            <a href="login.html" class="btn btn-danger">Sair</a>
+        </nav>
+    </header>
+    <main>
+        <!-- Informações do Professor e Bater Ponto lado a lado -->
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch;">
+            <!-- Bloco Informações do Professor -->
+            <div class="card" style="flex: 1 1 350px; min-width: 300px; display: flex; flex-direction: column;">
+                <section class="info-professor">
+                    <h3>Informações do Professor</h3>
+                    <hr class="divisor">
+                    <div class="profile-info"></div>
+                    <div class="professor-perfil-container">
+                        <img src="../images/user.png" class="professor-foto" alt="Foto do Professor">
+                        <div class="professor-dados">
+                            <div><strong>Nome:</strong> <span class="value" id="nome"></span></div>
+                            <div><strong>Email:</strong> <span class="value" id="email"></span></div>
+                            <div><strong>Turno:</strong> <span class="value" id="turno"></span></div>
+                            <div><strong>Curso:</strong> <span class="value" id="curso"></span></div>
+                        </div>
+                    </div>
+                    <div class="professor-botoes">
+                        <a href="configprof.html" class="btn-editar-perfil" style="background-color:#6A0DAD; color:white; border:none; padding:8px 16px; border-radius:5px; cursor:pointer; margin-top:10px; display:inline-block; text-decoration:none;">
+                            Editar Perfil
+                        </a>
+                        <label class="professor-alterar-imagem" style="cursor:pointer; margin-top:10px; display:inline-block;">
+                            Alterar Imagem
+                            <input type="file" id="input-foto-professor" accept="image/*" style="display:none;">
+                        </label>
+                    </div>
+                </section>
+            </div>
+            <!-- Bloco Bater Ponto -->
+        </div>
+
+        <!-- Calendário de Aulas -->
+        <div class="card">
+            <section class="calendario">
+                <h3>Calendário de Aulas</h3>
+                <hr class="divisor">
+                <div class="calendario-blocos">
+                    <div class="dia-bloco">
+                        <h4>Segunda</h4>
+                        <div>Algoritmos - Turma A<br><span class="turno-materia">Manhã</span></div>
+                    </div>
+                    <div class="dia-bloco">
+                        <h4>Terça</h4>
+                        <div>Estruturas de Dados - Turma B<br><span class="turno-materia">Tarde</span></div>
+                    </div>
+                    <div class="dia-bloco">
+                        <h4>Quarta</h4>
+                        <div>Redes de Computadores - Turma C<br><span class="turno-materia">Noite</span></div>
+                    </div>
+                    <div class="dia-bloco">
+                        <h4>Quinta</h4>
+                        <div>Engenharia de Software - Turma A<br><span class="turno-materia">Manhã</span></div>
+                    </div>
+                    <div class="dia-bloco">
+                        <h4>Sexta</h4>
+                        <div>Bancos de Dados - Turma B<br><span class="turno-materia">Tarde</span></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Suas Turmas -->
+        <div class="card">
+            <section class="turmas">
+                <h3>Suas Turmas</h3>
+                <hr class="divisor">
+                <div class="prof-turmas-abas" id="prof-turmas-abas"></div>
+                <div class="prof-turma-alunos" id="prof-turma-alunos"></div>
+            </section>
+        </div>
+
+        <!-- Painel Flutuante para Alunos -->
+        <div class="overlay" id="overlay" onclick="fecharModal()"></div>
+        <div class="modal" id="modalAlunos">
+            <h3>Alunos da Turma</h3>
+            <ul id="listaAlunos"></ul>
+            <button onclick="fecharModal()">Fechar</button>
+        </div>
+
+        <!-- Modal para Bater Ponto -->
+        <div class="overlay" id="overlayPonto" onclick="fecharModalPonto()"></div>
+        <div class="modal" id="modalPonto">
+            <h3>Registrar Presença</h3>
+            <form>
+                <label for="diaPonto">Dia da Semana:</label>
+                <select id="diaPonto">
+                    <option value="seg">Segunda</option>
+                    <option value="ter">Terça</option>
+                    <option value="qua">Quarta</option>
+                    <option value="qui">Quinta</option>
+                    <option value="sex">Sexta</option>
+                </select>
+                <label for="presenca">Presença:</label>
+                <select id="presenca">
+                    <option value="presente">Presente</option>
+                    <option value="ausente">Ausente</option>
+                </select>
+                <button type="button" onclick="registrarPonto()">Salvar</button>
+            </form>
+        </div>
+    </main>
+    <script src="../javascript/professor.js"></script>
+</body>
+</html>

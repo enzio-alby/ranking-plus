@@ -1,0 +1,139 @@
+/* Paleta: Roxo escuro #3B1053, Branco #FFFFFF */
+
+/* Fundo com imagem e efeito de desfoque */
+body {
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    background: url('../images/fundologin.png') no-repeat center center fixed;
+    background-size: cover;
+    font-family: Arial, sans-serif;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: inherit;
+    filter: blur(8px) brightness(0.85);
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Container centralizado e moderno */
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 420px;
+    margin: 40px auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px #6a0dad22;
+    padding: 32px 28px 24px 28px;
+}
+
+h2 {
+    color: #6A0DAD;
+    text-align: center;
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #3B1053;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="file"] {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1em;
+    margin-bottom: 18px;
+    background: #fff;
+    color: #3B1053;
+    outline: none;
+    transition: border 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    border: 2px solid #7c3aed; /* roxo claro para foco */
+}
+
+.btn, .btn-verificar {
+    background: #6A0DAD;
+    color: #fff;
+    border: none;
+    padding: 9px 22px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.2s;
+}
+
+.btn-verificar {
+    padding: 7px 14px;
+    font-size: 0.98em;
+    margin-left: 8px;
+}
+
+.btn:disabled, .btn-verificar:disabled {
+    background: #bba0d6;
+    cursor: not-allowed;
+}
+
+#preview-container {
+    margin-top: 8px;
+    text-align: center;
+}
+
+#preview-foto {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #6A0DAD;
+    display: none;
+}
+
+.codigo-verificacao-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.codigo-verificacao-group input {
+    flex: 1;
+}
+
+.mensagem-sucesso {
+    color: #388e3c;
+    font-size: 1em;
+    margin-top: 8px;
+    text-align: center;
+}
+
+.mensagem-erro {
+    color: #d32f2f;
+    font-size: 1em;
+    margin-top: 8px;
+    text-align: center;
+}

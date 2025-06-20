@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuração de Usuário</title>
+    <link rel="stylesheet" href="../css/styleconfiguser.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Alterar Dados da Conta</h2>
+        <form class="user-form" action="/atualizar-usuario" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="apelido">Editar Nome:</label>
+                <input type="text" id="apelido" name="apelido" required>
+            </div>
+            <div class="form-group">
+                <label for="senha">Nova Senha:</label>
+                <input type="password" id="senha" name="senha" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmar-senha">Confirmar Nova Senha:</label>
+                <input type="password" id="confirmar-senha" name="confirmar-senha" required>
+            </div>
+            <div class="form-group">
+                <label for="foto">Alterar Foto de Perfil:</label>
+                <input type="file" id="foto" name="foto" accept="image/*">
+                <div id="preview-container">
+                    <img id="preview-foto" src="#" alt="Prévia da foto">
+                </div>
+            </div>
+            <button type="submit" class="btn">Salvar Alterações</button>
+        </form>
+    </div>
+    <script src="../javascript/configuser.js"></script>
+</body>
+</html>
+
