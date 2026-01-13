@@ -1,0 +1,322 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suporte - Ranking+</title>
+    <link rel="stylesheet" href="../css/stylesuporte.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Background Elements -->
+        <div class="bg-decoration">
+            <div class="circle circle-1"></div>
+            <div class="circle circle-2"></div>
+            <div class="circle circle-3"></div>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-trophy"></i>
+                <h1>Ranking+</h1>
+            </div>
+            <nav class="nav">
+                <a href="index.html">Home</a>
+                <a href="suporte.html" class="active">Suporte</a>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="hero-content">
+                    <h2>Como podemos ajudar você?</h2>
+                    <p>Estamos aqui para garantir que sua experiência no Ranking+ seja a melhor possível</p>
+                    
+                    <!-- Search Bar -->
+                    <div class="search-container">
+                        <div class="search-bar">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="Pesquise por dúvidas, problemas ou tutoriais...">
+                            <button type="button" id="searchBtn">Buscar</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="quick-actions">
+                <h3>Acesso Rápido</h3>
+                <div class="actions-grid">
+                    <div class="action-card" data-action="chat">
+                        <div class="action-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h4>Chat ao Vivo</h4>
+                        <p>Fale conosco agora</p>
+                        <span class="status online">Online</span>
+                    </div>
+
+                    <div class="action-card" data-action="ticket">
+                        <div class="action-icon">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <h4>Abrir Ticket</h4>
+                        <p>Relate um problema</p>
+                        <span class="status">24h resposta</span>
+                    </div>
+
+                    <div class="action-card" data-action="faq">
+                        <div class="action-icon">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                        <h4>FAQ</h4>
+                        <p>Perguntas frequentes</p>
+                        <span class="status">Respostas rápidas</span>
+                    </div>
+
+                    <div class="action-card" data-action="tutorial">
+                        <div class="action-icon">
+                            <i class="fas fa-play-circle"></i>
+                        </div>
+                        <h4>Tutoriais</h4>
+                        <p>Aprenda a usar</p>
+                        <span class="status">Vídeos e guias</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FAQ Section -->
+            <section class="faq-section" id="faq-section">
+                <h3>Perguntas Frequentes</h3>
+                <div class="faq-container">
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h4>Como funciona o sistema de ranking?</h4>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>O sistema de ranking é baseado em múltiplos critérios como notas, participação em atividades, frequência e projetos especiais. Cada atividade tem um peso específico que contribui para sua pontuação geral.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h4>Quais benefícios posso obter com uma boa colocação?</h4>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Os melhores colocados têm acesso a bolsas de estudo, programas de intercâmbio, vagas prioritárias em projetos de pesquisa, mentoria especializada e oportunidades exclusivas de estágio.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h4>Com que frequência o ranking é atualizado?</h4>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>O ranking é atualizado semanalmente, sempre às segundas-feiras às 00:00. Você pode acompanhar sua evolução em tempo real através do dashboard pessoal.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h4>Como posso contestar minha pontuação?</h4>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Você pode abrir um ticket de contestação através desta página de suporte. Nossa equipe revisará sua solicitação em até 48 horas e fornecerá uma resposta detalhada.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h4>Posso ver o histórico das minhas pontuações?</h4>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Sim! No seu dashboard pessoal você encontra um gráfico completo com seu histórico de pontuações, permitindo acompanhar sua evolução ao longo do tempo.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Support Forms -->
+            <div class="support-forms" id="support-forms">
+                <!-- Chat Form -->
+                <div class="form-container" id="chat-form">
+                    <div class="form-header">
+                        <button class="back-btn" onclick="closeForms()">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h3>Chat ao Vivo</h3>
+                        <span class="online-indicator">
+                            <i class="fas fa-circle"></i>
+                            Online
+                        </span>
+                    </div>
+                    
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chat-messages">
+                            <div class="message bot-message">
+                                <div class="message-avatar">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div class="message-content">
+                                    <p>Olá! Sou o assistente virtual do Ranking+. Como posso ajudá-lo hoje?</p>
+                                    <span class="message-time">Agora</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-input">
+                            <input type="text" id="chatInput" placeholder="Digite sua mensagem...">
+                            <button type="button" id="sendMessage">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ticket Form -->
+                <div class="form-container" id="ticket-form">
+                    <div class="form-header">
+                        <button class="back-btn" onclick="closeForms()">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h3>Abrir Ticket de Suporte</h3>
+                    </div>
+                    
+                    <form id="ticketForm">
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="ticketCategory">Categoria</label>
+                                <select id="ticketCategory" name="category" required>
+                                    <option value="">Selecione uma categoria</option>
+                                    <option value="technical">Problema Técnico</option>
+                                    <option value="ranking">Dúvida sobre Ranking</option>
+                                    <option value="benefits">Benefícios e Recompensas</option>
+                                    <option value="account">Problemas de Conta</option>
+                                    <option value="other">Outros</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="priority">Prioridade</label>
+                                <select id="priority" name="priority" required>
+                                    <option value="">Selecione a prioridade</option>
+                                    <option value="low">Baixa</option>
+                                    <option value="medium">Média</option>
+                                    <option value="high">Alta</option>
+                                    <option value="urgent">Urgente</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="ticketSubject">Assunto</label>
+                            <input type="text" id="ticketSubject" name="subject" placeholder="Descreva brevemente o problema" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="ticketDescription">Descrição Detalhada</label>
+                            <textarea id="ticketDescription" name="description" rows="6" placeholder="Descreva seu problema ou dúvida em detalhes..." required></textarea>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="ticketFile">Anexar Arquivo (opcional)</label>
+                            <div class="file-upload">
+                                <input type="file" id="ticketFile" name="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
+                                <label for="ticketFile" class="file-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Clique para anexar ou arraste aqui</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="submit-btn">
+                            <span>Enviar Ticket</span>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Contact Info -->
+            <section class="contact-info">
+                <h3>Outras Formas de Contato</h3>
+                <div class="contact-grid">
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Email</h4>
+                            <p>suporte@rankingplus.edu.br</p>
+                            <span>Resposta em até 24h</span>
+                        </div>
+                    </div>
+
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Telefone</h4>
+                            <p>(11) 3000-1234</p>
+                            <span>Seg-Sex: 8h às 18h</span>
+                        </div>
+                    </div>
+
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>WhatsApp</h4>
+                            <p>(11) 99999-8888</p>
+                            <span>Seg-Sex: 8h às 22h</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Ranking+</h4>
+                    <p>Plataforma de ranking universitário que reconhece e recompensa a excelência acadêmica.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links Úteis</h4>
+                    <ul>
+                        <li><a href="termos.html">Termos de Uso</a></li>
+                        <li><a href="privacidade.html">Política de Privacidade</a></li>
+                        <li><a href="sobre.html">Sobre Nós</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Suporte</h4>
+                    <ul>
+                        <li><a href="#faq-section">FAQ</a></li>
+                        <li><a href="tutoriais.html">Tutoriais</a></li>
+                        <li><a href="status.html">Status do Sistema</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Ranking+. Todos os direitos reservados.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="../javascript/suporte.js"></script>
+</body>
+</html>

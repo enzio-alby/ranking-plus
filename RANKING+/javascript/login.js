@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
             window.location.href = 'areadoprofessor.html';
           } else {
             localStorage.setItem('alunoId', resposta.usuario.id);
-            window.location.href = 'index.html'; // ajuste para sua página de destino
+            window.location.href = 'homealuno.html'; // ajuste para sua página de destino
           }
         } else {
           alert(resposta.mensagem || 'Usuário ou senha inválidos.');
