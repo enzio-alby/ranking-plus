@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard do Professor - Sistema Universitário</title>
+    <meta name="description" content="Sistema de ranking e gestão de alunos universitários">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../css/styleareaprofessor.css">
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="p-4">
+                <div class="text-center mb-4">
+                    <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <i class="fas fa-graduation-cap text-primary" style="font-size: 24px;"></i>
+                    </div>
+                    <h5 class="text-white mt-2 mb-0">Prof. Tiago Leite</h5>
+                    <small class="text-white-50">Área do Professor</small>
+                </div>
+                
+                <nav class="nav flex-column">
+                    <a class="nav-link active" href="#" onclick="showTab('dashboard')">
+                        <i class="fas fa-chart-line"></i>
+                        Dashboard
+                    </a>
+                    <a class="nav-link" href="#" onclick="showTab('classes')">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        Turmas
+                    </a>
+                    <a class="nav-link" href="#" onclick="showTab('students')">
+                        <i class="fas fa-users"></i>
+                        Alunos
+                    </a>
+                    <a class="nav-link" href="#" onclick="showTab('schedule')">
+                        <i class="fas fa-calendar-alt"></i>
+                        Horários
+                    </a>
+                    <a class="nav-link" href="#" onclick="showTab('reports')">
+                        <i class="fas fa-chart-bar"></i>
+                        Relatórios
+                    </a>
+                    <a class="nav-link" href="#" onclick="showTab('settings')">
+                        <i class="fas fa-cog"></i>
+                        Configurações
+                    </a>
+                    <a class="nav-link text-danger mt-3" href="#" onclick="confirmLogout(event)">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-grow-1 main-content">
+            <!-- Mobile Header -->
+            <div class="d-md-none bg-white border-bottom p-3">
+                <button class="btn btn-outline-primary" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <div class="container-fluid p-4">
+                <!-- Dashboard Tab -->
+                <div id="dashboard-tab" class="tab-content active fade-in">
+                    <!-- Header com Estatísticas -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="main-header rounded-3 mb-4">
+                                <div class="container-fluid">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <h2 class="mb-1">
+                                                <i class="fas fa-chart-line me-2"></i>
+                                                Dashboard do Professor
+                                            </h2>
+                                            <p class="mb-0 opacity-75">Acompanhe o desempenho e ranking dos seus alunos</p>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <div class="d-flex justify-content-end align-items-center">
+                                                <i class="fas fa-calendar-alt me-2"></i>
+                                                <span id="current-date"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cards de Estatísticas -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card">
+                                <div class="stats-number">45</div>
+                                <div class="stats-label">Total de Alunos</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card">
+                                <div class="stats-number">3</div>
+                                <div class="stats-label">Turmas Ativas</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card">
+                                <div class="stats-number">87%</div>
+                                <div class="stats-label">Presença Média</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card">
+                                <div class="stats-number">8.5</div>
+                                <div class="stats-label">Nota Média</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="row mb-4">
+                        <div class="col-lg-8 mb-4">
+                            <div class="custom-card">
+                                <div class="card-header-custom">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-chart-bar me-2"></i>
+                                        Desempenho por Turma
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="performanceChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-4">
+                            <div class="custom-card">
+                                <div class="card-header-custom">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-user-check me-2"></i>
+                                        Presença Hoje
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="attendanceChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Evolução Temporal -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="custom-card">
+                                <div class="card-header-custom">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-chart-line me-2"></i>
+                                        Evolução do Desempenho
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="evolutionChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Classes Tab -->
+                <div id="classes-tab" class="tab-content fade-in">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3>
+                            <i class="fas fa-chalkboard-teacher me-2 text-primary"></i>
+                            Minhas Turmas
+                        </h3>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newClassModal">
+                            <i class="fas fa-plus me-2"></i>
+                            Nova Turma
+                        </button>
+                    </div>
+
+                    <div class="row" id="classes-container">
+                        <!-- Turmas serão carregadas via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Students Tab -->
+                <div id="students-tab" class="tab-content fade-in">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h3>
+                                <i class="fas fa-users me-2 text-primary"></i>
+                                <span id="selected-class-name">Algoritmos e Estruturas de Dados</span>
+                            </h3>
+                            <p class="text-muted mb-0">Ranking e gestão de alunos</p>
+                        </div>
+                        <div>
+                            <select class="form-select me-3 d-inline-block w-auto" id="class-selector">
+                                <option value="1">Algoritmos e Estruturas de Dados</option>
+                                <option value="2">Banco de Dados Avançado</option>
+                                <option value="3">Engenharia de Software</option>
+                            </select>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newStudentModal">
+                                <i class="fas fa-user-plus me-2"></i>
+                                Adicionar Aluno
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Top 3 Students -->
+                    <div class="row mb-4" id="top-students">
+                        <!-- Top 3 serão carregados via JavaScript -->
+                    </div>
+
+                    <!-- Tabela Completa -->
+                    <div class="custom-card">
+                        <div class="card-header-custom">
+                            <h5 class="mb-0">
+                                <i class="fas fa-trophy me-2"></i>
+                                Ranking Completo
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-custom mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Ranking</th>
+                                            <th>Aluno</th>
+                                            <th>Curso</th>
+                                            <th>Nota</th>
+                                            <th>Presença</th>
+                                            <th>Atividades</th>
+                                            <th>Participação</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="students-table">
+                                        <!-- Estudantes serão carregados via JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule Tab -->
+                <div id="schedule-tab" class="tab-content fade-in">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3>
+                            <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                            Grade de Horários
+                        </h3>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newClassScheduleModal">
+                            <i class="fas fa-plus me-2"></i>
+                            Nova Aula
+                        </button>
+                    </div>
+
+                    <div class="custom-card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="bg-dark-blue text-white">
+                                        <tr>
+                                            <th>Horário</th>
+                                            <th>Segunda</th>
+                                            <th>Terça</th>
+                                            <th>Quarta</th>
+                                            <th>Quinta</th>
+                                            <th>Sexta</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="fw-bold">08:00 - 10:00</td>
+                                            <td></td>
+                                            <td class="bg-light">
+                                                <div class="p-2 border-start border-primary border-4">
+                                                    <strong>Banco de Dados Avançado</strong><br/>
+                                                    <small class="text-muted">Lab 203 - 15 alunos</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td class="bg-light">
+                                                <div class="p-2 border-start border-primary border-4">
+                                                    <strong>Banco de Dados Avançado</strong><br/>
+                                                    <small class="text-muted">Lab 203 - 15 alunos</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">10:00 - 12:00</td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">14:00 - 16:00</td>
+                                            <td class="bg-light">
+                                                <div class="p-2 border-start border-primary border-4">
+                                                    <strong>Algoritmos e Estruturas</strong><br/>
+                                                    <small class="text-muted">Lab 101 - 25 alunos</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td class="bg-light">
+                                                <div class="p-2 border-start border-primary border-4">
+                                                    <strong>Algoritmos e Estruturas</strong><br/>
+                                                    <small class="text-muted">Lab 101 - 25 alunos</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">16:00 - 18:00</td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="custom-card">
+                                <div class="card-header-custom">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-clock me-2"></i>
+                                        Próximas Aulas
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">Algoritmos e Estruturas de Dados</h6>
+                                                <p class="mb-1 text-muted">Segunda-feira, 14:00</p>
+                                                <small>Lab 101</small>
+                                            </div>
+                                            <span class="badge bg-primary rounded-pill">Hoje</span>
+                                        </div>
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">Banco de Dados Avançado</h6>
+                                                <p class="mb-1 text-muted">Terça-feira, 08:00</p>
+                                                <small>Lab 203</small>
+                                            </div>
+                                            <span class="badge bg-secondary rounded-pill">Amanhã</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="custom-card">
+                                <div class="card-header-custom">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-tasks me-2"></i>
+                                        Atividades Pendentes
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">Correção de Provas - AED</h6>
+                                                <small class="text-muted">25 provas para corrigir</small>
+                                            </div>
+                                            <span class="badge bg-warning rounded-pill">Urgente</span>
+                                        </div>
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">Lançar Notas - BDA</h6>
+                                                <small class="text-muted">15 notas pendentes</small>
+                                            </div>
+                                            <span class="badge bg-info rounded-pill">Pendente</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Tab -->
+                <div id="reports-tab" class="tab-content fade-in">
+                    <!-- Main Content -->
+                        <!-- Header -->
+                        <header class="content-header">
+                            <div class="header-title">
+                                <h1>📊 Relatórios Avançados</h1>
+                                <p>Filtre, analise e exporte dados dos alunos</p>
+                            </div>
+                            <div class="header-stats">
+                                <span class="stat-item">
+                                    <span class="stat-number" id="totalStudents">156</span>
+                                    <span class="stat-label">Alunos</span>
+                                </span>
+                                <span class="stat-item">
+                                    <span class="stat-number" id="filteredStudents">156</span>
+                                    <span class="stat-label">Filtrados</span>
+                                </span>
+                            </div>
+                        </header>
+
+                        <!-- Main Layout -->
+                        <div class="reports-layout">
+                            <!-- Filters Column -->
+                            <aside class="filters-panel">
+                                <div class="filters-header">
+                                    <h2>🔍 Filtros</h2>
+                                    <button class="btn-clear-filters" id="clearFilters">Limpar Tudo</button>
+                                </div>
+
+                                <div class="filters-content">
+                                    <!-- Busca por Nome -->
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <span class="filter-icon">👤</span>
+                                            Nome do Aluno
+                                        </label>
+                                        <input type="text" id="searchName" class="filter-input" placeholder="Digite o nome...">
+                                    </div>
+
+                                    <!-- Filtro por Curso -->
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <span class="filter-icon">🎓</span>
+                                            Curso
+                                        </label>
+                                        <div class="checkbox-group" id="courseFilters">
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="Ciência da Computação">
+                                                <span class="checkbox-custom"></span>
+                                                Ciência da Computação
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="Engenharia de Software">
+                                                <span class="checkbox-custom"></span>
+                                                Engenharia de Software
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="Sistemas de Informação">
+                                                <span class="checkbox-custom"></span>
+                                                Sistemas de Informação
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="Análise e Desenvolvimento">
+                                                <span class="checkbox-custom"></span>
+                                                Análise e Desenvolvimento
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Filtro por Semestre -->
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <span class="filter-icon">📚</span>
+                                            Semestre
+                                        </label>
+                                        <div class="checkbox-group" id="semesterFilters">
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="1">
+                                                <span class="checkbox-custom"></span>
+                                                1º Semestre
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="2">
+                                                <span class="checkbox-custom"></span>
+                                                2º Semestre
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="3">
+                                                <span class="checkbox-custom"></span>
+                                                3º Semestre
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="4">
+                                                <span class="checkbox-custom"></span>
+                                                4º Semestre
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="5">
+                                                <span class="checkbox-custom"></span>
+                                                5º Semestre
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="6">
+                                                <span class="checkbox-custom"></span>
+                                                6º Semestre
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Filtro por Status -->
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <span class="filter-icon">🎯</span>
+                                            Status
+                                        </label>
+                                        <div class="checkbox-group" id="statusFilters">
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="Ativo">
+                                                <span class="checkbox-custom"></span>
+                                                Ativo
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="Formado">
+                                                <span class="checkbox-custom"></span>
+                                                Formado
+                                            </label>
+                                            <label class="checkbox-item">
+                                                <input type="checkbox" value="Trancado">
+                                                <span class="checkbox-custom"></span>
+                                                Trancado
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Slider Pontuação Geral -->
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <span class="filter-icon">🏆</span>
+                                            Pontuação Geral
+                                        </label>
+                                        <div class="range-slider">
+                                            <div class="range-values">
+                                                <span id="scoreMin">0</span>
+                                                <span id="scoreMax">1000</span>
+                                            </div>
+                                            <div class="dual-range">
+                                                <input type="range" id="scoreRangeMin" min="0" max="1000" value="0" class="range-input">
+                                                <input type="range" id="scoreRangeMax" min="0" max="1000" value="1000" class="range-input">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Slider Frequência -->
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <span class="filter-icon">📅</span>
+                                            Frequência (%)
+                                        </label>
+                                        <div class="range-slider">
+                                            <div class="range-values">
+                                                <span id="attendanceMin">0%</span>
+                                                <span id="attendanceMax">100%</span>
+                                            </div>
+                                            <div class="dual-range">
+                                                <input type="range" id="attendanceRangeMin" min="0" max="100" value="0" class="range-input">
+                                                <input type="range" id="attendanceRangeMax" min="0" max="100" value="100" class="range-input">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </aside>
+
+                            <!-- Results Area -->
+                            <main class="results-panel">
+                                <!-- Action Buttons -->
+                                <div class="action-buttons">
+                                    <button class="btn-export btn-excel" id="exportExcel">
+                                        <span class="btn-icon">📊</span>
+                                        Exportar para Excel
+                                    </button>
+                                    <button class="btn-export btn-pdf" id="generatePDF">
+                                        <span class="btn-icon">📄</span>
+                                        Gerar Relatórios PDF
+                                    </button>
+                                </div>
+
+                                <!-- Results Table -->
+                                <div class="results-container">
+                                    <div class="results-header">
+                                        <h3>Resultados da Pesquisa</h3>
+                                        <div class="results-count">
+                                            <span id="resultsCount">156 alunos encontrados</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-container">
+                                        <table class="results-table" id="resultsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>
+                                                        <label class="checkbox-item select-all">
+                                                            <input type="checkbox" id="selectAll">
+                                                            <span class="checkbox-custom"></span>
+                                                        </label>
+                                                    </th>
+                                                    <th>Aluno</th>
+                                                    <th>Curso</th>
+                                                    <th>Semestre</th>
+                                                    <th>Pontuação</th>
+                                                    <th>Frequência</th>
+                                                    <th>Status</th>
+                                                    <th>Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="resultsTableBody">
+                                                <!-- Dados serão inseridos via JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </main>
+                        </div>
+
+                    <!-- Loading Overlay -->
+                    <div id="loadingOverlay" class="loading-overlay">
+                        <div class="loading-content">
+                            <div class="loading-spinner"></div>
+                            <p class="loading-text">Processando...</p>
+                        </div>
+                    </div>
+
+                    <!-- Toast Notifications -->
+                    <div id="toastContainer" class="toast-container"></div>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+                    <!-- carregar PDF-Lib antes do areaprofessor.js -->
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+<!-- seu areaprofessor.js deve vir depois -->
+<script src="../javascript/areaprofessor.js"></script>
+                </div>
+
+                <!-- Settings Tab -->
+                <div id="settings-tab" class="tab-content fade-in">
+                    <h3>
+                        <i class="fas fa-cog me-2 text-primary"></i>
+                        Configurações
+                    </h3>
+                    <section class="config-container">
+    <h2 class="config-title"><i class="bi bi-gear"></i> Configurações</h2>
+    <div class="tabs">
+        <button class="config-tab-btn active" data-tab="perfil">Editar Perfil</button>
+        <button class="config-tab-btn" data-tab="dados">Dados Pessoais</button>
+        <button class="config-tab-btn" data-tab="preferencias">Preferências</button>
+        <button class="config-tab-btn" data-tab="seguranca">Segurança</button>
+    </div>
+    <div class="config-tab-content active" id="perfil">
+        <form id="form-perfil">
+            <label class="form-label">Nome</label>
+            <input type="text" class="form-control" name="nome" required>
+            <label class="form-label">Foto de Perfil</label>
+            <input type="file" class="form-control" name="foto">
+            <button type="submit" class="btn btn-primary">Salvar Perfil</button>
+        </form>
+    </div>
+    
+    <div class="config-tab-content" id="dados">
+        <form id="form-dados">
+            <label class="form-label">E-mail</label>
+            <input type="email" class="form-control" name="email" required>
+            <label class="form-label">Telefone</label>
+            <input type="tel" class="form-control" name="telefone">
+            <label class="form-label">Data de Nascimento</label>
+            <input type="date" class="form-control" name="nascimento">
+            <button type="submit" class="btn btn-primary">Salvar Dados</button>
+        </form>
+    </div>
+    <div class="config-tab-content" id="preferencias">
+        <form id="form-preferencias">
+            <label class="form-label">Receber notificações por e-mail</label>
+            <input type="checkbox" class="form-check-input" name="notificacoes">
+            <label class="form-label">Tema escuro</label>
+            <input type="checkbox" class="form-check-input" name="tema">
+            <button type="submit" class="btn btn-primary">Salvar Preferências</button>
+        </form>
+    </div>
+    <div class="config-tab-content" id="seguranca">
+        <form id="form-seguranca">
+            <label class="form-label">Alterar Senha</label>
+            <input type="password" class="form-control" name="senha" required>
+            <label class="form-label">Confirmar Nova Senha</label>
+            <input type="password" class="form-control" name="confirmar_senha" required>
+            <button type="submit" class="btn btn-primary">Salvar Senha</button>
+        </form>
+    </div>
+</section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Avaliação -->
+    <div class="modal fade" id="evaluationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-edit me-2"></i>
+                        Avaliar Aluno: <span id="modal-student-name"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <img id="modal-student-avatar" src="" alt="" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                            <h5 id="modal-student-name-2"></h5>
+                            <p class="text-muted" id="modal-student-course"></p>
+                        </div>
+                        <div class="col-md-8">
+                            <form id="evaluation-form">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Nota Final</label>
+                                        <input type="number" class="form-control form-control-custom" id="student-grade" min="0" max="10" step="0.1">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Presença (%)</label>
+                                        <input type="number" class="form-control form-control-custom" id="student-attendance" min="0" max="100">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Atividades (%)</label>
+                                        <input type="number" class="form-control form-control-custom" id="student-assignments" min="0" max="100">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Participação (%)</label>
+                                        <input type="number" class="form-control form-control-custom" id="student-participation" min="0" max="100">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Observações</label>
+                                    <textarea class="form-control form-control-custom" id="student-observations" rows="3" placeholder="Adicione observações sobre o desempenho do aluno..."></textarea>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveEvaluation()">
+                        <i class="fas fa-save me-2"></i>
+                        Salvar Avaliação
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nova Turma -->
+    <div class="modal fade" id="newClassModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus me-2"></i>
+                        Nova Turma
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Nome da Disciplina</label>
+                            <input type="text" class="form-control form-control-custom" placeholder="Ex: Algoritmos e Estruturas de Dados">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Código</label>
+                            <input type="text" class="form-control form-control-custom" placeholder="Ex: AED-2024">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Horário</label>
+                                <input type="text" class="form-control form-control-custom" placeholder="Ex: Seg/Qua 14:00-16:00">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Sala</label>
+                                <input type="text" class="form-control form-control-custom" placeholder="Ex: Lab 101">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        Criar Turma
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Aluno -->
+    <div class="modal fade" id="newStudentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Novo Aluno
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Nome Completo</label>
+                            <input type="text" class="form-control form-control-custom" placeholder="Nome do aluno">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control form-control-custom" placeholder="email@uni.edu">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Curso</label>
+                            <select class="form-select form-control-custom">
+                                <option>Ciência da Computação</option>
+                                <option>Engenharia de Software</option>
+                                <option>Sistemas de Informação</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Matrícula</label>
+                            <input type="text" class="form-control form-control-custom" placeholder="Número da matrícula">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        Adicionar Aluno
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="../javascript/areaprofessor.js"></script>
+    <script>
+function confirmLogout(event) {
+    event.preventDefault();
+    if (confirm('Tem certeza que deseja sair?')) {
+        window.location.href = '../html/index.html';
+    }
+}
+</script>
+</body>
+</html>

@@ -1,48 +1,171 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recuperar Senha - Plataforma CEUB</title>
+    <title>Recuperar Senha - Ranking+</title>
     <link rel="stylesheet" href="../css/stylerecuperar.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="recuperar-container">
-        <h2>Recuperar Senha</h2>
-        <p>Informe seu e-mail para enviarmos instruções de redefinição.</p>
-        <form id="recuperarForm">
-            <label for="email">E-mail</label>
-            <input type="email" id="email" name="email" required placeholder="Digite seu e-mail">
-            <button type="submit" class="btn-recuperar">Enviar</button>
-            <div class="voltar-login">
-                <a href="login.html">Voltar ao login</a>
+    <div class="container">
+        <!-- Background Elements -->
+        <div class="bg-decoration">
+            <div class="circle circle-1"></div>
+            <div class="circle circle-2"></div>
+            <div class="circle circle-3"></div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="recovery-card">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo">
+                    <i class="fas fa-trophy"></i>
+                    <h1>Ranking+</h1>
+                </div>
+                <h2>Recuperar Senha</h2>
+                <p>Escolha uma das opções abaixo para recuperar sua senha</p>
             </div>
-        </form>
+
+            <!-- Recovery Options -->
+            <div class="recovery-options">
+                <!-- Email Recovery -->
+                <div class="option-card" id="email-option">
+                    <div class="option-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="option-content">
+                        <h3>Recuperar por Email</h3>
+                        <p>Enviaremos um link de recuperação para seu email cadastrado</p>
+                    </div>
+                    <div class="option-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <!-- SMS Recovery -->
+                <div class="option-card" id="sms-option">
+                    <div class="option-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <div class="option-content">
+                        <h3>Recuperar por SMS</h3>
+                        <p>Receba um código de verificação no seu celular</p>
+                    </div>
+                    <div class="option-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <!-- Security Questions -->
+                <div class="option-card" id="questions-option">
+                    <div class="option-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="option-content">
+                        <h3>Perguntas de Segurança</h3>
+                        <p>Responda suas perguntas de segurança cadastradas</p>
+                    </div>
+                    <div class="option-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recovery Forms (Hidden by default) -->
+            <div class="recovery-forms">
+                <!-- Email Form -->
+                <div class="form-container" id="email-form">
+                    <div class="form-header">
+                        <button class="back-btn" onclick="showOptions()">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h3>Recuperação por Email</h3>
+                    </div>
+                    <form id="emailRecoveryForm">
+                        <div class="input-group">
+                            <label for="email">Email ou Matrícula</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-envelope"></i>
+                                <input type="text" id="email" name="email" placeholder="Digite seu email ou matrícula" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-btn">
+                            <span>Enviar Link de Recuperação</span>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- SMS Form -->
+                <div class="form-container" id="sms-form">
+                    <div class="form-header">
+                        <button class="back-btn" onclick="showOptions()">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h3>Recuperação por SMS</h3>
+                    </div>
+                    <form id="smsRecoveryForm">
+                        <div class="input-group">
+                            <label for="phone">Número do Celular</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-mobile-alt"></i>
+                                <input type="tel" id="phone" name="phone" placeholder="(11) 99999-9999" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-btn">
+                            <span>Enviar Código SMS</span>
+                            <i class="fas fa-sms"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Security Questions Form -->
+                <div class="form-container" id="questions-form">
+                    <div class="form-header">
+                        <button class="back-btn" onclick="showOptions()">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h3>Perguntas de Segurança</h3>
+                    </div>
+                    <form id="questionsRecoveryForm">
+                        <div class="input-group">
+                            <label for="user-id">Email ou Matrícula</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="user-id" name="user-id" placeholder="Digite seu email ou matrícula" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-btn">
+                            <span>Buscar Perguntas</span>
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <div class="success-message" id="success-message">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3>Solicitação Enviada!</h3>
+                <p id="success-text">Verifique sua caixa de entrada e siga as instruções para redefinir sua senha.</p>
+                <button class="back-to-login" onclick="window.location.href='login.html'">
+                    Voltar ao Login
+                </button>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>Lembrou da sua senha? <a href="index.html">Fazer Login</a></p>
+                <p>Precisa de ajuda? <a href="suporte.html">Contatar Suporte</a></p>
+            </div>
+        </div>
     </div>
 
-    <!-- Acessibilidade -->
-    <div class="accessibility">
-        <div class="accessibility-icons">
-            <img src="../images/Olho.png" alt="Acessibilidade visual" class="icone-acessibilidade" onclick="toggleVisionMenu()" />
-            <img src="../images/Orelha.png" alt="Acessibilidade auditiva" class="icone-acessibilidade" onclick="toggleAudioAccessibility()" />
-        </div>
-        <div class="vision-menu" id="visionMenu" style="display:none;">
-            <button onclick="toggleContrast()">Ativar/Desativar Contraste</button>
-            <button onclick="increaseFont()">Aumentar Fonte</button>
-            <button onclick="decreaseFont()">Diminuir Fonte</button>
-        </div>
-    </div>
-
-    <!-- VLibras -->
-    <div vw class="enabled">
-        <div vw-access-button class="active"></div>
-        <div vw-plugin-wrapper>
-            <div class="vw-plugin-top-wrapper"></div>
-        </div>
-    </div>
-    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-    <script src="../javascript/acessibilidade.js"></script>
     <script src="../javascript/recuperar.js"></script>
 </body>
 </html>

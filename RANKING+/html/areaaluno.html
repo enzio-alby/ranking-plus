@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espaço do Aluno - Sistema de Ranking Acadêmico</title>
+    <meta name="description" content="Plataforma exclusiva para alunos acompanharem seu desempenho acadêmico">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="../css/styleareaaluno.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h4 class="text-white mb-0">
+                <i class="bi bi-mortarboard-fill me-2"></i>
+                Área do Aluno
+            </h4>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-link active" data-page="dashboard">
+                <i class="bi bi-house-fill"></i>
+                Dashboard
+            </a>
+            <a href="#" class="nav-link" data-page="disciplinas">
+                <i class="bi bi-book-fill"></i>
+                Disciplinas
+            </a>
+            <a href="#" class="nav-link" data-page="colegas">
+                <i class="bi bi-people-fill"></i>
+                Ranking
+            </a>
+            <a href="#" class="nav-link" data-page="perfil">
+                <i class="bi bi-person-fill"></i>
+                Meu Perfil
+            </a>
+            <a href="#" class="nav-link" data-page="relatorios">
+                <i class="bi bi-file-earmark-bar-graph me-2"></i>
+                Relatórios
+            </a>
+            <a class="nav-link text-danger mt-3" href="#" onclick="confirmLogout(event)"></a>
+                <i class="fas fa-sign-out-alt"></i>
+                Sair
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="btn btn-link text-primary d-lg-none" id="sidebarToggle">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                <div class="ms-auto d-flex align-items-center">
+                    <div class="dropdown">
+                        <button class="btn btn-link text-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle fs-4"></i>
+                            <span class="ms-2 d-none d-md-inline">João Silva</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" data-page="perfil">Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="#" data-page="editar-perfil">Editar Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="#" onclick="confirmLogout(event)">
+                                    Sair
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="content" id="pageContent">
+            <!-- Dashboard Content (Default) -->
+            <div id="dashboard-page" class="page-content active">
+                <!-- Welcome Banner -->
+                <div class="welcome-banner mb-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="text-white mb-2">Bem-vindo, João!</h1>
+                            <p class="text-light mb-0">
+                                Acompanhe seu progresso acadêmico e mantenha-se no topo do seu desempenho.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end d-none d-md-block">
+                            <i class="bi bi-graph-up text-white" style="font-size: 4rem; opacity: 0.3;"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">CRA Atual</p>
+                                    <h3 class="text-primary mb-1">8.7</h3>
+                                    <small class="text-success">+0.3 vs. semestre anterior</small>
+                                </div>
+                                <div class="stat-icon bg-success">
+                                    <i class="bi bi-trending-up"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Frequência Média</p>
+                                    <h3 class="text-primary mb-1">94%</h3>
+                                    <small class="text-success">+2% vs. semestre anterior</small>
+                                </div>
+                                <div class="stat-icon bg-primary">
+                                    <i class="bi bi-calendar-check"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Ranking Turma</p>
+                                    <h3 class="text-primary mb-1">#15</h3>
+                                    <small class="text-success">+3 vs. semestre anterior</small>
+                                </div>
+                                <div class="stat-icon bg-warning">
+                                    <i class="bi bi-award"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted mb-1">Disciplinas Ativas</p>
+                                    <h3 class="text-primary mb-1">6</h3>
+                                    <small class="text-muted">0 vs. semestre anterior</small>
+                                </div>
+                                <div class="stat-icon bg-info">
+                                    <i class="bi bi-book"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="row mb-4">
+                    <div class="col-lg-6 mb-4">
+                        <div class="chart-card">
+                            <h5 class="card-title mb-3">Evolução das Notas</h5>
+                            <div class="chart-container">
+                                <canvas id="performanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <div class="chart-card">
+                            <h5 class="card-title mb-3">Frequência por Disciplina</h5>
+                            <div class="chart-container">
+                                <canvas id="frequencyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Section -->
+                <div class="row">
+                    <div class="col-lg-8 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Notas Recentes</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Disciplina</th>
+                                                <th>Avaliação</th>
+                                                <th>Nota</th>
+                                                <th>Data</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Algoritmos e Estruturas de Dados</td>
+                                                <td>Prova P2</td>
+                                                <td><span class="badge bg-success">9.2</span></td>
+                                                <td>15/11/2024</td>
+                                                <td><span class="badge bg-success">Aprovado</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Banco de Dados</td>
+                                                <td>Projeto Final</td>
+                                                <td><span class="badge bg-success">8.8</span></td>
+                                                <td>12/11/2024</td>
+                                                <td><span class="badge bg-success">Aprovado</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Programação Orientada a Objetos</td>
+                                                <td>Lista de Exercícios</td>
+                                                <td><span class="badge bg-warning">7.5</span></td>
+                                                <td>10/11/2024</td>
+                                                <td><span class="badge bg-warning">Regular</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Cálculo Diferencial</td>
+                                                <td>Prova P1</td>
+                                                <td><span class="badge bg-success">8.9</span></td>
+                                                <td>08/11/2024</td>
+                                                <td><span class="badge bg-success">Aprovado</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Insights de Estudo</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="insight-item mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-lightbulb text-warning me-2"></i>
+                                        <strong>Dica de Performance</strong>
+                                    </div>
+                                    <p class="text-muted small">
+                                        Suas notas em Algoritmos estão consistentemente altas. Continue praticando exercícios de complexidade!
+                                    </p>
+                                </div>
+                                <div class="insight-item mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-clock text-info me-2"></i>
+                                        <strong>Próximas Avaliações</strong>
+                                    </div>
+                                    <ul class="list-unstyled small text-muted">
+                                        <li>• Redes - Prova P2 (22/11)</li>
+                                        <li>• Eng. Software - Projeto (25/11)</li>
+                                    </ul>
+                                </div>
+                                <div class="insight-item">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-target text-success me-2"></i>
+                                        <strong>Meta do Semestre</strong>
+                                    </div>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar bg-success" style="width: 87%"></div>
+                                    </div>
+                                    <p class="text-muted small">87% para atingir CRA 9.0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disciplinas Page -->
+            <div id="disciplinas-page" class="page-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="text-primary">Minhas Disciplinas</h2>
+                    <span class="badge bg-primary">6 disciplinas ativas</span>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card subject-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title">Algoritmos e Estruturas de Dados</h5>
+                                    <span class="badge bg-success">9.2</span>
+                                </div>
+                                <p class="text-muted small mb-3">Prof. Dr. Carlos Silva</p>
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">96%</div>
+                                            <div class="metric-label">Frequência</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">8.8</div>
+                                            <div class="metric-label">Média</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-success" style="width: 92%"></div>
+                                </div>
+                                <small class="text-muted">92% do semestre concluído</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card subject-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title">Banco de Dados</h5>
+                                    <span class="badge bg-success">8.8</span>
+                                </div>
+                                <p class="text-muted small mb-3">Prof. Dra. Ana Santos</p>
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">92%</div>
+                                            <div class="metric-label">Frequência</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">8.5</div>
+                                            <div class="metric-label">Média</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-success" style="width: 88%"></div>
+                                </div>
+                                <small class="text-muted">88% do semestre concluído</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card subject-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title">Cálculo Diferencial</h5>
+                                    <span class="badge bg-warning">7.9</span>
+                                </div>
+                                <p class="text-muted small mb-3">Prof. Dr. Roberto Lima</p>
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">88%</div>
+                                            <div class="metric-label">Frequência</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">7.6</div>
+                                            <div class="metric-label">Média</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-warning" style="width: 85%"></div>
+                                </div>
+                                <small class="text-muted">85% do semestre concluído</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card subject-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title">Programação Orientada a Objetos</h5>
+                                    <span class="badge bg-success">9.0</span>
+                                </div>
+                                <p class="text-muted small mb-3">Prof. Dr. Marcus Oliveira</p>
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">98%</div>
+                                            <div class="metric-label">Frequência</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">8.9</div>
+                                            <div class="metric-label">Média</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-success" style="width: 90%"></div>
+                                </div>
+                                <small class="text-muted">90% do semestre concluído</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card subject-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title">Redes de Computadores</h5>
+                                    <span class="badge bg-warning">8.1</span>
+                                </div>
+                                <p class="text-muted small mb-3">Prof. Dra. Fernanda Costa</p>
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">94%</div>
+                                            <div class="metric-label">Frequência</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">8.0</div>
+                                            <div class="metric-label">Média</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-warning" style="width: 82%"></div>
+                                </div>
+                                <small class="text-muted">82% do semestre concluído</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card subject-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title">Engenharia de Software</h5>
+                                    <span class="badge bg-success">8.7</span>
+                                </div>
+                                <p class="text-muted small mb-3">Prof. Dr. Paulo Mendes</p>
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">96%</div>
+                                            <div class="metric-label">Frequência</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value">8.4</div>
+                                            <div class="metric-label">Média</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-success" style="width: 87%"></div>
+                                </div>
+                                <small class="text-muted">87% do semestre concluído</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colegas Page -->
+            <div id="colegas-page" class="page-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="text-primary">Colegas de Turma</h2>
+                    <div class="alert alert-info mb-0 py-2 px-3">
+                        <i class="bi bi-shield-check me-2"></i>
+                        <small>Dados anonimizados conforme LGPD</small>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="text-primary">#15</h4>
+                                <p class="text-muted mb-0">Sua Posição no Ranking</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="text-primary">127</h4>
+                                <p class="text-muted mb-0">Total de Alunos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Ranking da Turma</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Posição</th>
+                                        <th>Identificação</th>
+                                        <th>CRA</th>
+                                        <th>Frequência Média</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="table-warning">
+                                        <td><strong>1º</strong></td>
+                                        <td>Aluno-001</td>
+                                        <td><span class="badge bg-success">9.8</span></td>
+                                        <td>98%</td>
+                                        <td><span class="badge bg-success">Excelente</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>2º</td>
+                                        <td>Aluno-045</td>
+                                        <td><span class="badge bg-success">9.6</span></td>
+                                        <td>97%</td>
+                                        <td><span class="badge bg-success">Excelente</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3º</td>
+                                        <td>Aluno-089</td>
+                                        <td><span class="badge bg-success">9.4</span></td>
+                                        <td>96%</td>
+                                        <td><span class="badge bg-success">Excelente</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>...</td>
+                                        <td colspan="4" class="text-muted text-center">...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>13º</td>
+                                        <td>Aluno-112</td>
+                                        <td><span class="badge bg-success">8.9</span></td>
+                                        <td>95%</td>
+                                        <td><span class="badge bg-success">Bom</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>14º</td>
+                                        <td>Aluno-067</td>
+                                        <td><span class="badge bg-success">8.8</span></td>
+                                        <td>94%</td>
+                                        <td><span class="badge bg-success">Bom</span></td>
+                                    </tr>
+                                    <tr class="table-primary">
+                                        <td><strong>15º</strong></td>
+                                        <td><strong>Você (João)</strong></td>
+                                        <td><span class="badge bg-success">8.7</span></td>
+                                        <td>94%</td>
+                                        <td><span class="badge bg-success">Bom</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>16º</td>
+                                        <td>Aluno-034</td>
+                                        <td><span class="badge bg-warning">8.6</span></td>
+                                        <td>93%</td>
+                                        <td><span class="badge bg-warning">Regular</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>17º</td>
+                                        <td>Aluno-078</td>
+                                        <td><span class="badge bg-warning">8.5</span></td>
+                                        <td>92%</td>
+                                        <td><span class="badge bg-warning">Regular</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Distribuição de Notas</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="height: 250px;">
+                                    <canvas id="gradeDistributionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Estatísticas da Turma</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6 mb-3">
+                                        <div class="metric">
+                                            <div class="metric-value text-success">8.2</div>
+                                            <div class="metric-label">Média da Turma</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <div class="metric">
+                                            <div class="metric-value text-primary">92%</div>
+                                            <div class="metric-label">Freq. Média</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value text-warning">15%</div>
+                                            <div class="metric-label">Acima de Você</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="metric">
+                                            <div class="metric-value text-info">85%</div>
+                                            <div class="metric-label">Abaixo de Você</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Perfil Page -->
+            <div id="perfil-page" class="page-content">
+                <h2 class="text-primary mb-4">Meu Perfil</h2>
+
+                <div class="row">
+                    <div class="col-lg-4 mb-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="profile-avatar mb-3">
+                                    <i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>
+                                </div>
+                                <h4 class="text-primary">João Silva</h4>
+                                <p class="text-muted">Ciência da Computação</p>
+                                <p class="text-muted small">Matrícula: 2021.1.001.234</p>
+                                <div class="row text-center mt-3">
+                                    <div class="col-4">
+                                        <div class="metric">
+                                            <div class="metric-value">6º</div>
+                                            <div class="metric-label">Semestre</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="metric">
+                                            <div class="metric-value">8.7</div>
+                                            <div class="metric-label">CRA</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="metric">
+                                            <div class="metric-value">94%</div>
+                                            <div class="metric-label">Freq.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-8 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Informações Acadêmicas</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label text-muted">Curso</label>
+                                        <p class="mb-0">Bacharelado em Ciência da Computação</p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label text-muted">Período de Ingresso</label>
+                                        <p class="mb-0">2021.1</p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label text-muted">Situação</label>
+                                        <span class="badge bg-success">Ativo</span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label text-muted">Previsão de Formatura</label>
+                                        <p class="mb-0">2024.2</p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label text-muted">Créditos Cursados</label>
+                                        <p class="mb-0">156 / 240</p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label text-muted">Percentual de Conclusão</label>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-primary" style="width: 65%">65%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Histórico de CRA</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="height: 300px;">
+                                    <canvas id="craHistoryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Conquistas</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="achievement-item mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-award-fill text-warning me-3" style="font-size: 1.5rem;"></i>
+                                        <div>
+                                            <h6 class="mb-1">Top 20 da Turma</h6>
+                                            <small class="text-muted">Mantido por 3 semestres consecutivos</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="achievement-item mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-calendar-check-fill text-success me-3" style="font-size: 1.5rem;"></i>
+                                        <div>
+                                            <h6 class="mb-1">Frequência Exemplar</h6>
+                                            <small class="text-muted">Mais de 90% em todas as disciplinas</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="achievement-item mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-graph-up-arrow text-primary me-3" style="font-size: 1.5rem;"></i>
+                                        <div>
+                                            <h6 class="mb-1">Melhoria Contínua</h6>
+                                            <small class="text-muted">CRA crescente nos últimos 2 semestres</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="achievement-item">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-code-slash text-info me-3" style="font-size: 1.5rem;"></i>
+                                        <div>
+                                            <h6 class="mb-1">Destaque em Programação</h6>
+                                            <small class="text-muted">Notas acima de 9.0 em disciplinas de código</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editar Perfil Page -->
+<div id="editar-perfil-page" class="page-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary">Editar Perfil</h2>
+        <button class="btn btn-outline-secondary" data-page="perfil" onclick="showPage('perfil')">
+            <i class="bi bi-arrow-left me-2"></i>
+            Voltar ao Perfil
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Foto do Perfil</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="profile-avatar mb-3">
+                        <i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm mb-2">
+                        <i class="bi bi-camera me-2"></i>
+                        Alterar Foto
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-trash me-2"></i>
+                        Remover Foto
+                    </button>
+                    <p class="text-muted small mt-3 mb-0">
+                        Formatos aceitos: JPG, PNG<br>
+                        Tamanho máximo: 2MB
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Configurações de Privacidade</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="showInRanking" checked>
+                        <label class="form-check-label" for="showInRanking">
+                            Aparecer no ranking público
+                        </label>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="allowContact" checked>
+                        <label class="form-check-label" for="allowContact">
+                            Permitir contato de colegas
+                        </label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="shareProgress">
+                        <label class="form-check-label" for="shareProgress">
+                            Compartilhar progresso acadêmico
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <form id="editProfileForm">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Informações Pessoais</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="firstName" class="form-label">Nome *</label>
+                                <input type="text" class="form-control" id="firstName" value="João" required>
+                                <div class="invalid-feedback">
+                                    Por favor, insira seu nome.
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="lastName" class="form-label">Sobrenome *</label>
+                                <input type="text" class="form-control" id="lastName" value="Silva" required>
+                                <div class="invalid-feedback">
+                                    Por favor, insira seu sobrenome.
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">E-mail *</label>
+                                <input type="email" class="form-control" id="email" value="joao.silva@universidade.edu.br" required>
+                                <div class="invalid-feedback">
+                                    Por favor, insira um e-mail válido.
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Telefone</label>
+                                <input type="tel" class="form-control" id="phone" value="(11) 99999-9999" placeholder="(11) 99999-9999">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="birthDate" class="form-label">Data de Nascimento</label>
+                                <input type="date" class="form-control" id="birthDate" value="1999-05-15">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="gender" class="form-label">Gênero</label>
+                                <select class="form-select" id="gender">
+                                    <option value="">Prefiro não informar</option>
+                                    <option value="masculino" selected>Masculino</option>
+                                    <option value="feminino">Feminino</option>
+                                    <option value="outro">Outro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Endereço</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="street" class="form-label">Rua/Avenida</label>
+                                <input type="text" class="form-control" id="street" value="Rua das Flores, 123">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="number" class="form-label">Número</label>
+                                <input type="text" class="form-control" id="number" value="123">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="complement" class="form-label">Complemento</label>
+                                <input type="text" class="form-control" id="complement" value="Apto 45">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="neighborhood" class="form-label">Bairro</label>
+                                <input type="text" class="form-control" id="neighborhood" value="Centro">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="zipCode" class="form-label">CEP</label>
+                                <input type="text" class="form-control" id="zipCode" value="01234-567" placeholder="00000-000">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="city" class="form-label">Cidade</label>
+                                <input type="text" class="form-control" id="city" value="São Paulo">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="state" class="form-label">Estado</label>
+                                <select class="form-select" id="state">
+                                    <option value="">Selecione um estado</option>
+                                    <option value="SP" selected>São Paulo</option>
+                                    <option value="RJ">Rio de Janeiro</option>
+                                    <option value="MG">Minas Gerais</option>
+                                    <option value="RS">Rio Grande do Sul</option>
+                                    <!-- Outros estados... -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Informações Acadêmicas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Nota:</strong> Algumas informações acadêmicas não podem ser alteradas pelo aluno. Entre em contato com a secretaria para modificações.
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="studentId" class="form-label">Matrícula</label>
+                                <input type="text" class="form-control" id="studentId" value="2021.1.001.234" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="course" class="form-label">Curso</label>
+                                <input type="text" class="form-control" id="course" value="Bacharelado em Ciência da Computação" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="entryPeriod" class="form-label">Período de Ingresso</label>
+                                <input type="text" class="form-control" id="entryPeriod" value="2021.1" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="currentSemester" class="form-label">Semestre Atual</label>
+                                <input type="text" class="form-control" id="currentSemester" value="6º Semestre" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Contato de Emergência</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="emergencyName" class="form-label">Nome do Contato</label>
+                                <input type="text" class="form-control" id="emergencyName" value="Maria Silva">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="emergencyPhone" class="form-label">Telefone</label>
+                                <input type="tel" class="form-control" id="emergencyPhone" value="(11) 98888-8888" placeholder="(11) 98888-8888">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="emergencyRelation" class="form-label">Parentesco</label>
+                                <input type="text" class="form-control" id="emergencyRelation" value="Mãe">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="emergencyEmail" class="form-label">E-mail</label>
+                                <input type="email" class="form-control" id="emergencyEmail" value="maria.silva@email.com">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Preferências</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Adicione campos de preferências aqui conforme necessário -->
+                        </div>
+                        <div class="mb-3">
+                            <!-- Adicione opções adicionais de preferências aqui -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-page="perfil" onclick="showPage('perfil')">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Cancelar
+                    </button>
+                    <div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>
+                            Salvar Alterações
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Página de Relatórios -->
+<div id="relatorios-page" class="page-content">
+  <div class="container py-4">
+    <div class="row mb-3 align-items-center">
+      <div class="col-md-8">
+        <h3>Relatórios</h3>
+        <p class="text-muted mb-0">Gere seu relatório acadêmico (PDF com gráficos e observações).</p>
+      </div>
+      <div class="col-md-4 text-end">
+        <button id="exportMyExcel" class="btn btn-outline-secondary me-2">Exportar Excel</button>
+        <button id="generateReportBtn" class="btn btn-primary">Gerar meu relatório (PDF)</button>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body d-flex align-items-start">
+        <div class="me-3">
+          <img id="reportAvatarPreview" src="../images/default-avatar.png" alt="avatar" style="width:72px;height:72px;object-fit:cover;border-radius:8px;">
+        </div>
+        <div>
+          <h5 id="reportName" class="mb-1">João Silva</h5>
+          <div id="reportCourse" class="small text-muted">Bacharelado em Ciência da Computação / 6º</div>
+          <div id="reportEmail" class="small text-muted">joao.silva@universidade.edu.br</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <div class="card p-3">
+          <h6 class="mb-2">Evolução (Composição)</h6>
+          <canvas id="reportPiePreview" width="480" height="220"></canvas>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card p-3">
+          <h6 class="mb-2">Posição (Jan–Dez)</h6>
+          <canvas id="reportRankPreview" width="480" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label for="reportObservations" class="form-label">Observações (aparecerão no PDF)</label>
+      <textarea id="reportObservations" class="form-control" rows="3" placeholder="Observações sobre seu desempenho..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- Incluir PDF-Lib CDN (antes do script areaaluno.js) -->
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+
+<script>
+function confirmLogout(event) {
+    event.preventDefault();
+    if (confirm('Tem certeza que deseja sair?')) {
+        window.location.href = '../html/index.html';
+    }
+}
+</script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom JS -->
+    <script src="../javascript/areaaluno.js"></script>
+</body>
+</html>

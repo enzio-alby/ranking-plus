@@ -1,382 +1,615 @@
 <!DOCTYPE html>
-<html lang="pt">
-
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ranking+</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/styleindex.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <title>Ranking+ - Sistema de Ranking Universitário</title>
+    <meta name="description" content="Plataforma de ranking universitário que reconhece e recompensa os melhores alunos">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom CSS -->
+    <link href="../css/styleindex.css" rel="stylesheet">
 </head>
-
 <body>
-    <div id="sidebar-overlay"></div>
-
-    <div class="topbar">
-        <button id="toggleSidebarBtn">
-            <i class="fas fa-bars"></i>
-        </button>
-        <img src="../images/logo3.png" alt="Logo" class="logo">
-        <div class="topbar-actions"></div>
-    </div>
-
-    <div class="sidebar" id="sidebar">
-        <h4 class="sidebar-title"></h4>
-        <a class="nav-link" href="#"><i class="fas fa-home"></i> Home</a>
-        <a class="nav-link" href="#"><i class="fas fa-book"></i> Sobre nós</a>
-        <a class="nav-link" href="#" onclick="showTab('materias'); return false;"><i class="fas fa-database"></i> Matérias</a>
-        <a class="nav-link" href="#"><i class="fas fa-coins"></i> Bonificações</a>
-        <a class="nav-link" href="#" id="comunicacao-link"><i class="fas fa-comments"></i>Contate-nos</a>
-        <a class="nav-link" href="configuser.html"><i class="fas fa-user-cog"></i> Configurações de usuário</a>
-        <a class="nav-link logout-link" href="login.html">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </a>
-    </div>
-
-    <div class="content">
-        <div class="welcome-box">
-            <div class="welcome-title">Bem-vindo ao seu Ranking+</div>
-            <div class="welcome-desc">Aqui você acompanha seu ranking, desempenho, faltas e muito mais.</div>
-            <div class="welcome-path">Home</div>
-        </div>
-
-        <!-- NOVO CONTAINER CENTRAL DE PERFIL E MÉTRICAS -->
-        <div class="profile-container">
-            <!-- Lado esquerdo: Dados do aluno -->
-            <div class="profile-left">
-                <img id="aluno-foto" src="../images/aluno_perfil.jpg" alt="Foto do Aluno">
-                <div class="profile-info">
-                    <p><strong>Nome:</strong> <div class="value" id="nome"></div></p>
-                    <p><strong>Email:</strong> <div class="value" id="email"></div></p>
-                    <p><strong>Campus:</strong> <div class="value" id="campus"></div></p>
-                    <p><strong>Turno:</strong> <div class="value" id="turno"></div></p>
-                    <p><strong>Matrícula:</strong> <div class="value" id="matricula"></div></p>
-                    <p><strong>Curso:</strong> <div class="value" id="curso"></div></p>
-                </div>
-            </div>
-            <!-- Lado direito: Gráfico de métricas -->
-            <div class="profile-right">
-                <div class="card">
-                    <h3>Suas Métricas:</h3>
-                    <canvas id="metricsChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Adicione a nova aba na navegação -->
-        <div class="nav-tabs">
-            <a class="nav-link active" href="#" onclick="showTab('ranking')" id="tab-ranking">Ranking</a>
-            <a class="nav-link" href="#" onclick="showTab('materias')" id="tab-materias">Matérias</a>
-            <a class="nav-link" href="#" onclick="showTab('faltas')" id="tab-faltas">Faltas e Menções</a>
-            <a class="nav-link" href="#" onclick="showTab('calendario')" id="tab-calendario">Eventos</a>
-            <a class="nav-link" href="#" onclick="showTab('recomendacao')" id="tab-recomendacao">Recomendação</a>
-        </div>
-        
-        <div id="content-ranking" class="tab-content" style="display:none">
-          <h5 class="mt-4">Ranking Geral dos Alunos</h5>
-          <!-- Novo container de filtros acima da tabela -->
-          <div id="filtros-mencoes-container" style="margin-bottom:18px; display:flex; gap:18px; align-items:center;">
-            <div id="filtros-mencoes" style="margin-bottom:0;">
-              <label for="filtro-curso"><b>Curso:</b></label>
-              <select id="filtro-curso"></select>
-              <label for="filtro-turma" style="margin-left:12px;"><b>Turma:</b></label>
-              <select id="filtro-turma"></select>
-            </div>
-          </div>
-          <div class="tabela-ranking-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Posição</th>
-                  <th>Nome</th>
-                  <th>Curso</th>
-                  <th>Média</th>
-                  <th>Avaliação</th>
-                </tr>
-              </thead>
-              <tbody id="tabela-ranking-alunos">
-                <!-- Dados do ranking serão inseridos aqui -->
-              </tbody>
-            </table>
-            <div style="display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between; margin-top: 24px;">
-            </div>
-            <!-- Novo gráfico de colunas -->
-            <div id="ranking-bar-chart-container" style="margin-top:32px;">
-              <h3 style="margin-bottom:16px; text-align:center;">Gráfico de Médias dos Alunos</h3>
-              <canvas id="rankingBarChart" style="width:100%;min-height:400px;max-height:900px;"></canvas>
-            </div>
-            <!-- Mova os filtros de pizza para antes do gráfico de pizza -->
-            <div id="ranking-pizza-chart-container" style="margin-top:32px;">
-            <h3 style="margin-bottom:16px; text-align:center;">Distribuição de Menções por Matéria</h3>
-
-            <!-- Filtros de gráfico de pizza -->
-            <div style="margin-bottom:16px; text-align:center;">
-                <label for="filtro-curso-pizza"><b>Curso:</b></label>
-                <select id="filtro-curso-pizza"></select>
-                <label for="filtro-professor-pizza" style="margin-left:12px;"><b>Professor:</b></label>
-                <select id="filtro-professor-pizza"></select>
-            </div>
-
-            <!-- Gráfico -->
-            <canvas id="aproveitamentoChart" style="width:100%;min-height:400px;max-height:900px;"></canvas>
-            </div>
-          </div>
-        </div>
-
-        
-
-
-        <div id="content-materias" class="tab-content" style="display:none">
-            <h5 class="mt-4">Matérias</h5>
-            <div class="materias-instrucoes">
-                <b>Instruções:</b> Clique em uma matéria para ver a descrição e os conteúdos postados pelo professor.
-            </div>
-            <!-- Caixa de horários das matérias -->
-            <div class="materias-horarios-box">
-            <h3>Horários das Matérias</h3>
-            <div class="materias-horarios-tabela" id="materias-horarios-tabela">
-                <!-- Os blocos serão preenchidos via JS -->
-            </div>
-            </div>
-            <!-- Fim da caixa de horários das matérias -->
-            <div id="materias-lista">
-                <!-- ...restante da lista de matérias... -->
-            </div>
-            <div id="materia-detalhe" style="display:none;">
-                <button id="fechar-materia-detalhe" class="btn-close-materia">&times;</button>
-                <h6 id="materia-nome"></h6>
-                <p id="materia-prof"></p>
-                <div id="materia-conteudo"></div>
-            </div>
-        </div>
-
-        <div id="content-faltas" class="tab-content" style="display:none">
-            <h5 class="mt-4">Faltas e Menções</h5>
-            <div style="display: flex; gap: 32px; align-items: flex-start;">
-                <div id="faltas-mencoes" style="flex:2;">
-                    <div id="faltas-mencoes-header">
-                        <i class="fa-solid fa-pen"></i>
-                        <span>FALTAS E MENÇÕES</span>
-                        <span style="flex:1"></span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </div>
-                    <div class="faltas-select"></div>
-                    <div id="faltas-mencoes-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Disciplinas</th>
-                                    <th>Faltas</th>
-                                    <th>Menções</th>
-                                    <th>Menção Final</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Conteúdo dinâmico gerado via JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <!-- LEGENDA DAS MENÇÕES ao lado direito -->
-                <div class="legenda-mencoes" style="flex:1; min-width:220px;">
-                    <h6 style="margin-bottom:8px;">Legenda das Menções</h6>
-                    <table style="border-collapse:collapse;">
-                        <tr>
-                            <td class="sr" style="padding:4px 12px; border:1px solid #ccc;">SR</td>
-                            <td>Sem rendimento</td>
-                        </tr>
-                        <tr>
-                            <td class="ii" style="padding:4px 12px; border:1px solid #ccc;">II</td>
-                            <td>Insuficiente</td>
-                        </tr>
-                        <tr>
-                            <td class="mi" style="padding:4px 12px; border:1px solid #ccc;">MI</td>
-                            <td>Muito insuficiente</td>
-                        </tr>
-                        <tr>
-                            <td class="mm" style="padding:4px 12px; border:1px solid #ccc;">MM</td>
-                            <td>Médio</td>
-                        </tr>
-                        <tr>
-                            <td class="ms" style="padding:4px 12px; border:1px solid #ccc;">MS</td>
-                            <td>Muito Satisfatório</td>
-                        </tr>
-                        <tr>
-                            <td class="ss" style="padding:4px 12px; border:1px solid #ccc;">SS</td>
-                            <td>Sobressalente</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="content-calendario" class="tab-content" style="display:none">
-            <div class="calendario-dicas dicas-modernas">
-                <i class="fa-solid fa-lightbulb"></i>
-                <span>
-                    <b>Dicas de uso:</b><br>
-                    <ul>
-                        <li><i class="fa-solid fa-arrow-right"></i> Navegue entre os meses usando as setas.</li>
-                        <li><i class="fa-solid fa-plus"></i> Clique em um dia para adicionar um evento.</li>
-                        <li><i class="fa-solid fa-trash"></i> Clique em <b>Remover</b> para excluir um evento.</li>
-                    </ul>
-                </span>
-            </div>
-            <div id="event-list"></div>
-            <div id="calendar-container">
-                <div class="calendar-header">
-                    <button id="prev-month" aria-label="Mês anterior">&lt;</button>
-                    <span id="calendar-month-year"></span>
-                    <button id="next-month" aria-label="Próximo mês">&gt;</button>
-                </div>
-                <table id="calendar">
-                    <thead>
-                        <tr>
-                            <th>Dom</th>
-                            <th>Seg</th>
-                            <th>Ter</th>
-                            <th>Qua</th>
-                            <th>Qui</th>
-                            <th>Sex</th>
-                            <th>Sáb</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Dias serão preenchidos via JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
- 
-        </div>
-        <!-- NOVA ABA DE RECOMENDAÇÃO -->
-        <div id="content-recomendacao" class="tab-content" style="display:none">
-            <div id="recomendacoes-professores" style="margin-top:36px;">
-                <h4 style="color:#6A0DAD;margin-bottom:12px;">Recomendações dos Professores</h4>
-
-                <!-- Adicione este bloco acima da tabela de recomendações, dentro da div #recomendacoes-professores -->
-                <div id="avaliacao-professor-box" style="margin-bottom: 24px; background: #f8f4fd; border-radius: 10px; padding: 18px 18px 10px 18px; box-shadow: 0 2px 10px #6a0dad11;">
-                    <h5 style="color:#6A0DAD;margin-bottom:10px;">Avaliação Semestral do Professor</h5>
-                    <form id="form-avaliar-prof" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
-                        <label for="select-professor" style="font-weight:600;">Professor:</label>
-                        <select id="select-professor" style="padding:5px 12px;border-radius:6px;">
-                            <!-- JS preenche -->
-                        </select>
-                        <label for="select-materia" style="font-weight:600;">Matéria:</label>
-                        <select id="select-materia" style="padding:5px 12px;border-radius:6px;">
-                            <!-- JS preenche -->
-                        </select>
-                        <span id="avaliacao-estrelas" style="font-size:1.6em;margin-left:10px;cursor:pointer;">
-                            <!-- JS preenche -->
-                        </span>
-                        <button type="submit" style="background:#6A0DAD;color:#fff;border:none;padding:7px 18px;border-radius:6px;font-weight:600;cursor:pointer;">
-                            Enviar Avaliação
-                        </button>
-                    </form>
-                    <div id="avaliacao-feedback" style="margin-top:8px;font-size:1em;color:#4CAF50;display:none;">Avaliação enviada!</div>
-                </div>
-
-                <table id="tabela-recomendacoes" style="width:100%;border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(106,13,173,0.07);margin-bottom:18px;">
-                    <thead>
-                        <tr>
-                            <th>Professor</th>
-                            <th>Matéria</th>
-                            <th>Média Recomendada</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- JS preenche -->
-                    </tbody>
-                </table>
-
-                <canvas id="graficoRecomendacoes" height="180"></canvas>
-            </div>
-        </div>
-
-    <!-- Modal para adicionar evento -->
-    <div id="modal-evento" class="modal-evento-overlay">
-        <div class="modal-evento-box">
-            <button class="modal-evento-close" id="fechar-modal-evento">&times;</button>
-            <h2>Adicionar Evento</h2>
-            <form id="form-evento">
-                <label for="evento-data">Data</label>
-                <input type="text" id="evento-data" name="evento-data" readonly>
-                <label for="evento-titulo">Título do Evento</label>
-                <input type="text" id="evento-titulo" name="evento-titulo" maxlength="60" required placeholder="Digite o título do evento">
-                <label for="evento-descricao">Descrição</label>
-                <textarea id="evento-descricao" name="evento-descricao" maxlength="200" placeholder="Digite uma descrição (opcional)" style="width:100%;min-height:50px;margin-bottom:10px;border-radius:5px;border:1px solid #ccc;padding:8px;box-sizing:border-box;"></textarea>
-                <div class="modal-evento-actions">
-                    <button type="submit" class="btn-criar-evento">Adicionar</button>
-                    <button type="button" class="btn-fechar-evento" id="cancelar-modal-evento">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal de Comunicação -->
-    <div id="comunicacao-modal" class="comunicacao-modal">
-        <div class="comunicacao-modal-content">
-            <button id="fechar-comunicacao-modal" class="comunicacao-modal-close">&times;</button>
-            <h2 style="margin-bottom: 8px;">Entre em contato:</h2>
-            <hr style="width: 120px; border: 1px solid #b39ddb; margin: 0 auto 18px auto;">
-            <div style="text-align:center; color:#222; font-size:1.08em;">
-                <div style="margin-bottom:10px;">
-                    - WhatsApp/telefone: 
-                    <a href="tel:+556139661201" style="color:#3b3be6; text-decoration:underline;">(61) 3966-1201</a>
-                </div>
-                <div style="margin-bottom:10px;">
-                    - E-mail: 
-                    <a href="mailto:ouvidoria@uniceub.br" style="color:#3b3be6; text-decoration:underline;">ouvidoria@uniceub.br</a>
-                    e
-                    <a href="mailto:ouvidoria.taguatinga@uniceub.br" style="color:#3b3be6; text-decoration:underline;">ouvidoria.taguatinga@uniceub.br</a>
-                </div>
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#inicio">
+                <!-- Removido o bloco de ícones -->
                 <div>
-                    - Regulamento da Ouvidoria : 
-                    <a href="https://www.uniceub.br/ouvidoria" target="_blank" style="color:#3b3be6; text-decoration:underline;">Clique aqui</a>
+                    <h5 class="mb-0 gradient-text fw-bold"></h5>
+                    <img src="../images/logob.png" alt="Logo" class="logo" style="height: 48px; width: auto;">
+                    <small class="text-muted"></small>
+                </div>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#inicio">Início</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#como-funciona">Como Funciona</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#beneficios">Benefícios</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#ranking">Ranking</a>
+                    </li>
+                </ul>
+                
+                <div class="d-flex gap-2" id="authButtons">
+                    <button class="btn btn-outline-primary" onclick="showLogin()">Entrar</button>
+                    <button class="btn btn-gradient" onclick="showRegister()">Cadastrar</button>
+                </div>
+                
+                <div class="d-none align-items-center gap-3" id="userInfo">
+                    <span class="text-muted" id="userName">Usuário</span>
+                    <button class="btn btn-outline-danger btn-sm" onclick="logout()">Sair</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="inicio" class="hero-section min-vh-100 d-flex align-items-center position-relative overflow-hidden">
+        <div class="hero-bg"></div>
+        <div class="container position-relative">
+            <div class="row justify-content-center text-center">
+                <div class="col-lg-10">
+                    <!-- Badge -->
+                    <!-- <div class="badge-custom mb-4 animate-fade-up">
+                        <i class="bi bi-star-fill text-warning me-2"></i>
+                        Sistema Inovador de Reconhecimento Acadêmico
+                    </div> -->
+                    
+                    <!-- Main Heading -->
+                    <h1 class="display-1 fw-bold mb-4 animate-fade-up" style="animation-delay: 0.2s">
+                        <span class="gradient-text">Reconheça</span><br>
+                        <span class="text-white">a Excelência</span><br>
+                        <span class="gradient-text-secondary">Acadêmica</span>
+                    </h1>
+                    
+                    <!-- Subtitle -->
+                    <p class="lead fs-3 text-white mb-5 animate-fade-up" style="animation-delay: 0.4s">
+                        Plataforma revolucionária que <span class="fw-semibold text-info">classifica e recompensa</span> os melhores alunos baseado em 
+                        <span class="fw-semibold text-warning">desempenho acadêmico</span>, 
+                        <span class="fw-semibold text-info">frequência</span> e 
+                        <span class="fw-semibold text-warning">participação</span>.
+                    </p>
+                    
+                    <!-- Stats -->
+                    <div class="row g-4 mb-5 animate-fade-up" style="animation-delay: 0.6s">
+                        <div class="col-md-4">
+                            <div class="stats-card">
+                                <i class="bi bi-trophy fs-1 text-warning mb-3"></i>
+                                <div class="display-4 fw-bold text-dark mb-2">Top 10%</div>
+                                <div class="text-muted">Alunos Premiados</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-card">
+                                <i class="bi bi-graph-up fs-1 text-success mb-3"></i>
+                                <div class="display-4 fw-bold text-dark mb-2">95%</div>
+                                <div class="text-muted">Melhoria na Frequência</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-card">
+                                <i class="bi bi-people fs-1 text-primary mb-3"></i>
+                                <div class="display-4 fw-bold text-dark mb-2">2.500+</div>
+                                <div class="text-muted">Alunos Participantes</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- CTA Buttons -->
+                    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center animate-fade-up" style="animation-delay: 0.8s">
+                        <button class="btn btn-gradient btn-lg px-5 py-3 fs-5" onclick="handleGetStarted()">
+                            Começar Agora
+                        </button>
+                        <button class="btn btn-outline-secondary btn-lg px-5 py-3 fs-5" onclick="scrollToSection('como-funciona')">
+                            Saiba Mais
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scroll Indicator -->
+        <div class="scroll-indicator">
+            <div class="scroll-dot"></div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="como-funciona" class="py-5 bg-light">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <h2 class="display-4 fw-bold mb-4">
+                        Como <span class="gradient-text">Funciona</span>
+                    </h2>
+                    <p class="lead text-muted">
+                        Nosso sistema avalia múltiplos aspectos do desempenho acadêmico para criar um ranking justo e motivador.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="how-it-works-card h-100 text-center">
+                        <div class="icon-wrapper bg-primary mb-4">
+                            <i class="bi bi-graph-up text-white fs-1"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Desempenho Acadêmico</h4>
+                        <p class="text-muted">Notas, trabalhos e avaliações são considerados com pesos específicos para cada disciplina.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="how-it-works-card h-100 text-center">
+                        <div class="icon-wrapper bg-success mb-4">
+                            <i class="bi bi-calendar-check text-white fs-1"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Frequência</h4>
+                        <p class="text-muted">Presença consistente em aulas e atividades demonstra comprometimento e dedicação.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="how-it-works-card h-100 text-center">
+                        <div class="icon-wrapper bg-warning mb-4">
+                            <i class="bi bi-people text-white fs-1"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Participação</h4>
+                        <p class="text-muted">Engajamento em discussões, projetos e atividades extracurriculares conta pontos extras.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="how-it-works-card h-100 text-center">
+                        <div class="icon-wrapper bg-info mb-4">
+                            <i class="bi bi-award text-white fs-1"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Recompensas</h4>
+                        <p class="text-muted">Benefícios exclusivos são oferecidos baseados na posição no ranking geral.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section id="beneficios" class="py-5 bg-gradient-light">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <h2 class="display-4 fw-bold mb-4">
+                        Benefícios <span class="gradient-text-secondary">Exclusivos</span>
+                    </h2>
+                    <p class="lead text-muted">
+                        Reconhecemos e recompensamos a excelência acadêmica com benefícios tangíveis que impactam positivamente sua jornada universitária.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="row g-4 mb-5">
+                <div class="col-lg-4 col-md-6">
+                    <div class="benefit-card h-100">
+                        <img src="https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Bolsas de Estudo" class="benefit-image">
+                        <div class="p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="icon-wrapper bg-primary">
+                                    <i class="bi bi-mortarboard text-white"></i>
+                                </div>
+                                <span class="badge bg-primary">Até 100%</span>
+                            </div>
+                            <h5 class="fw-bold mb-3">Bolsas de Estudo</h5>
+                            <p class="text-muted">Bolsas parciais e integrais para os alunos melhor classificados no ranking.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="benefit-card h-100">
+                        <img src="https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Descontos Exclusivos" class="benefit-image">
+                        <div class="p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="icon-wrapper bg-success">
+                                    <i class="bi bi-currency-dollar text-white"></i>
+                                </div>
+                                <span class="badge bg-success">Até 50%</span>
+                            </div>
+                            <h5 class="fw-bold mb-3">Descontos Exclusivos</h5>
+                            <p class="text-muted">Descontos em mensalidades, material didático e eventos da universidade.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="benefit-card h-100">
+                        <img src="https://images.pexels.com/photos/5940721/pexels-photo-5940721.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Certificados de Mérito" class="benefit-image">
+                        <div class="p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="icon-wrapper bg-warning">
+                                    <i class="bi bi-award text-white"></i>
+                                </div>
+                                <span class="badge bg-warning">Oficial</span>
+                            </div>
+                            <h5 class="fw-bold mb-3">Certificados de Mérito</h5>
+                            <p class="text-muted">Certificados oficiais de reconhecimento acadêmico para seu currículo.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="benefit-card h-100">
+                        <img src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Oportunidades de Estágio" class="benefit-image">
+                        <div class="p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="icon-wrapper bg-purple">
+                                    <i class="bi bi-briefcase text-white"></i>
+                                </div>
+                                <span class="badge bg-purple">Exclusivo</span>
+                            </div>
+                            <h5 class="fw-bold mb-3">Oportunidades de Estágio</h5>
+                            <p class="text-muted">Acesso prioritário a vagas de estágio em empresas parceiras.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="benefit-card h-100">
+                        <img src="https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Networking Premium" class="benefit-image">
+                        <div class="p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="icon-wrapper bg-danger">
+                                    <i class="bi bi-people text-white"></i>
+                                </div>
+                                <span class="badge bg-danger">VIP</span>
+                            </div>
+                            <h5 class="fw-bold mb-3">Networking Premium</h5>
+                            <p class="text-muted">Eventos exclusivos com profissionais e alumni de destaque.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="benefit-card h-100">
+                        <img src="https://images.pexels.com/photos/2582937/pexels-photo-2582937.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Acesso Antecipado" class="benefit-image">
+                        <div class="p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="icon-wrapper bg-info">
+                                    <i class="bi bi-lightning text-white"></i>
+                                </div>
+                                <span class="badge bg-info">Primeiro</span>
+                            </div>
+                            <h5 class="fw-bold mb-3">Acesso Antecipado</h5>
+                            <p class="text-muted">Prioridade na matrícula de disciplinas e uso de laboratórios.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ranking Tiers -->
+            <div class="ranking-tiers">
+                <h3 class="text-center fw-bold mb-5 display-5">Níveis de Recompensa</h3>
+                <div class="row g-4">
+                    <div class="col-lg-4">
+                        <div class="tier-card tier-gold text-center">
+                            <div class="tier-icon">
+                                <i class="bi bi-award"></i>
+                            </div>
+                            <h4 class="fw-bold">Top 5%</h4>
+                            <div class="tier-name">Ouro</div>
+                            <p class="text-muted">Todos os benefícios + Bolsa integral + Mentoria exclusiva</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="tier-card tier-silver text-center">
+                            <div class="tier-icon">
+                                <i class="bi bi-award"></i>
+                            </div>
+                            <h4 class="fw-bold">Top 15%</h4>
+                            <div class="tier-name">Prata</div>
+                            <p class="text-muted">Bolsa parcial + Descontos + Certificados + Networking</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="tier-card tier-bronze text-center">
+                            <div class="tier-icon">
+                                <i class="bi bi-award"></i>
+                            </div>
+                            <h4 class="fw-bold">Top 30%</h4>
+                            <div class="tier-name">Bronze</div>
+                            <p class="text-muted">Descontos + Certificados + Acesso prioritário</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ranking Preview Section -->
+    <section id="ranking" class="py-5 bg-white">
+        <div class="container">
+            <div class="row justify-content-center mb-5">
+                <div class="col-lg-8 text-center">
+                    <h2 class="display-4 fw-bold mb-4">
+                        <span class="gradient-text-warning">Ranking</span>
+                        <span class="text-dark"> dos Melhores</span>
+                    </h2>
+                    <p class="lead text-muted">
+                        Conheça os alunos que se destacam pela excelência acadêmica e dedicação aos estudos.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="mb-5" id="rankingList">
+                <!-- Ranking items will be populated by JavaScript -->
+            </div>
+            
+            <!-- Stats Overview -->
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="stats-overview bg-primary">
+                        <div class="display-4 fw-bold text-white mb-2">2,847</div>
+                        <div class="text-white-50">Alunos Ativos</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stats-overview bg-success">
+                        <div class="display-4 fw-bold text-white mb-2">156</div>
+                        <div class="text-white-50">Bolsas Concedidas</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stats-overview bg-purple">
+                        <div class="display-4 fw-bold text-white mb-2">98.5%</div>
+                        <div class="text-white-50">Taxa de Satisfação</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stats-overview bg-warning">
+                        <div class="display-4 fw-bold text-white mb-2">45</div>
+                        <div class="text-white-50">Cursos Participantes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <div>
+                            <h5 class="mb-0 gradient-text fw-bold"></h5>
+                            <img src="../images/logob.png" alt="Logo" class="logo" style="height: 50px; width: auto;">
+                        </div>
+                    </div>
+                    <p class="text-muted mb-4">
+                        Transformando a educação através do reconhecimento e recompensa da excelência acadêmica.
+                    </p>
+                    <div class="d-flex gap-3">
+                        <a href="https://github.com/enzio-alby/ranking-plus" class="text-white fs-4"><i class="bi bi-github"></i></a>
+                        <a href="#" class="text-white fs-4"><i class="bi bi-linkedin"></i></a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="fw-bold mb-3"></h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#inicio" class="text-muted text-decoration-none">Início</a></li>
+                        <li><a href="#como-funciona" class="text-muted text-decoration-none">Como Funciona</a></li>
+                        <li><a href="#beneficios" class="text-muted text-decoration-none">Benefícios</a></li>
+                        <li><a href="#ranking" class="text-muted text-decoration-none">Ranking</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="fw-bold mb-3"></h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-muted text-decoration-none">FAQ</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">Contato</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">Ajuda</a></li>
+                        <li><a href="#" class="text-muted text-decoration-none">Termos</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-4">
+                    <h6 class="fw-bold mb-3">Fique por Dentro</h6>
+                    <p class="text-muted mb-3">Receba atualizações sobre o ranking e novos benefícios.</p>
+                    <div class="input-group mb-3">
+                        <input type="email" class="form-control" placeholder="Seu e-mail">
+                        <button class="btn btn-primary" type="button">Inscrever</button>
+                    </div>
+                    <button class="btn btn-gradient btn-lg w-100" onclick="handleGetStarted()">
+                        Participar do Ranking
+                    </button>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="text-muted mb-0">&copy; 2024 Rankingplus. Todos os direitos reservados.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="termodeuso.html" class="text-muted text-decoration-none me-3">Política de Privacidade</a>
+                    <a href="termodeuso.html" class="text-muted text-decoration-none">Termos de Uso</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Acessar o Ranking+</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container px-0">
+                        <header class="text-center mb-3">
+                            <img src="../images/logoa.png" alt="Logo" style="max-width: 150px; display: block; margin: 0 auto;">
+                        </header>
+                        <h2 class="fw-bold text-center mb-4" style="color: #da6900;">Faça seu login</h2>
+                        <form id="loginForm">
+                            <div class="mb-3">
+                                <label for="tipoUsuario" class="form-label">Tipo de usuário<span class="text-danger">*</span></label>
+                                <select id="loginTipo" class="form-select" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="aluno">Aluno</option>
+                                    <option value="professor">Professor</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="loginUser" class="form-label">E-mail/Matricula:<span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="loginUser" required placeholder="Digite seu acesso">
+                            </div>
+                            <div class="mb-3">
+                                <label for="loginPass" class="form-label">Senha<span class="text-danger">*</span></label>
+                                <div class="position-relative">
+                                    <input type="password" class="form-control" id="loginPass" required placeholder="Sua senha">
+                                    <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y border-0" onclick="togglePasswordVisibility('loginPass')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="lembrar" name="lembrar">
+                                <label class="form-check-label" for="lembrar">Lembrar senha</label>
+                            </div>
+                            <button type="submit" class="btn btn-gradient w-100 mb-3">Entrar</button>
+                            <div class="text-center">
+                                <a href="recuperarsenha.html" class="text-decoration-none">Esqueceu sua senha?</a>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-        <!-- Modal Sobre Nós -->
-<div id="sobre-nos-modal" class="comunicacao-modal">
-    <div class="comunicacao-modal-content">
-        <button id="fechar-sobre-nos-modal" class="comunicacao-modal-close">&times;</button>
-        <h2 style="margin-bottom: 8px;">💻 Sobre Nós</h2>
-        <hr style="width: 120px; border: 1px solid #b39ddb; margin: 0 auto 18px auto;">
-        <div style="text-align:left; color:#222; font-size:1.08em; line-height:1.6;">
-            Somos uma equipe formada por estudantes de Ciência da Computação apaixonados por inovação, tecnologia e educação. Nossa missão é transformar o ambiente acadêmico em um espaço mais dinâmico, justo e motivador por meio da nossa plataforma de Ranking de Alunos.<br><br>
-            Desenvolvemos essa solução com o objetivo de incentivar a competitividade de forma saudável, promovendo o reconhecimento de alunos que se destacam em notas, presença e participação. Acreditamos que, com gamificação e feedback constante, é possível tornar a jornada acadêmica mais envolvente e gratificante.<br><br>
-            A plataforma foi criada com foco na transparência, engajamento e evolução contínua, tanto para alunos quanto para professores. Cada funcionalidade foi pensada para valorizar o esforço dos estudantes e criar oportunidades reais de crescimento dentro e fora da sala de aula.<br><br>
-            <b>Seja bem-vindo(a) ao novo jeito de acompanhar desempenho!</b>
+    <!-- Register Modal (Atualizado para Tabela Alunos) -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Cadastro de Aluno</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="registerForm">
+                        <div class="row g-3">
+                            <!-- Dados Pessoais -->
+                            <div class="col-md-6">
+                                <label class="form-label">Nome Completo</label>
+                                <input type="text" class="form-control" id="regNome" name="nome" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">E-mail</label>
+                                <input type="email" class="form-control" id="regEmail" name="email" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">CPF</label>
+                                <input type="text" class="form-control" id="regCpf" name="cpf" required placeholder="000.000.000-00">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Telefone</label>
+                                <input type="text" class="form-control" id="regTelefone" name="telefone" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Data de Nascimento</label>
+                                <input type="date" class="form-control" id="regNascimento" name="data_nascimento" required>
+                            </div>
+
+                            <!-- Dados Acadêmicos -->
+                            <div class="col-md-4">
+                                <label class="form-label">Matrícula</label>
+                                <input type="text" class="form-control" id="regMatricula" name="matricula" required>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Curso</label>
+                                <select class="form-select" id="regCurso" name="curso" required>
+                                    <option value="">Selecione um curso</option>
+                                    <option value="Algoritmos e Estruturas de Dados">Algoritmos e Estruturas de Dados</option>
+                                    <option value="Banco de Dados Relacional">Banco de Dados Relacional</option>
+                                    <option value="Engenharia de Software">Engenharia de Software</option>
+                                    <option value="Inteligência Artificial">Inteligência Artificial</option>
+                                    <option value="Redes de Computadores">Redes de Computadores</option>
+                                    <option value="Compiladores">Compiladores</option>
+                                    <option value="Sistemas Operacionais">Sistemas Operacionais</option>
+                                    <option value="Matemática Discreta">Matemática Discreta</option>
+                                    <option value="Ética e Computação">Ética e Computação</option>
+                                    <option value="Gestão de Projetos de TI">Gestão de Projetos de TI</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Semestre</label>
+                                <input type="number" class="form-control" id="regSemestre" name="semestre" min="1" max="10" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Turno</label>
+                                <select class="form-select" id="regTurno" name="turno" required>
+                                    <option value="">Selecione</option>
+                                    <option value="Matutino">Matutino</option>
+                                    <option value="Vespertino">Vespertino</option>
+                                    <option value="Noturno">Noturno</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Campus</label>
+                                <select class="form-select" id="regCampus" name="campus" required>
+                                    <option value="">Selecione</option>
+                                    <option value="Asa Norte">Asa Norte</option>
+                                    <option value="Taguatinga">Taguatinga</option>
+                                </select>
+                            </div>
+
+                            <!-- Senha -->
+                            <div class="col-md-6">
+                                <label class="form-label">Senha</label>
+                                <input type="password" class="form-control" id="regSenha" name="senha" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Confirmação de Senha</label>
+                                <input type="password" class="form-control" id="regSenhaConf" name="senha_confirmacao" required>
+                            </div>
+                            <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="acceptTerms" name="acceptTerms" required>
+                            <label class="form-check-label" for="acceptTerms">
+                                Aceito os <a href="termodeuso.html" class="text-decoration-none">termos de uso</a>
+                            </label>
+                        </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-gradient w-100">Finalizar Cadastro</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JavaScript -->
     <script src="../javascript/index.js"></script>
-    <script src="../javascript/comunicacao.js"></script>
-    <script src="../javascript/sobrenos.js"></script>
-
-    <script>
-// Chame ao carregar a página
-if (typeof renderRecomendacoesProfessores === 'function') {
-    renderRecomendacoesProfessores();
-}
-
-function showTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-    document.getElementById('content-' + tab).style.display = '';
-    document.getElementById('tab-' + tab).classList.add('active');
-    // Redesenha o gráfico de recomendações ao abrir a aba recomendação
-    if(tab === 'recomendacao' && typeof renderRecomendacoesProfessores === 'function') {
-        setTimeout(renderRecomendacoesProfessores, 100);
-    }
-}
-    </script>
 </body>
-
 </html>
