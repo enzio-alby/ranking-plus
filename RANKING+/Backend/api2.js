@@ -11,16 +11,16 @@ app.use(cors());
 
 // Configurações do Banco (Google Cloud SQL - IP público) com o banco universidade_ranking
 const dbConfig = {
-  host: '34.139.180.202', // IP do Cloud SQL
+  host: 'IP', // IP do Cloud SQL
   user: 'user1',
-  password: 'Proj#Rank25', // Senha 
+  password: 'senha', // Senha 
   database: 'universidade_ranking',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 };
 
-// --- PROVA REAL (log) ---
+// ---  (log) ---
 console.log('--------------------------------------');
 console.log('TENTANDO CONECTAR NO BANCO COM:');
 console.log('User:', dbConfig.user);
@@ -30,7 +30,7 @@ console.log('--------------------------------------');
 
 const db = mysql.createPool(dbConfig);
 
-// --- ROTAS DE LOGIN ---
+// --- LOGIN ---
 app.post('/login', async (req, res) => {
   const { tipoUsuario, identificador, senha } = req.body; // identificador pode ser email ou matricula
   console.log('[LOGIN] Tentativa:', { tipoUsuario, identificador });
