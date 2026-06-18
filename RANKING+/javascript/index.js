@@ -1,19 +1,24 @@
 // UniRank JavaScript - Conectado à API e com Ranking Real
 
 // CONFIGURAÇÃO DA API
-// IMPORTANTE: IP da sua VM se estiver rodando no Google Cloud (Ex: 'http://34.139.180.202:3000')
-const API_URL = 'http://34.27.195.110:3000';
+const API_URL = 'http://localhost:4000';
 
 // Estado Global
 let currentUser = null;
 let isAuthenticated = false;
+
+// Estado 2FA
+let _otpTempToken = null;
+let _otpTipo = null;
+let _otpReenvioTimer = null;
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     initializeAnimations();
     initializeFormHandlers();
-    loadRanking(); // <--- Adicionado: Carrega o ranking do banco ao iniciar
+    loadRanking();
+    loadStats();
 });
 
 function initializeApp() {
@@ -41,6 +46,12 @@ function initializeFormHandlers() {
     if (registerForm) {
         registerForm.addEventListener('submit', handleRegister);
     }
+
+    // OTP 2FA
+    const otpForm = document.getElementById('otpForm');
+    if (otpForm) {
+        otpForm.addEventListener('submit', handleOtpSubmit);
+    }
 }
 
 // --- NOVA FUNÇÃO: CARREGAR RANKING DO BANCO ---
@@ -48,8 +59,7 @@ async function loadRanking() {
     const rankingList = document.getElementById('rankingList');
     if (!rankingList) return;
 
-    // Mostrar estado de carregamento
-    rankingList.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Carregando ranking...</p></div>';
+    rankingList.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Carregando...</div>';
 
     try {
         const response = await fetch(`${API_URL}/ranking`);
@@ -62,7 +72,7 @@ async function loadRanking() {
             return;
         }
 
-        // Renderizar Top 5 (ou mais) alunos
+        // Renderizar Top 5 alunos
         students.slice(0, 5).forEach((student, index) => {
             const position = index + 1;
             const item = createRankingItem(student, position);
@@ -75,55 +85,43 @@ async function loadRanking() {
     }
 }
 
+// Carrega estatísticas reais da plataforma
+async function loadStats() {
+    try {
+        const res  = await fetch(`${API_URL}/stats`);
+        const data = await res.json();
+        const fmt  = n => Number(n).toLocaleString('pt-BR');
+        const set  = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        set('statAlunos',   fmt(data.total_alunos      ?? '—'));
+        set('statCursos',   fmt(data.total_cursos      ?? '—'));
+        set('statProfs',    fmt(data.total_professores ?? '—'));
+        set('statEmpresas', fmt(data.total_empresas    ?? '—'));
+    } catch (_) { /* stats são opcionais — silencia falha */ }
+}
+
 // Helper para criar o HTML de cada item do ranking
 function createRankingItem(student, position) {
     const item = document.createElement('div');
-    item.className = 'ranking-item mb-3 p-3 bg-white rounded shadow-sm';
-    
-    // Define estilos baseados na posição
-    let positionBadgeClass = 'bg-light text-dark';
-    let trophyIcon = '';
-    
-    if (position === 1) { positionBadgeClass = 'bg-warning text-dark'; trophyIcon = '🏆'; }
-    else if (position === 2) { positionBadgeClass = 'bg-secondary text-white'; trophyIcon = '🥈'; }
-    else if (position === 3) { positionBadgeClass = 'bg-danger text-white'; trophyIcon = '🥉'; }
 
-    // Avatar aleatório (já que não temos upload de foto ainda)
-    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.nome)}&background=random&color=fff`;
+    const anonimo     = student.permitir_exibicao_ranking === 0 || student.permitir_exibicao_ranking === '0';
+    const nomeExibido = anonimo ? 'Aluno Anônimo' : student.nome;
+    const cursoExibido = anonimo ? '—' : (student.curso || '—');
 
+    const posClass = position === 1 ? 'p1' : position === 2 ? 'p2' : position === 3 ? 'p3' : 'pd';
+    const avatarUrl = anonimo
+        ? 'https://ui-avatars.com/api/?name=?&background=9e9e9e&color=fff&size=80'
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(student.nome)}&background=random&color=fff&size=80`;
+
+    item.className = 'ranking-row';
     item.innerHTML = `
-        <div class="d-flex align-items-center">
-            <!-- Posição -->
-            <div class="flex-shrink-0 me-4 text-center" style="width: 40px;">
-                <span class="badge rounded-pill ${positionBadgeClass} fs-5" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                    ${position}
-                </span>
-            </div>
-            
-            <!-- Avatar -->
-            <div class="flex-shrink-0 me-3">
-                <img src="${avatarUrl}" alt="${student.nome}" class="rounded-circle border" style="width: 50px; height: 50px; object-fit: cover;">
-            </div>
-            
-            <!-- Info -->
-            <div class="flex-grow-1">
-                <div class="d-flex align-items-center mb-1">
-                    <h5 class="fw-bold mb-0 me-2 text-dark">${student.nome}</h5>
-                    <span>${trophyIcon}</span>
-                </div>
-                <p class="text-muted mb-0 small"><i class="bi bi-book me-1"></i>${student.curso}</p>
-            </div>
-            
-            <!-- Pontuação -->
-            <div class="flex-shrink-0 text-end">
-                <div class="display-6 fw-bold text-primary mb-0" style="font-size: 1.5rem;">
-                    ${student.pontuacao || 0}
-                </div>
-                <div class="small text-muted" style="font-size: 0.75rem;">pontos</div>
-            </div>
+        <div class="rank-pos ${posClass}">${position}</div>
+        <img src="${avatarUrl}" alt="${nomeExibido}" class="rank-avatar">
+        <div class="rank-info">
+            <div class="nome ${anonimo ? 'text-muted fst-italic' : ''}">${nomeExibido}</div>
+            <div class="curso">${cursoExibido}</div>
         </div>
+        <div class="rank-score">${student.pontuacao || 0}<small>pts</small></div>
     `;
-    
     return item;
 }
 
@@ -163,27 +161,29 @@ async function handleLogin(e) {
         const data = await response.json();
 
         if (data.sucesso) {
-            currentUser = data.usuario;
-            isAuthenticated = true;
-            localStorage.setItem('unirank_user', JSON.stringify(currentUser));
-            
-            if (tipoUsuario === 'aluno') {
-                localStorage.setItem('alunoId', currentUser.id);
-                localStorage.removeItem('professorId');
-                showAlert('Login realizado! Redirecionando...', 'success');
-                setTimeout(() => window.location.href = 'homealuno.html', 1500);
+            if (data.requerOTP) {
+                // Fecha modal de login e abre modal OTP
+                _otpTempToken = data.tempToken;
+                _otpTipo = tipoUsuario;
+                const emailDisplay = document.getElementById('otpEmailDisplay');
+                if (emailDisplay) emailDisplay.textContent = data.emailMascarado || 'seu e-mail';
+                iniciarContadorReenvio();
+                const loginModalEl = document.getElementById('loginModal');
+                const loginModal = bootstrap.Modal.getInstance(loginModalEl);
+                if (loginModal) loginModal.hide();
+                const otpModalEl = document.getElementById('otpModal');
+                const otpModal = new bootstrap.Modal(otpModalEl);
+                otpModal.show();
+                otpModalEl.addEventListener('shown.bs.modal', () => {
+                    document.getElementById('otpCodigo')?.focus();
+                }, { once: true });
             } else {
-                localStorage.setItem('professorId', currentUser.id);
-                localStorage.removeItem('alunoId');
-                showAlert('Login realizado! Redirecionando...', 'success');
-                setTimeout(() => window.location.href = 'areadoprofessor.html', 1500);
+                // Fluxo direto (fallback — não deve ocorrer com a API atual)
+                const loginModalEl = document.getElementById('loginModal');
+                const loginModal = bootstrap.Modal.getInstance(loginModalEl);
+                if (loginModal) loginModal.hide();
+                finalizarLogin(data.usuario, tipoUsuario);
             }
-            
-            // Fecha o modal com segurança
-            const modalEl = document.getElementById('loginModal');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            if(modal) modal.hide();
-            
         } else {
             showAlert(data.mensagem || 'Credenciais inválidas.', 'danger');
         }
@@ -209,20 +209,24 @@ async function handleRegister(e) {
         return;
     }
 
+    const _v = id => (document.getElementById(id)?.value || '').trim() || null;
+    const semestreRaw = document.getElementById('regSemestre')?.value;
     const alunoData = {
-        nome: document.getElementById('regNome').value,
-        email: document.getElementById('regEmail').value,
-        cpf: document.getElementById('regCpf').value,
-        telefone: document.getElementById('regTelefone').value,
-        data_nascimento: document.getElementById('regNascimento').value,
-        matricula: document.getElementById('regMatricula').value,
-        curso: document.getElementById('regCurso').value,
-        semestre: parseInt(document.getElementById('regSemestre').value),
-        turno: document.getElementById('regTurno').value,
-        campus: document.getElementById('regCampus').value,
-        senha: senha,
-        periodo_curso: '2024.1',
-        data_matricula: new Date().toISOString().split('T')[0]
+        nome:            document.getElementById('regNome').value.trim(),
+        email:           document.getElementById('regEmail').value.trim(),
+        matricula:       document.getElementById('regMatricula').value.trim(),
+        curso:           document.getElementById('regCurso').value,
+        senha:           senha,
+        cpf:             _v('regCpf'),
+        telefone:        _v('regTelefone'),
+        data_nascimento: _v('regNascimento'),
+        semestre:        semestreRaw ? parseInt(semestreRaw) : null,
+        turno:           _v('regTurno'),
+        campus:          _v('regCampus'),
+        github:          _v('regGithub'),
+        linkedin:        _v('regLinkedin'),
+        periodo_curso:   new Date().getFullYear() + '.' + (new Date().getMonth() < 6 ? '1' : '2'),
+        data_matricula:  new Date().toISOString().split('T')[0]
     };
 
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -290,6 +294,12 @@ function updateAuthUI() {
         userInfo.classList.remove('d-none');
         userInfo.classList.add('d-flex');
         userName.textContent = `Olá, ${currentUser.nome.split(' ')[0]}`;
+        const areaBtn = document.getElementById('areaBtn');
+        if (areaBtn) {
+            const isProfessor = !!localStorage.getItem('professorId');
+            areaBtn.href = isProfessor ? 'areaprofessor.html' : 'areaaluno.html';
+            areaBtn.textContent = isProfessor ? 'Área do Professor' : 'Área do Aluno';
+        }
     } else {
         authButtons.classList.remove('d-none');
         authButtons.classList.add('d-flex');
@@ -313,8 +323,8 @@ function showAlert(message, type = 'info') {
 function handleGetStarted() {
     if (isAuthenticated) {
         const tipo = localStorage.getItem('professorId') ? 'professor' : 'aluno';
-        if(tipo === 'aluno') window.location.href = 'homealuno.html';
-        else window.location.href = 'areadoprofessor.html';
+        if(tipo === 'aluno') window.location.href = 'areaaluno.html';
+        else window.location.href = 'areaprofessor.html';
     } else {
         showRegister();
     }
@@ -345,4 +355,100 @@ function initializeAnimations() {
         });
     });
     document.querySelectorAll('.animate-fade-up').forEach(el => observer.observe(el));
+}
+
+// ─── 2FA — Funções auxiliares ────────────────────────────────────────────────
+
+function finalizarLogin(usuario, tipo) {
+    currentUser = usuario;
+    isAuthenticated = true;
+    localStorage.setItem('unirank_user', JSON.stringify(currentUser));
+    if (tipo === 'aluno') {
+        localStorage.setItem('alunoId', currentUser.id);
+        localStorage.removeItem('professorId');
+    } else {
+        localStorage.setItem('professorId', currentUser.id);
+        localStorage.removeItem('alunoId');
+    }
+    showAlert('Login realizado! Redirecionando...', 'success');
+    setTimeout(() => {
+        window.location.href = tipo === 'aluno' ? 'areaaluno.html' : 'areaprofessor.html';
+    }, 1500);
+}
+
+async function handleOtpSubmit(e) {
+    e.preventDefault();
+    const codigo = (document.getElementById('otpCodigo')?.value || '').replace(/\D/g, '');
+    if (codigo.length !== 6) {
+        showAlert('Digite o código de 6 dígitos recebido no e-mail.', 'warning');
+        return;
+    }
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verificando...';
+    submitBtn.disabled = true;
+    try {
+        const response = await fetch(`${API_URL}/verificar-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tempToken: _otpTempToken, codigo })
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+            const otpModal = bootstrap.Modal.getInstance(document.getElementById('otpModal'));
+            if (otpModal) otpModal.hide();
+            clearInterval(_otpReenvioTimer);
+            finalizarLogin(data.usuario, _otpTipo);
+        } else {
+            showAlert(data.mensagem || 'Código inválido. Tente novamente.', 'danger');
+            document.getElementById('otpCodigo').value = '';
+            document.getElementById('otpCodigo').focus();
+        }
+    } catch (error) {
+        console.error('Erro na verificação OTP:', error);
+        showAlert('Erro ao verificar código. Tente novamente.', 'danger');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+async function reenviarOtp() {
+    if (!_otpTempToken) return;
+    try {
+        const response = await fetch(`${API_URL}/reenviar-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tempToken: _otpTempToken })
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+            showAlert('Novo código enviado para seu e-mail.', 'success');
+            iniciarContadorReenvio();
+        } else {
+            showAlert(data.mensagem || 'Erro ao reenviar. Faça login novamente.', 'danger');
+        }
+    } catch (_) {
+        showAlert('Erro ao reenviar código.', 'danger');
+    }
+}
+
+function iniciarContadorReenvio() {
+    clearInterval(_otpReenvioTimer);
+    const btn = document.getElementById('otpReenviarBtn');
+    const contagem = document.getElementById('otpContagem');
+    if (!btn || !contagem) return;
+    btn.disabled = true;
+    let s = 60;
+    contagem.textContent = `(${s}s)`;
+    _otpReenvioTimer = setInterval(() => {
+        s--;
+        if (s <= 0) {
+            clearInterval(_otpReenvioTimer);
+            contagem.textContent = '';
+            btn.disabled = false;
+        } else {
+            contagem.textContent = `(${s}s)`;
+        }
+    }, 1000);
 }

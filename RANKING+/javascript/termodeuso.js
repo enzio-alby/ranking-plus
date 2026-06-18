@@ -119,7 +119,7 @@ function handleAcceptanceConfirmation() {
         
         // Redirect after delay
         setTimeout(() => {
-            window.location.href = 'dashboard.html';
+            window.location.href = 'index.html';
         }, 3000);
     }
 }

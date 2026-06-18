@@ -369,6 +369,27 @@ body {
   background: white;
   border-radius: 12px;
   padding: 20px;
+  overflow: hidden;
+}
+
+.chart-container > div {
+  height: 100%;
+  width: 100%;
+}
+
+.chart-container .frappe-chart {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.chart-container svg {
+  max-width: 100% !important;
+  display: block;
+}
+
+/* Frappe Charts tooltip */
+.graph-svg-tip {
+  display: none !important;
 }
 
 /* Header Styles */
@@ -1310,3 +1331,48 @@ body {
 .d-block { display: block; }
 .d-flex { display: flex; }
 .d-grid { display: grid; }
+
+/* ── PDF Export Chips ─────────────────────────────────────────────── */
+.pdf-chip {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border-light, #e2e8f0);
+    background: #f8f9fa;
+    color: var(--text-dark, #2D3748);
+    font-size: 12px;
+    font-weight: 500;
+    transition: border-color .15s, background .15s, color .15s;
+    user-select: none;
+    margin: 0;
+    line-height: 1.4;
+}
+.pdf-chip:hover {
+    border-color: var(--primary-orange, #F4442E);
+    color: var(--primary-orange, #F4442E);
+}
+.pdf-chip input[type="checkbox"] {
+    display: none;
+}
+/* Chip ativo (checked) — usa :has() suportado em todos browsers modernos */
+.pdf-chip:has(input:checked) {
+    background: var(--primary-blue, #020122);
+    border-color: var(--primary-blue, #020122);
+    color: #fff;
+}
+.pdf-chip:has(input:checked):hover {
+    background: var(--primary-orange, #F4442E);
+    border-color: var(--primary-orange, #F4442E);
+}
+/* Fallback para browsers sem :has() — classe adicionada via JS se necessário */
+.pdf-chip.chip-active {
+    background: var(--primary-blue, #020122);
+    border-color: var(--primary-blue, #020122);
+    color: #fff;
+}
+.pdf-chip.chip-active:hover {
+    background: var(--primary-orange, #F4442E);
+    border-color: var(--primary-orange, #F4442E);
+}

@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espaço do Aluno - Sistema de Ranking Acadêmico</title>
     <meta name="description" content="Plataforma exclusiva para alunos acompanharem seu desempenho acadêmico">
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -13,6 +14,7 @@
     <!-- Custom CSS -->
     <link href="../css/styleareaaluno.css" rel="stylesheet">
 </head>
+
 <body>
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
@@ -22,7 +24,7 @@
                 Área do Aluno
             </h4>
         </div>
-        
+
         <nav class="sidebar-nav">
             <a href="#" class="nav-link active" data-page="dashboard">
                 <i class="bi bi-house-fill"></i>
@@ -44,9 +46,16 @@
                 <i class="bi bi-file-earmark-bar-graph me-2"></i>
                 Relatórios
             </a>
-            <a class="nav-link text-danger mt-3" href="#" onclick="confirmLogout(event)"></a>
-                <i class="fas fa-sign-out-alt"></i>
-                Sair
+            <!-- <a href="talentos.html" class="nav-link" target="_blank">
+                <i class="bi bi-people-fill"></i>
+                Portal de Talentos
+            </a> -->
+            <a href="../html/index.html" class="nav-link mt-3">
+                <i class="bi bi-house-door-fill"></i>
+                Início
+            </a>
+            <a class="nav-link text-danger" href="#" onclick="confirmLogout(event)">
+                <i class="bi bi-box-arrow-right me-2"></i>Sair
             </a>
         </nav>
     </div>
@@ -61,14 +70,17 @@
                 </button>
                 <div class="ms-auto d-flex align-items-center">
                     <div class="dropdown">
-                        <button class="btn btn-link text-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-link text-primary dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle fs-4"></i>
-                            <span class="ms-2 d-none d-md-inline">João Silva</span>
+                            <span class="ms-2 d-none d-md-inline" id="headerUserName">Aluno</span>
                         </button>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="#" data-page="perfil">Meu Perfil</a></li>
                             <li><a class="dropdown-item" href="#" data-page="editar-perfil">Editar Perfil</a></li>
-                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
                             <li>
                                 <a class="dropdown-item text-danger" href="#" onclick="confirmLogout(event)">
                                     Sair
@@ -88,7 +100,7 @@
                 <div class="welcome-banner mb-4">
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <h1 class="text-white mb-2">Bem-vindo, João!</h1>
+                            <h1 class="text-white mb-2">Bem-vindo, <span id="welcomeName">Aluno</span>!</h1>
                             <p class="text-light mb-0">
                                 Acompanhe seu progresso acadêmico e mantenha-se no topo do seu desempenho.
                             </p>
@@ -106,8 +118,8 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-muted mb-1">CRA Atual</p>
-                                    <h3 class="text-primary mb-1">8.7</h3>
-                                    <small class="text-success">+0.3 vs. semestre anterior</small>
+                                    <h3 class="text-primary mb-1" id="dashCRA">—</h3>
+                                    <small class="text-muted" id="dashCRALabel">calculando...</small>
                                 </div>
                                 <div class="stat-icon bg-success">
                                     <i class="bi bi-trending-up"></i>
@@ -120,8 +132,8 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-muted mb-1">Frequência Média</p>
-                                    <h3 class="text-primary mb-1">94%</h3>
-                                    <small class="text-success">+2% vs. semestre anterior</small>
+                                    <h3 class="text-primary mb-1" id="dashFreq">—</h3>
+                                    <small class="text-muted" id="dashFreqLabel">calculando...</small>
                                 </div>
                                 <div class="stat-icon bg-primary">
                                     <i class="bi bi-calendar-check"></i>
@@ -133,9 +145,9 @@
                         <div class="stat-card">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <p class="text-muted mb-1">Ranking Turma</p>
-                                    <h3 class="text-primary mb-1">#15</h3>
-                                    <small class="text-success">+3 vs. semestre anterior</small>
+                                    <p class="text-muted mb-1">Posição no Ranking</p>
+                                    <h3 class="text-primary mb-1" id="dashRanking">—</h3>
+                                    <small class="text-muted" id="dashRankingLabel">de — alunos</small>
                                 </div>
                                 <div class="stat-icon bg-warning">
                                     <i class="bi bi-award"></i>
@@ -148,8 +160,8 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-muted mb-1">Disciplinas Ativas</p>
-                                    <h3 class="text-primary mb-1">6</h3>
-                                    <small class="text-muted">0 vs. semestre anterior</small>
+                                    <h3 class="text-primary mb-1" id="dashDisc">—</h3>
+                                    <small class="text-muted" id="dashDiscLabel">neste semestre</small>
                                 </div>
                                 <div class="stat-icon bg-info">
                                     <i class="bi bi-book"></i>
@@ -163,9 +175,16 @@
                 <div class="row mb-4">
                     <div class="col-lg-6 mb-4">
                         <div class="chart-card">
-                            <h5 class="card-title mb-3">Evolução das Notas</h5>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h5 class="card-title mb-0">Evolução das Notas</h5>
+                                <div class="btn-group btn-group-sm" id="perfFiltroGrupo">
+                                    <button class="btn btn-dark"         data-perf-filtro="mes">Mês</button>
+                                    <button class="btn btn-outline-dark" data-perf-filtro="semestre">Semestre</button>
+                                    <button class="btn btn-outline-dark" data-perf-filtro="ano">Ano</button>
+                                </div>
+                            </div>
                             <div class="chart-container">
-                                <canvas id="performanceChart"></canvas>
+                                <div id="performanceChart" class="frappe-chart-slot"></div>
                             </div>
                         </div>
                     </div>
@@ -173,7 +192,7 @@
                         <div class="chart-card">
                             <h5 class="card-title mb-3">Frequência por Disciplina</h5>
                             <div class="chart-container">
-                                <canvas id="frequencyChart"></canvas>
+                                <div id="frequencyChart" class="frappe-chart-slot"></div>
                             </div>
                         </div>
                     </div>
@@ -245,7 +264,8 @@
                                         <strong>Dica de Performance</strong>
                                     </div>
                                     <p class="text-muted small">
-                                        Suas notas em Algoritmos estão consistentemente altas. Continue praticando exercícios de complexidade!
+                                        Suas notas em Algoritmos estão consistentemente altas. Continue praticando
+                                        exercícios de complexidade!
                                     </p>
                                 </div>
                                 <div class="insight-item mb-3">
@@ -278,348 +298,123 @@
             <div id="disciplinas-page" class="page-content">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2 class="text-primary">Minhas Disciplinas</h2>
-                    <span class="badge bg-primary">6 disciplinas ativas</span>
+                    <span class="badge bg-primary" id="disciplinasCount">carregando...</span>
                 </div>
-
-                <div class="row">
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card subject-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <h5 class="card-title">Algoritmos e Estruturas de Dados</h5>
-                                    <span class="badge bg-success">9.2</span>
-                                </div>
-                                <p class="text-muted small mb-3">Prof. Dr. Carlos Silva</p>
-                                <div class="row text-center mb-3">
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">96%</div>
-                                            <div class="metric-label">Frequência</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">8.8</div>
-                                            <div class="metric-label">Média</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="progress mb-2">
-                                    <div class="progress-bar bg-success" style="width: 92%"></div>
-                                </div>
-                                <small class="text-muted">92% do semestre concluído</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card subject-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <h5 class="card-title">Banco de Dados</h5>
-                                    <span class="badge bg-success">8.8</span>
-                                </div>
-                                <p class="text-muted small mb-3">Prof. Dra. Ana Santos</p>
-                                <div class="row text-center mb-3">
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">92%</div>
-                                            <div class="metric-label">Frequência</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">8.5</div>
-                                            <div class="metric-label">Média</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="progress mb-2">
-                                    <div class="progress-bar bg-success" style="width: 88%"></div>
-                                </div>
-                                <small class="text-muted">88% do semestre concluído</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card subject-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <h5 class="card-title">Cálculo Diferencial</h5>
-                                    <span class="badge bg-warning">7.9</span>
-                                </div>
-                                <p class="text-muted small mb-3">Prof. Dr. Roberto Lima</p>
-                                <div class="row text-center mb-3">
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">88%</div>
-                                            <div class="metric-label">Frequência</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">7.6</div>
-                                            <div class="metric-label">Média</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="progress mb-2">
-                                    <div class="progress-bar bg-warning" style="width: 85%"></div>
-                                </div>
-                                <small class="text-muted">85% do semestre concluído</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card subject-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <h5 class="card-title">Programação Orientada a Objetos</h5>
-                                    <span class="badge bg-success">9.0</span>
-                                </div>
-                                <p class="text-muted small mb-3">Prof. Dr. Marcus Oliveira</p>
-                                <div class="row text-center mb-3">
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">98%</div>
-                                            <div class="metric-label">Frequência</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">8.9</div>
-                                            <div class="metric-label">Média</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="progress mb-2">
-                                    <div class="progress-bar bg-success" style="width: 90%"></div>
-                                </div>
-                                <small class="text-muted">90% do semestre concluído</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card subject-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <h5 class="card-title">Redes de Computadores</h5>
-                                    <span class="badge bg-warning">8.1</span>
-                                </div>
-                                <p class="text-muted small mb-3">Prof. Dra. Fernanda Costa</p>
-                                <div class="row text-center mb-3">
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">94%</div>
-                                            <div class="metric-label">Frequência</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">8.0</div>
-                                            <div class="metric-label">Média</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="progress mb-2">
-                                    <div class="progress-bar bg-warning" style="width: 82%"></div>
-                                </div>
-                                <small class="text-muted">82% do semestre concluído</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card subject-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <h5 class="card-title">Engenharia de Software</h5>
-                                    <span class="badge bg-success">8.7</span>
-                                </div>
-                                <p class="text-muted small mb-3">Prof. Dr. Paulo Mendes</p>
-                                <div class="row text-center mb-3">
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">96%</div>
-                                            <div class="metric-label">Frequência</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value">8.4</div>
-                                            <div class="metric-label">Média</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="progress mb-2">
-                                    <div class="progress-bar bg-success" style="width: 87%"></div>
-                                </div>
-                                <small class="text-muted">87% do semestre concluído</small>
-                            </div>
-                        </div>
+                <div class="row" id="disciplinasGrid">
+                    <div class="col-12 text-center py-5 text-muted">
+                        <div class="spinner-border spinner-border-sm me-2"></div>Carregando disciplinas...
                     </div>
                 </div>
             </div>
 
             <!-- Colegas Page -->
             <div id="colegas-page" class="page-content">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="text-primary">Colegas de Turma</h2>
-                    <div class="alert alert-info mb-0 py-2 px-3">
-                        <i class="bi bi-shield-check me-2"></i>
-                        <small>Dados anonimizados conforme LGPD</small>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="text-primary">Ranking</h2>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="rankingToggleNomes" checked>
+                        <label class="form-check-label small" for="rankingToggleNomes">Mostrar nomes</label>
                     </div>
                 </div>
 
+                <!-- Filtros -->
+                <div class="card mb-4">
+                    <div class="card-body py-2">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label form-label-sm mb-1">Curso</label>
+                                <select class="form-select form-select-sm" id="rankFiltCurso">
+                                    <option value="">Todos os cursos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label form-label-sm mb-1">Semestre</label>
+                                <select class="form-select form-select-sm" id="rankFiltSemestre">
+                                    <option value="">Todos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label form-label-sm mb-1">Disciplina</label>
+                                <select class="form-select form-select-sm" id="rankFiltDisciplina">
+                                    <option value="">Todas as disciplinas</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-primary btn-sm w-100" id="rankFiltBtn">
+                                    <i class="bi bi-funnel me-1"></i>Filtrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sumário -->
                 <div class="row mb-4">
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h4 class="text-primary">#15</h4>
+                                <h4 class="text-primary" id="rankMinhaPos">—</h4>
                                 <p class="text-muted mb-0">Sua Posição no Ranking</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h4 class="text-primary">127</h4>
+                                <h4 class="text-primary" id="rankTotalAlunos">—</h4>
                                 <p class="text-muted mb-0">Total de Alunos</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="text-primary" id="rankMinhaPontuacao">—</h4>
+                                <p class="text-muted mb-0">Sua Pontuação</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Tabela -->
                 <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Ranking da Turma</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Ranking Geral</h5>
+                        <span class="badge bg-secondary" id="rankTotalBadge">—</span>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
                                     <tr>
                                         <th>Posição</th>
-                                        <th>Identificação</th>
-                                        <th>CRA</th>
-                                        <th>Frequência Média</th>
+                                        <th id="rankColNome">Aluno</th>
+                                        <th>Curso</th>
+                                        <th>Pontuação</th>
+                                        <th>Frequência</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr class="table-warning">
-                                        <td><strong>1º</strong></td>
-                                        <td>Aluno-001</td>
-                                        <td><span class="badge bg-success">9.8</span></td>
-                                        <td>98%</td>
-                                        <td><span class="badge bg-success">Excelente</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>2º</td>
-                                        <td>Aluno-045</td>
-                                        <td><span class="badge bg-success">9.6</span></td>
-                                        <td>97%</td>
-                                        <td><span class="badge bg-success">Excelente</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>3º</td>
-                                        <td>Aluno-089</td>
-                                        <td><span class="badge bg-success">9.4</span></td>
-                                        <td>96%</td>
-                                        <td><span class="badge bg-success">Excelente</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>...</td>
-                                        <td colspan="4" class="text-muted text-center">...</td>
-                                    </tr>
-                                    <tr>
-                                        <td>13º</td>
-                                        <td>Aluno-112</td>
-                                        <td><span class="badge bg-success">8.9</span></td>
-                                        <td>95%</td>
-                                        <td><span class="badge bg-success">Bom</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>14º</td>
-                                        <td>Aluno-067</td>
-                                        <td><span class="badge bg-success">8.8</span></td>
-                                        <td>94%</td>
-                                        <td><span class="badge bg-success">Bom</span></td>
-                                    </tr>
-                                    <tr class="table-primary">
-                                        <td><strong>15º</strong></td>
-                                        <td><strong>Você (João)</strong></td>
-                                        <td><span class="badge bg-success">8.7</span></td>
-                                        <td>94%</td>
-                                        <td><span class="badge bg-success">Bom</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>16º</td>
-                                        <td>Aluno-034</td>
-                                        <td><span class="badge bg-warning">8.6</span></td>
-                                        <td>93%</td>
-                                        <td><span class="badge bg-warning">Regular</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>17º</td>
-                                        <td>Aluno-078</td>
-                                        <td><span class="badge bg-warning">8.5</span></td>
-                                        <td>92%</td>
-                                        <td><span class="badge bg-warning">Regular</span></td>
-                                    </tr>
+                                <tbody id="rankingTableBody">
+                                    <tr><td colspan="6" class="text-center py-4 text-muted">
+                                        <div class="spinner-border spinner-border-sm me-2"></div>Carregando...
+                                    </td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
+                <!-- Gráfico distribuição -->
                 <div class="row mt-4">
-                    <div class="col-md-6">
+                    <div class="col-12">
                         <div class="card">
                             <div class="card-header">
                                 <h6 class="mb-0">Distribuição de Notas</h6>
                             </div>
                             <div class="card-body">
-                                <div class="chart-container" style="height: 250px;">
-                                    <canvas id="gradeDistributionChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h6 class="mb-0">Estatísticas da Turma</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row text-center">
-                                    <div class="col-6 mb-3">
-                                        <div class="metric">
-                                            <div class="metric-value text-success">8.2</div>
-                                            <div class="metric-label">Média da Turma</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 mb-3">
-                                        <div class="metric">
-                                            <div class="metric-value text-primary">92%</div>
-                                            <div class="metric-label">Freq. Média</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value text-warning">15%</div>
-                                            <div class="metric-label">Acima de Você</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="metric">
-                                            <div class="metric-value text-info">85%</div>
-                                            <div class="metric-label">Abaixo de Você</div>
-                                        </div>
-                                    </div>
+                                <div style="height: 250px;">
+                                    <div id="gradeDistributionChart" class="frappe-chart-slot"></div>
                                 </div>
                             </div>
                         </div>
@@ -638,25 +433,25 @@
                                 <div class="profile-avatar mb-3">
                                     <i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>
                                 </div>
-                                <h4 class="text-primary">João Silva</h4>
-                                <p class="text-muted">Ciência da Computação</p>
-                                <p class="text-muted small">Matrícula: 2021.1.001.234</p>
+                                <h4 class="text-primary" id="perfilNome">—</h4>
+                                <p class="text-muted" id="perfilCurso">—</p>
+                                <p class="text-muted small">Matrícula: <span id="perfilMatricula">—</span></p>
                                 <div class="row text-center mt-3">
                                     <div class="col-4">
                                         <div class="metric">
-                                            <div class="metric-value">6º</div>
+                                            <div class="metric-value" id="perfilSemestre">—</div>
                                             <div class="metric-label">Semestre</div>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="metric">
-                                            <div class="metric-value">8.7</div>
+                                            <div class="metric-value" id="perfilCRA">—</div>
                                             <div class="metric-label">CRA</div>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="metric">
-                                            <div class="metric-value">94%</div>
+                                            <div class="metric-value" id="perfilFreq">—</div>
                                             <div class="metric-label">Freq.</div>
                                         </div>
                                     </div>
@@ -674,29 +469,27 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label text-muted">Curso</label>
-                                        <p class="mb-0">Bacharelado em Ciência da Computação</p>
+                                        <p class="mb-0" id="perfilCursoCompleto">—</p>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label text-muted">Período de Ingresso</label>
-                                        <p class="mb-0">2021.1</p>
+                                        <p class="mb-0" id="perfilPeriodo">—</p>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label text-muted">Situação</label>
-                                        <span class="badge bg-success">Ativo</span>
+                                        <span class="badge bg-success" id="perfilSituacao">—</span>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label text-muted">Previsão de Formatura</label>
-                                        <p class="mb-0">2024.2</p>
+                                        <label class="form-label text-muted">Turno</label>
+                                        <p class="mb-0" id="perfilTurno">—</p>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label text-muted">Créditos Cursados</label>
-                                        <p class="mb-0">156 / 240</p>
+                                        <label class="form-label text-muted">Campus</label>
+                                        <p class="mb-0" id="perfilCampus">—</p>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label text-muted">Percentual de Conclusão</label>
-                                        <div class="progress">
-                                            <div class="progress-bar bg-primary" style="width: 65%">65%</div>
-                                        </div>
+                                        <label class="form-label text-muted">E-mail</label>
+                                        <p class="mb-0" id="perfilEmail">—</p>
                                     </div>
                                 </div>
                             </div>
@@ -707,12 +500,17 @@
                 <div class="row">
                     <div class="col-lg-6 mb-4">
                         <div class="card">
-                            <div class="card-header">
+                            <div class="card-header d-flex align-items-center justify-content-between">
                                 <h5 class="mb-0">Histórico de CRA</h5>
+                                <div class="btn-group btn-group-sm" id="craFiltroGrupo">
+                                    <button class="btn btn-dark"         data-cra-filtro="2anos">2 Anos</button>
+                                    <button class="btn btn-outline-dark" data-cra-filtro="3anos">3 Anos</button>
+                                    <button class="btn btn-outline-dark" data-cra-filtro="tudo">Completo</button>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="chart-container" style="height: 300px;">
-                                    <canvas id="craHistoryChart"></canvas>
+                                    <div id="craHistoryChart" class="frappe-chart-slot"></div>
                                 </div>
                             </div>
                         </div>
@@ -722,41 +520,115 @@
                             <div class="card-header">
                                 <h5 class="mb-0">Conquistas</h5>
                             </div>
+                            <div class="card-body" id="conquistasContainer">
+                                <!-- populado dinamicamente pelo JS -->
+                                <div class="text-center text-muted small py-3">
+                                    <div class="spinner-border spinner-border-sm me-1"></div> Calculando...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quadro Profissional (GitHub + LinkedIn links) -->
+                <div class="row mt-2" id="quadroProfissionalSection" style="display:none!important;">
+                    <div class="col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-briefcase-fill me-2 text-primary"></i>Quadro Profissional</h5>
+                                <div id="quadroLinks"></div>
+                            </div>
+                            <div class="card-body" id="quadroBody">
+                                <div class="text-center text-muted small py-3">
+                                    <div class="spinner-border spinner-border-sm me-1"></div> Carregando...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Perfil Profissional Editável -->
+                <div class="row mt-2">
+                    <div class="col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-person-badge-fill me-2 text-primary"></i>Perfil Profissional
+                                </h5>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <label class="btn btn-sm btn-outline-primary mb-0" for="linkedinPdfInput" style="cursor:pointer;">
+                                        <i class="bi bi-linkedin me-1"></i>Importar PDF do LinkedIn
+                                    </label>
+                                    <input type="file" id="linkedinPdfInput" accept=".pdf" class="d-none">
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="savePerfilProfissional()">
+                                        <i class="bi bi-check2 me-1"></i>Salvar Perfil
+                                    </button>
+                                </div>
+                            </div>
                             <div class="card-body">
-                                <div class="achievement-item mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-award-fill text-warning me-3" style="font-size: 1.5rem;"></i>
-                                        <div>
-                                            <h6 class="mb-1">Top 20 da Turma</h6>
-                                            <small class="text-muted">Mantido por 3 semestres consecutivos</small>
-                                        </div>
-                                    </div>
+                                <div class="text-center py-4" id="perfilProfLoading">
+                                    <div class="spinner-border spinner-border-sm text-primary me-1"></div>
+                                    <span class="text-muted">Carregando...</span>
                                 </div>
-                                <div class="achievement-item mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-calendar-check-fill text-success me-3" style="font-size: 1.5rem;"></i>
-                                        <div>
-                                            <h6 class="mb-1">Frequência Exemplar</h6>
-                                            <small class="text-muted">Mais de 90% em todas as disciplinas</small>
-                                        </div>
-                                    </div>
+                                <div id="perfilProfImportando" style="display:none;" class="text-center py-4">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                                    <span class="text-primary fw-semibold">Analisando PDF do LinkedIn...</span>
                                 </div>
-                                <div class="achievement-item mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-graph-up-arrow text-primary me-3" style="font-size: 1.5rem;"></i>
-                                        <div>
-                                            <h6 class="mb-1">Melhoria Contínua</h6>
-                                            <small class="text-muted">CRA crescente nos últimos 2 semestres</small>
-                                        </div>
+                                <div id="perfilProfForm" style="display:none;">
+                                    <!-- Resumo -->
+                                    <div class="mb-4">
+                                        <label class="form-label fw-semibold">Resumo Profissional</label>
+                                        <textarea id="ppResumo" class="form-control" rows="3"
+                                            placeholder="Ex: Desenvolvedor Full Stack com foco em Python e React, buscando oportunidades em startups de tecnologia..."></textarea>
                                     </div>
-                                </div>
-                                <div class="achievement-item">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-code-slash text-info me-3" style="font-size: 1.5rem;"></i>
-                                        <div>
-                                            <h6 class="mb-1">Destaque em Programação</h6>
-                                            <small class="text-muted">Notas acima de 9.0 em disciplinas de código</small>
+                                    <!-- Experiências -->
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label fw-semibold mb-0">Experiências Profissionais</label>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="ppAddExperiencia()">
+                                                <i class="bi bi-plus me-1"></i>Adicionar
+                                            </button>
                                         </div>
+                                        <div id="ppExperiencias"></div>
+                                    </div>
+                                    <!-- Formação Complementar -->
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label fw-semibold mb-0">Formação Complementar / Cursos</label>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="ppAddFormacao()">
+                                                <i class="bi bi-plus me-1"></i>Adicionar
+                                            </button>
+                                        </div>
+                                        <div id="ppFormacoes"></div>
+                                    </div>
+                                    <!-- Idiomas -->
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label fw-semibold mb-0">Idiomas</label>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="ppAddIdioma()">
+                                                <i class="bi bi-plus me-1"></i>Adicionar
+                                            </button>
+                                        </div>
+                                        <div id="ppIdiomas"></div>
+                                    </div>
+                                    <!-- Habilidades / Skills -->
+                                    <div class="mb-2">
+                                        <label class="form-label fw-semibold">Habilidades / Skills</label>
+                                        <div class="input-group mb-2">
+                                            <input type="text" id="ppHabilidadeInput" class="form-control"
+                                                placeholder="Ex: React, Python, SQL... (Enter para adicionar)"
+                                                onkeydown="ppAddHabilidadeOnEnter(event)">
+                                            <button type="button" class="btn btn-outline-primary" onclick="ppAddHabilidade()">Adicionar</button>
+                                        </div>
+                                        <div id="ppHabilidadesTags" class="d-flex flex-wrap gap-2"></div>
+                                    </div>
+
+                                    <div class="mb-2 mt-3">
+                                        <label class="form-label fw-semibold">Certificações e Cursos Complementares</label>
+                                        <div id="ppCertificacoes"></div>
+                                        <button type="button" class="btn btn-outline-warning btn-sm mt-2" onclick="ppAddCertificacao()">
+                                            <i class="bi bi-plus-circle me-1"></i> Adicionar Certificação
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -766,315 +638,529 @@
             </div>
 
             <!-- Editar Perfil Page -->
-<div id="editar-perfil-page" class="page-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary">Editar Perfil</h2>
-        <button class="btn btn-outline-secondary" data-page="perfil" onclick="showPage('perfil')">
-            <i class="bi bi-arrow-left me-2"></i>
-            Voltar ao Perfil
-        </button>
-    </div>
-
-    <div class="row">
-        <div class="col-lg-4 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Foto do Perfil</h5>
-                </div>
-                <div class="card-body text-center">
-                    <div class="profile-avatar mb-3">
-                        <i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>
-                    </div>
-                    <button class="btn btn-outline-primary btn-sm mb-2">
-                        <i class="bi bi-camera me-2"></i>
-                        Alterar Foto
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm">
-                        <i class="bi bi-trash me-2"></i>
-                        Remover Foto
-                    </button>
-                    <p class="text-muted small mt-3 mb-0">
-                        Formatos aceitos: JPG, PNG<br>
-                        Tamanho máximo: 2MB
-                    </p>
-                </div>
-            </div>
-
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Configurações de Privacidade</h5>
-                </div>
-                <div class="card-body">
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="showInRanking" checked>
-                        <label class="form-check-label" for="showInRanking">
-                            Aparecer no ranking público
-                        </label>
-                    </div>
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="allowContact" checked>
-                        <label class="form-check-label" for="allowContact">
-                            Permitir contato de colegas
-                        </label>
-                    </div>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="shareProgress">
-                        <label class="form-check-label" for="shareProgress">
-                            Compartilhar progresso acadêmico
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-8">
-            <form id="editProfileForm">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Informações Pessoais</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="firstName" class="form-label">Nome *</label>
-                                <input type="text" class="form-control" id="firstName" value="João" required>
-                                <div class="invalid-feedback">
-                                    Por favor, insira seu nome.
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="lastName" class="form-label">Sobrenome *</label>
-                                <input type="text" class="form-control" id="lastName" value="Silva" required>
-                                <div class="invalid-feedback">
-                                    Por favor, insira seu sobrenome.
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="email" class="form-label">E-mail *</label>
-                                <input type="email" class="form-control" id="email" value="joao.silva@universidade.edu.br" required>
-                                <div class="invalid-feedback">
-                                    Por favor, insira um e-mail válido.
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="phone" class="form-label">Telefone</label>
-                                <input type="tel" class="form-control" id="phone" value="(11) 99999-9999" placeholder="(11) 99999-9999">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="birthDate" class="form-label">Data de Nascimento</label>
-                                <input type="date" class="form-control" id="birthDate" value="1999-05-15">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="gender" class="form-label">Gênero</label>
-                                <select class="form-select" id="gender">
-                                    <option value="">Prefiro não informar</option>
-                                    <option value="masculino" selected>Masculino</option>
-                                    <option value="feminino">Feminino</option>
-                                    <option value="outro">Outro</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Endereço</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8 mb-3">
-                                <label for="street" class="form-label">Rua/Avenida</label>
-                                <input type="text" class="form-control" id="street" value="Rua das Flores, 123">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="number" class="form-label">Número</label>
-                                <input type="text" class="form-control" id="number" value="123">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="complement" class="form-label">Complemento</label>
-                                <input type="text" class="form-control" id="complement" value="Apto 45">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="neighborhood" class="form-label">Bairro</label>
-                                <input type="text" class="form-control" id="neighborhood" value="Centro">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="zipCode" class="form-label">CEP</label>
-                                <input type="text" class="form-control" id="zipCode" value="01234-567" placeholder="00000-000">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="city" class="form-label">Cidade</label>
-                                <input type="text" class="form-control" id="city" value="São Paulo">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="state" class="form-label">Estado</label>
-                                <select class="form-select" id="state">
-                                    <option value="">Selecione um estado</option>
-                                    <option value="SP" selected>São Paulo</option>
-                                    <option value="RJ">Rio de Janeiro</option>
-                                    <option value="MG">Minas Gerais</option>
-                                    <option value="RS">Rio Grande do Sul</option>
-                                    <!-- Outros estados... -->
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Informações Acadêmicas</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle me-2"></i>
-                            <strong>Nota:</strong> Algumas informações acadêmicas não podem ser alteradas pelo aluno. Entre em contato com a secretaria para modificações.
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="studentId" class="form-label">Matrícula</label>
-                                <input type="text" class="form-control" id="studentId" value="2021.1.001.234" readonly>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="course" class="form-label">Curso</label>
-                                <input type="text" class="form-control" id="course" value="Bacharelado em Ciência da Computação" readonly>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="entryPeriod" class="form-label">Período de Ingresso</label>
-                                <input type="text" class="form-control" id="entryPeriod" value="2021.1" readonly>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="currentSemester" class="form-label">Semestre Atual</label>
-                                <input type="text" class="form-control" id="currentSemester" value="6º Semestre" readonly>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Contato de Emergência</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="emergencyName" class="form-label">Nome do Contato</label>
-                                <input type="text" class="form-control" id="emergencyName" value="Maria Silva">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="emergencyPhone" class="form-label">Telefone</label>
-                                <input type="tel" class="form-control" id="emergencyPhone" value="(11) 98888-8888" placeholder="(11) 98888-8888">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="emergencyRelation" class="form-label">Parentesco</label>
-                                <input type="text" class="form-control" id="emergencyRelation" value="Mãe">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="emergencyEmail" class="form-label">E-mail</label>
-                                <input type="email" class="form-control" id="emergencyEmail" value="maria.silva@email.com">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Preferências</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <!-- Adicione campos de preferências aqui conforme necessário -->
-                        </div>
-                        <div class="mb-3">
-                            <!-- Adicione opções adicionais de preferências aqui -->
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary" data-page="perfil" onclick="showPage('perfil')">
+            <div id="editar-perfil-page" class="page-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="text-primary">Editar Perfil</h2>
+                    <button class="btn btn-outline-secondary" data-page="perfil" onclick="showPage('perfil')">
                         <i class="bi bi-arrow-left me-2"></i>
-                        Cancelar
+                        Voltar ao Perfil
                     </button>
-                    <div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save me-2"></i>
-                            Salvar Alterações
-                        </button>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Foto do Perfil</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="profile-avatar mb-3">
+                                    <i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm mb-2">
+                                    <i class="bi bi-camera me-2"></i>
+                                    Alterar Foto
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash me-2"></i>
+                                    Remover Foto
+                                </button>
+                                <p class="text-muted small mt-3 mb-0">
+                                    Formatos aceitos: JPG, PNG<br>
+                                    Tamanho máximo: 2MB
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Configurações de Privacidade</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="showInRanking" checked>
+                                    <label class="form-check-label" for="showInRanking">
+                                        Aparecer no ranking público
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="allowContact" checked>
+                                    <label class="form-check-label" for="allowContact">
+                                        Permitir contato de colegas
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="shareProgress">
+                                    <label class="form-check-label" for="shareProgress">
+                                        Compartilhar progresso acadêmico
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-8">
+                        <form id="editProfileForm">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Informações Pessoais</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="firstName" class="form-label">Nome *</label>
+                                            <input type="text" class="form-control" id="firstName" value=""
+                                                required>
+                                            <div class="invalid-feedback">
+                                                Por favor, insira seu nome.
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="lastName" class="form-label">Sobrenome *</label>
+                                            <input type="text" class="form-control" id="lastName" value=""
+                                                required>
+                                            <div class="invalid-feedback">
+                                                Por favor, insira seu sobrenome.
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="email" class="form-label">E-mail *</label>
+                                            <input type="email" class="form-control" id="email"
+                                                value="" required>
+                                            <div class="invalid-feedback">
+                                                Por favor, insira um e-mail válido.
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="phone" class="form-label">Telefone</label>
+                                            <input type="tel" class="form-control" id="phone" value=""
+                                                placeholder="(11) 99999-9999">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="birthDate" class="form-label">Data de Nascimento</label>
+                                            <input type="date" class="form-control" id="birthDate" value="">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="gender" class="form-label">Gênero</label>
+                                            <select class="form-select" id="gender">
+                                                <option value="">Prefiro não informar</option>
+                                                <option value="masculino">Masculino</option>
+                                                <option value="feminino">Feminino</option>
+                                                <option value="outro">Outro</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Endereço</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label for="street" class="form-label">Rua/Avenida</label>
+                                            <input type="text" class="form-control" id="street"
+                                                value="">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="number" class="form-label">Número</label>
+                                            <input type="text" class="form-control" id="number" value="">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="complement" class="form-label">Complemento</label>
+                                            <input type="text" class="form-control" id="complement" value="">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="neighborhood" class="form-label">Bairro</label>
+                                            <input type="text" class="form-control" id="neighborhood" value="">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="zipCode" class="form-label">CEP</label>
+                                            <input type="text" class="form-control" id="zipCode" value=""
+                                                placeholder="00000-000">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="city" class="form-label">Cidade</label>
+                                            <input type="text" class="form-control" id="city" value="">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="state" class="form-label">Estado</label>
+                                            <select class="form-select" id="state">
+                                                <option value="">Selecione um estado</option>
+                                                <option value="SP">São Paulo</option>
+                                                <option value="RJ">Rio de Janeiro</option>
+                                                <option value="MG">Minas Gerais</option>
+                                                <option value="RS">Rio Grande do Sul</option>
+                                                <!-- Outros estados... -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Informações Acadêmicas</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <strong>Nota:</strong> Algumas informações acadêmicas não podem ser alteradas
+                                        pelo aluno. Entre em contato com a secretaria para modificações.
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="studentId" class="form-label">Matrícula</label>
+                                            <input type="text" class="form-control" id="studentId"
+                                                value="" readonly>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="course" class="form-label">Curso</label>
+                                            <input type="text" class="form-control" id="course"
+                                                value="" readonly>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="entryPeriod" class="form-label">Período de Ingresso</label>
+                                            <input type="text" class="form-control" id="entryPeriod" value=""
+                                                readonly>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="currentSemester" class="form-label">Semestre Atual</label>
+                                            <input type="text" class="form-control" id="currentSemester"
+                                                value="" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Contato de Emergência</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="emergencyName" class="form-label">Nome do Contato</label>
+                                            <input type="text" class="form-control" id="emergencyName"
+                                                value="">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="emergencyPhone" class="form-label">Telefone</label>
+                                            <input type="tel" class="form-control" id="emergencyPhone"
+                                                value="" placeholder="(11) 98888-8888">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="emergencyRelation" class="form-label">Parentesco</label>
+                                            <input type="text" class="form-control" id="emergencyRelation" value="">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="emergencyEmail" class="form-label">E-mail</label>
+                                            <input type="email" class="form-control" id="emergencyEmail"
+                                                value="">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Redes Profissionais</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="editGithub" class="form-label"><i class="bi bi-github me-1"></i>GitHub</label>
+                                            <input type="url" class="form-control" id="editGithub" placeholder="https://github.com/usuario">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="editLinkedin" class="form-label"><i class="bi bi-linkedin me-1"></i>LinkedIn</label>
+                                            <input type="url" class="form-control" id="editLinkedin" placeholder="https://linkedin.com/in/usuario">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Esses links aparecem no <strong>Quadro Profissional</strong> e, com seu consentimento, no Portal de Talentos.</small>
+                                </div>
+                            </div>
+
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Preferências</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="prefIdioma" class="form-label">Idioma</label>
+                                            <select class="form-select" id="prefIdioma">
+                                                <option value="pt-BR" selected>Português (Brasil)</option>
+                                                <option value="en-US">English (US)</option>
+                                                <option value="es">Español</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="prefFuso" class="form-label">Fuso Horário</label>
+                                            <select class="form-select" id="prefFuso">
+                                                <option value="America/Sao_Paulo" selected>Brasília (UTC-3)</option>
+                                                <option value="America/Manaus">Manaus (UTC-4)</option>
+                                                <option value="America/Belem">Belém (UTC-3)</option>
+                                                <option value="America/Fortaleza">Fortaleza (UTC-3)</option>
+                                                <option value="America/Noronha">Fernando de Noronha (UTC-2)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <p class="fw-semibold mb-2">Notificações por E-mail</p>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="notifEmail" checked>
+                                                <label class="form-check-label" for="notifEmail">
+                                                    Ativar notificações por e-mail
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notifNotas" checked>
+                                                <label class="form-check-label" for="notifNotas">
+                                                    <i class="bi bi-journal-check me-1 text-primary"></i>Novas notas lançadas
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notifGrade" checked>
+                                                <label class="form-check-label" for="notifGrade">
+                                                    <i class="bi bi-calendar2-week me-1 text-primary"></i>Mudanças na grade horária
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-2 mt-md-4">
+                                                <input class="form-check-input" type="checkbox" id="notifEventos">
+                                                <label class="form-check-label" for="notifEventos">
+                                                    <i class="bi bi-megaphone me-1 text-primary"></i>Eventos acadêmicos
+                                                </label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notifRanking" checked>
+                                                <label class="form-check-label" for="notifRanking">
+                                                    <i class="bi bi-trophy me-1 text-primary"></i>Mudanças no ranking
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary" data-page="perfil"
+                                    onclick="showPage('perfil')">
+                                    <i class="bi bi-arrow-left me-2"></i>
+                                    Cancelar
+                                </button>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i>
+                                        Salvar Alterações
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
-            </form>
+            </div>
+
+            <!-- PÁGINA DE RELATÓRIOS -->
+            <div id="relatorios-page" class="page-content">
+                <div class="container py-4">
+                    <div class="row mb-3 align-items-center">
+                        <div class="col-md-8">
+                            <h3>Relatórios</h3>
+                            <p class="text-muted mb-0">Gere seu relatório acadêmico PDF com gráficos e observações.</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button id="exportMyExcel" class="btn btn-outline-secondary me-2">Exportar CSV</button>
+                            <button id="generateReportBtn" class="btn btn-primary">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>Gerar meu relatório PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cartão de prévia do aluno -->
+                    <div class="card mb-4">
+                        <div class="card-body d-flex align-items-center">
+                            <img id="reportAvatarPreview" src="../images/user.png" alt="avatar"
+                                style="width:64px;height:64px;object-fit:cover;border-radius:50%;border:3px solid #020122;margin-right:16px;">
+                            <div>
+                                <h5 id="reportName" class="mb-1">Aluno</h5>
+                                <div id="reportCourse" class="small text-muted">Bacharelado em Superior · xº Semestre</div>
+                                <div id="reportEmail" class="small text-muted">aluno.aluno@universidade.edu.br</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prévia dos gráficos que serão incluídos no PDF -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="card p-3">
+                                <h6 class="mb-2 text-muted">Prévia: Evolução das Notas</h6>
+                                <div id="reportPiePreview" class="report-chart"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card p-3">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h6 class="mb-0 text-muted">Prévia: Frequência por Disciplina</h6>
+                                    <select class="form-select form-select-sm w-auto" id="reportDisciplinaFilter">
+                                        <option value="">Todas</option>
+                                    </select>
+                                </div>
+                                <div id="reportRankPreview" class="report-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="reportObservations" class="form-label fw-semibold">Observações (aparecerão no PDF)</label>
+                        <textarea id="reportObservations" class="form-control" rows="3"
+                            placeholder="Escreva observações sobre seu desempenho neste semestre..."></textarea>
+                    </div>
+
+                    <!-- Toggle: Perfil Profissional no relatório -->
+                    <div class="card mb-3 border-0 bg-light">
+                        <div class="card-body py-3">
+                            <div class="form-check form-switch d-flex align-items-center gap-2">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="incluirPerfilProfissional" style="width:2.5em;height:1.25em;flex-shrink:0;">
+                                <label class="form-check-label fw-semibold" for="incluirPerfilProfissional">
+                                    <i class="bi bi-person-badge me-1 text-primary"></i>
+                                    Incluir Perfil Profissional no relatório
+                                </label>
+                            </div>
+                            <p class="text-muted small mb-0 mt-1" style="padding-left:3.2rem;">
+                                O perfil profissional será adicionado como segunda página do PDF em formato <strong>ATS</strong> — texto limpo, sem imagens e sem cores, compatível com sistemas de triagem de RH automatizados.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── Template oculto do relatório PDF (estilo LinkedIn) ─────────────── -->
+            <div id="report-print" style="display:none; width:730px; background:#fff; font-family:'Segoe UI',Arial,sans-serif; box-sizing:border-box; padding:16px 20px;">
+
+                <!-- Banner -->
+                <div style="background:linear-gradient(135deg,#020122 0%,#1a1a4e 55%,#F4442E 100%); height:110px; position:relative; border-radius:8px 8px 0 0;">
+                    <div style="position:absolute; top:14px; right:22px; text-align:right;">
+                        <div style="color:#fff; font-size:10px; opacity:.75;" id="rp-date"></div>
+                        <div style="color:#fff; font-size:13px; font-weight:700; margin-top:3px; letter-spacing:.5px;">Ranking+ · Relatório Acadêmico</div>
+                    </div>
+                    <!-- Avatar sobreposto -->
+                    <div style="position:absolute; bottom:-36px; left:28px;">
+                        <img id="rp-avatar" src="../images/user.png" alt="avatar"
+                            style="width:76px; height:76px; border-radius:50%; border:4px solid #fff; object-fit:cover; background:#eee; display:block;">
+                    </div>
+                </div>
+
+                <!-- Identidade -->
+                <div style="padding:46px 28px 14px 28px;">
+                    <h1 id="rp-name" style="margin:0; font-size:20px; color:#020122; font-weight:700;"></h1>
+                    <div id="rp-course" style="color:#555; font-size:12px; margin-top:3px;"></div>
+                    <div id="rp-email"  style="color:#888; font-size:11px; margin-top:2px;"></div>
+                </div>
+
+                <hr style="margin:0 28px; border:none; border-top:1px solid #eee;">
+
+                <!-- Métricas -->
+                <div style="display:flex; gap:10px; padding:16px 28px;">
+                    <div style="flex:1; background:#f0f4ff; border-radius:8px; padding:12px 10px; text-align:center; border-left:4px solid #020122;">
+                        <div id="rp-cra"         style="font-size:22px; font-weight:700; color:#020122;"></div>
+                        <div style="font-size:10px; color:#666; margin-top:3px;">CRA Atual</div>
+                    </div>
+                    <div style="flex:1; background:#f0fff4; border-radius:8px; padding:12px 10px; text-align:center; border-left:4px solid #22C55E;">
+                        <div id="rp-freq"        style="font-size:22px; font-weight:700; color:#22C55E;"></div>
+                        <div style="font-size:10px; color:#666; margin-top:3px;">Frequência</div>
+                    </div>
+                    <div style="flex:1; background:#fffbf0; border-radius:8px; padding:12px 10px; text-align:center; border-left:4px solid #F59E0B;">
+                        <div id="rp-rank"        style="font-size:22px; font-weight:700; color:#F59E0B;"></div>
+                        <div style="font-size:10px; color:#666; margin-top:3px;">Ranking Turma</div>
+                    </div>
+                    <div style="flex:1; background:#fff5f5; border-radius:8px; padding:12px 10px; text-align:center; border-left:4px solid #F4442E;">
+                        <div id="rp-disciplines" style="font-size:22px; font-weight:700; color:#F4442E;"></div>
+                        <div style="font-size:10px; color:#666; margin-top:3px;">Disciplinas Ativas</div>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div style="padding:0 28px 16px;">
+                    <h3 style="font-size:13px; font-weight:700; color:#020122; margin:0 0 10px; padding-bottom:5px; border-bottom:2px solid #F4442E;">
+                        Evolução das Métricas
+                    </h3>
+                    <div style="display:flex; gap:14px;">
+                        <div style="flex:1; text-align:center;">
+                            <div style="font-size:10px; color:#888; margin-bottom:4px;">Evolução das Notas</div>
+                            <img class="rp-chart-img" src="" alt="gráfico evolução"
+                                style="width:100%; height:auto; border-radius:4px; border:1px solid #eee;">
+                        </div>
+                        <div style="flex:1; text-align:center;">
+                            <div style="font-size:10px; color:#888; margin-bottom:4px;">Frequência por Disciplina</div>
+                            <img class="rp-chart-img" src="" alt="gráfico frequência"
+                                style="width:100%; height:auto; border-radius:4px; border:1px solid #eee;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pontos Fortes -->
+                <div style="padding:0 28px 16px;">
+                    <h3 style="font-size:13px; font-weight:700; color:#020122; margin:0 0 8px; padding-bottom:5px; border-bottom:2px solid #22C55E;">
+                        Pontos Fortes
+                    </h3>
+                    <ul id="rp-strengths" style="margin:0; padding-left:18px; color:#444; font-size:12px; line-height:1.9;"></ul>
+                </div>
+
+                <!-- Observações -->
+                <div style="padding:0 28px 20px;">
+                    <h3 style="font-size:13px; font-weight:700; color:#020122; margin:0 0 6px; padding-bottom:5px; border-bottom:1px solid #eee;">
+                        Observações
+                    </h3>
+                    <p id="rp-obs" style="font-size:11px; color:#555; margin:0; line-height:1.7;"></p>
+                </div>
+
+                <!-- Rodapé -->
+                <div style="background:#020122; padding:10px 28px; border-radius:0 0 8px 8px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:#fff; font-size:9px; opacity:.65;">Ranking+ · Relatório Acadêmico gerado automaticamente</span>
+                    <span style="color:#F4442E; font-size:10px; font-weight:700;">ranking.plus</span>
+                </div>
+            </div>
+            <!-- ──────────────────────────────────────────────────────────────────────── -->
+
+            <script>
+                function confirmLogout(event) {
+                    event.preventDefault();
+                    localStorage.clear();
+                    window.location.href = '../html/index.html';
+                }
+            </script>
+
+            <!-- Bootstrap JS -->
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+            <!-- Frappe Charts -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-charts/1.6.2/frappe-charts.min.umd.min.js"></script>
+
+            <!-- html2canvas + jsPDF (geração de relatório — sem iframe, funciona com file://) -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+            <!-- Área do Aluno -->
+            <script src="../javascript/areaaluno.js"></script>
+
+    <!-- VLibras — Acessibilidade em Libras (Gov.br) -->
+    <div vw class="enabled">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper>
+            <div class="vw-plugin-top-wrapper"></div>
         </div>
     </div>
-</div>
-
-<!-- Página de Relatórios -->
-<div id="relatorios-page" class="page-content">
-  <div class="container py-4">
-    <div class="row mb-3 align-items-center">
-      <div class="col-md-8">
-        <h3>Relatórios</h3>
-        <p class="text-muted mb-0">Gere seu relatório acadêmico (PDF com gráficos e observações).</p>
-      </div>
-      <div class="col-md-4 text-end">
-        <button id="exportMyExcel" class="btn btn-outline-secondary me-2">Exportar Excel</button>
-        <button id="generateReportBtn" class="btn btn-primary">Gerar meu relatório (PDF)</button>
-      </div>
-    </div>
-
-    <div class="card mb-4">
-      <div class="card-body d-flex align-items-start">
-        <div class="me-3">
-          <img id="reportAvatarPreview" src="../images/default-avatar.png" alt="avatar" style="width:72px;height:72px;object-fit:cover;border-radius:8px;">
-        </div>
-        <div>
-          <h5 id="reportName" class="mb-1">João Silva</h5>
-          <div id="reportCourse" class="small text-muted">Bacharelado em Ciência da Computação / 6º</div>
-          <div id="reportEmail" class="small text-muted">joao.silva@universidade.edu.br</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-3 mb-3">
-      <div class="col-md-6">
-        <div class="card p-3">
-          <h6 class="mb-2">Evolução (Composição)</h6>
-          <canvas id="reportPiePreview" width="480" height="220"></canvas>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card p-3">
-          <h6 class="mb-2">Posição (Jan–Dez)</h6>
-          <canvas id="reportRankPreview" width="480" height="220"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <div class="mb-4">
-      <label for="reportObservations" class="form-label">Observações (aparecerão no PDF)</label>
-      <textarea id="reportObservations" class="form-control" rows="3" placeholder="Observações sobre seu desempenho..."></textarea>
-    </div>
-  </div>
-</div>
-
-<!-- Incluir PDF-Lib CDN (antes do script areaaluno.js) -->
-<script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
-
-<script>
-function confirmLogout(event) {
-    event.preventDefault();
-    if (confirm('Tem certeza que deseja sair?')) {
-        window.location.href = '../html/index.html';
-    }
-}
-</script>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Custom JS -->
-    <script src="../javascript/areaaluno.js"></script>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+    <script src="../javascript/acessibilidade.js"></script>
 </body>
+
 </html>

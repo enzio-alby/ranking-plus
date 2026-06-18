@@ -1,0 +1,240 @@
+/* ═══════════════════════════════════════════════════
+   admin.css — Painel Administrativo Ranking+
+═══════════════════════════════════════════════════ */
+:root {
+    --primary:   #020122;
+    --accent:    #F4442E;
+    --sidebar-w: 260px;
+}
+
+/* ── Layout ─────────────────────────────────────── */
+body {
+    background: #f4f6fb;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #333;
+    min-height: 100vh;
+}
+
+/* ── Login ──────────────────────────────────────── */
+#loginScreen {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary) 0%, #1a1a6e 55%, var(--accent) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+}
+
+.login-logo {
+    width: 56px;
+    height: 56px;
+    background: var(--primary);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    color: #fff;
+    margin: 0 auto 20px;
+}
+
+/* ── Sidebar ────────────────────────────────────── */
+.admin-sidebar {
+    width: var(--sidebar-w);
+    min-height: 100vh;
+    background: var(--primary);
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+}
+
+.sidebar-brand {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.sidebar-brand .badge-admin {
+    background: var(--accent);
+    font-size: .65rem;
+    padding: 3px 8px;
+    border-radius: 20px;
+    letter-spacing: .5px;
+}
+
+.sidebar-nav { padding: 16px 0; flex: 1; }
+
+.sidebar-nav .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 20px;
+    color: rgba(255,255,255,.65);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    border-left: 3px solid transparent;
+    text-decoration: none;
+    font-size: .9rem;
+}
+
+.sidebar-nav .nav-item:hover,
+.sidebar-nav .nav-item.active {
+    background: rgba(255,255,255,.07);
+    color: #fff;
+    border-left-color: var(--accent);
+}
+
+.sidebar-nav .nav-item i { width: 18px; text-align: center; }
+
+.sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,.08);
+}
+
+/* ── Main ───────────────────────────────────────── */
+.admin-main {
+    margin-left: var(--sidebar-w);
+    min-height: 100vh;
+}
+
+.admin-topbar {
+    background: #fff;
+    border-bottom: 1px solid #e8e8e8;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+
+.admin-content { padding: 28px; }
+
+/* ── Cards de resumo ────────────────────────────── */
+.stat-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px 22px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    border-left: 4px solid transparent;
+    transition: box-shadow .18s;
+}
+
+.stat-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.09); }
+.stat-card.accent  { border-left-color: var(--accent); }
+.stat-card.primary { border-left-color: var(--primary); }
+.stat-card.green   { border-left-color: #22c55e; }
+.stat-card.blue    { border-left-color: #3b82f6; }
+
+.stat-value { font-size: 2rem; font-weight: 800; color: var(--primary); line-height: 1; }
+.stat-label { font-size: .78rem; color: #888; margin-top: 4px; }
+
+/* ── Tabelas ────────────────────────────────────── */
+.table-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    overflow: hidden;
+}
+
+.table-card .table-header {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.table-card .table { margin-bottom: 0; }
+.table-card .table th {
+    background: #f8f9fb;
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #888;
+    border-bottom: 1px solid #eee;
+    padding: 10px 16px;
+}
+.table-card .table td { padding: 12px 16px; vertical-align: middle; font-size: .88rem; }
+
+/* ── Impersonate button ──────────────────────────── */
+.btn-impersonate {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.btn-impersonate:hover {
+    background: #1a1a6e;
+    transform: translateY(-1px);
+}
+
+.btn-impersonate.prof { background: #1565c0; }
+.btn-impersonate.prof:hover { background: #0d47a1; }
+
+/* ── Search ─────────────────────────────────────── */
+.search-input {
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    padding: 6px 14px 6px 36px;
+    font-size: .85rem;
+    width: 220px;
+    background: #f8f9fb;
+    transition: border .15s;
+}
+.search-input:focus { outline: none; border-color: var(--primary); background: #fff; }
+.search-wrapper { position: relative; }
+.search-wrapper i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #aaa; font-size: .85rem; }
+
+/* ── Toast / Notificação ─────────────────────────── */
+.impersonate-toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.14);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: .88rem;
+    z-index: 9999;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: opacity .25s, transform .25s;
+    max-width: 340px;
+}
+.impersonate-toast.show { opacity: 1; transform: translateY(0); }
+.impersonate-toast .toast-icon { font-size: 1.4rem; flex-shrink: 0; }
+
+/* ── Responsive ──────────────────────────────────── */
+@media (max-width: 768px) {
+    .admin-sidebar { display: none; }
+    .admin-main { margin-left: 0; }
+}

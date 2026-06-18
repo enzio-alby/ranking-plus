@@ -3,385 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ranking+ - Sistema de Ranking Universitário</title>
+    <title>Ranking+ Sistema de Ranking e Conexões</title>
     <meta name="description" content="Plataforma de ranking universitário que reconhece e recompensa os melhores alunos">
-    
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Custom CSS -->
     <link href="../css/styleindex.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Header -->
+
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="#inicio">
-                <!-- Removido o bloco de ícones -->
-                <div>
-                    <h5 class="mb-0 gradient-text fw-bold"></h5>
-                    <img src="../images/logob.png" alt="Logo" class="logo" style="height: 48px; width: auto;">
-                    <small class="text-muted"></small>
-                </div>
+                <img src="../images/logob.png" alt="Ranking+" class="logo" style="height: 44px; width: auto;">
             </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav mx-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#inicio">Início</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#como-funciona">Como Funciona</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#beneficios">Benefícios</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#ranking">Ranking</a>
-                    </li>
+                <ul class="navbar-nav mx-auto gap-1">
+                    <li class="nav-item"><a class="nav-link" href="#inicio">Início</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#como-funciona">Como Funciona</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#ranking">Ranking</a></li>
+                    <!-- <li class="nav-item"><a class="nav-link" href="talentos.html"><i class="bi bi-people-fill me-1"></i>Portal de Talentos</a></li> -->
                 </ul>
-                
                 <div class="d-flex gap-2" id="authButtons">
-                    <button class="btn btn-outline-primary" onclick="showLogin()">Entrar</button>
-                    <button class="btn btn-gradient" onclick="showRegister()">Cadastrar</button>
+                    <button class="btn btn-outline-primary btn-sm" onclick="showLogin()">Entrar</button>
+                    <button class="btn btn-gradient btn-sm" onclick="showRegister()">Cadastrar</button>
                 </div>
-                
                 <div class="d-none align-items-center gap-3" id="userInfo">
-                    <span class="text-muted" id="userName">Usuário</span>
+                    <span class="text-muted small" id="userName">Usuário</span>
+                    <a id="areaBtn" href="#" class="btn btn-gradient btn-sm">Minha Área</a>
                     <button class="btn btn-outline-danger btn-sm" onclick="logout()">Sair</button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section id="inicio" class="hero-section min-vh-100 d-flex align-items-center position-relative overflow-hidden">
+    <!-- Hero -->
+    <section id="inicio" class="hero-section d-flex align-items-center position-relative overflow-hidden">
         <div class="hero-bg"></div>
-        <div class="container position-relative">
-            <div class="row justify-content-center text-center">
-                <div class="col-lg-10">
-                    <!-- Badge -->
-                    <!-- <div class="badge-custom mb-4 animate-fade-up">
-                        <i class="bi bi-star-fill text-warning me-2"></i>
-                        Sistema Inovador de Reconhecimento Acadêmico
-                    </div> -->
-                    
-                    <!-- Main Heading -->
-                    <h1 class="display-1 fw-bold mb-4 animate-fade-up" style="animation-delay: 0.2s">
-                        <span class="gradient-text">Reconheça</span><br>
-                        <span class="text-white">a Excelência</span><br>
-                        <span class="gradient-text-secondary">Acadêmica</span>
+        <div class="container position-relative text-center">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <h1 class="display-1 fw-bold mb-3 animate-fade-up">
+                        <span class="gradient-text">Sua Jornada Acadêmica</span><br>
+                        <span class="text-white">Valorizada</span>
                     </h1>
-                    
-                    <!-- Subtitle -->
-                    <p class="lead fs-3 text-white mb-5 animate-fade-up" style="animation-delay: 0.4s">
-                        Plataforma revolucionária que <span class="fw-semibold text-info">classifica e recompensa</span> os melhores alunos baseado em 
-                        <span class="fw-semibold text-warning">desempenho acadêmico</span>, 
-                        <span class="fw-semibold text-info">frequência</span> e 
-                        <span class="fw-semibold text-warning">participação</span>.
+                    <p class="lead text-white-50 mb-5 animate-fade-up" style="animation-delay:.2s">
+                        Desempenho, frequência e participação transformados em reconhecimento e oportunidades no mercado de trabalho.
                     </p>
-                    
-                    <!-- Stats -->
-                    <div class="row g-4 mb-5 animate-fade-up" style="animation-delay: 0.6s">
-                        <div class="col-md-4">
-                            <div class="stats-card">
-                                <i class="bi bi-trophy fs-1 text-warning mb-3"></i>
-                                <div class="display-4 fw-bold text-dark mb-2">Top 10%</div>
-                                <div class="text-muted">Alunos Premiados</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="stats-card">
-                                <i class="bi bi-graph-up fs-1 text-success mb-3"></i>
-                                <div class="display-4 fw-bold text-dark mb-2">95%</div>
-                                <div class="text-muted">Melhoria na Frequência</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="stats-card">
-                                <i class="bi bi-people fs-1 text-primary mb-3"></i>
-                                <div class="display-4 fw-bold text-dark mb-2">2.500+</div>
-                                <div class="text-muted">Alunos Participantes</div>
-                            </div>
-                        </div>
+                    <div class="animate-fade-up" style="animation-delay:.35s">
+                        <button class="btn btn-gradient btn-lg px-5" onclick="handleGetStarted()">Começar Agora</button>
                     </div>
-                    
-                    <!-- CTA Buttons -->
-                    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center animate-fade-up" style="animation-delay: 0.8s">
-                        <button class="btn btn-gradient btn-lg px-5 py-3 fs-5" onclick="handleGetStarted()">
-                            Começar Agora
-                        </button>
-                        <button class="btn btn-outline-secondary btn-lg px-5 py-3 fs-5" onclick="scrollToSection('como-funciona')">
-                            Saiba Mais
-                        </button>
+
+                    <!-- Barra de stats minimalista -->
+                    <div class="stats-bar mt-5 animate-fade-up" style="animation-delay:.5s">
+                        <div class="stat-item">
+                            <i class="bi bi-mortarboard"></i>
+                            <span id="statAlunos">—</span>
+                            <small>alunos</small>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <i class="bi bi-journal-bookmark"></i>
+                            <span id="statCursos">—</span>
+                            <small>cursos</small>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <i class="bi bi-person-badge"></i>
+                            <span id="statProfs">—</span>
+                            <small>professores</small>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <i class="bi bi-building"></i>
+                            <span id="statEmpresas">—</span>
+                            <small>empresas parceiras</small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Scroll Indicator -->
         <div class="scroll-indicator">
             <div class="scroll-dot"></div>
         </div>
     </section>
 
-    <!-- How It Works Section -->
-    <section id="como-funciona" class="py-5 bg-light">
+    <!-- Como Funciona -->
+    <section id="como-funciona" class="py-5 section-light">
         <div class="container">
-            <div class="row justify-content-center mb-5">
-                <div class="col-lg-8 text-center">
-                    <h2 class="display-4 fw-bold mb-4">
-                        Como <span class="gradient-text">Funciona</span>
-                    </h2>
-                    <p class="lead text-muted">
-                        Nosso sistema avalia múltiplos aspectos do desempenho acadêmico para criar um ranking justo e motivador.
-                    </p>
-                </div>
+            <div class="section-header text-center mb-5">
+                <h2 class="fw-bold">Como <span class="gradient-text">Funciona</span></h2>
+                <p class="text-muted mt-2">Avaliamos múltiplos aspectos do desempenho acadêmico para criar um ranking motivador e desenvolver talentos.</p>
             </div>
-            
-            <div class="row g-4">
-                <div class="col-lg-3 col-md-6">
-                    <div class="how-it-works-card h-100 text-center">
-                        <div class="icon-wrapper bg-primary mb-4">
-                            <i class="bi bi-graph-up text-white fs-1"></i>
-                        </div>
-                        <h4 class="fw-bold mb-3">Desempenho Acadêmico</h4>
-                        <p class="text-muted">Notas, trabalhos e avaliações são considerados com pesos específicos para cada disciplina.</p>
+            <div class="row g-4 justify-content-center">
+                <div class="col-lg-3 col-sm-6">
+                    <div class="feature-card text-center">
+                        <div class="feature-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                        <h6 class="fw-semibold mt-3 mb-1">Desempenho</h6>
+                        <p class="text-muted small mb-0">Notas, avaliações e atividades com pesos por disciplina.</p>
                     </div>
                 </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <div class="how-it-works-card h-100 text-center">
-                        <div class="icon-wrapper bg-success mb-4">
-                            <i class="bi bi-calendar-check text-white fs-1"></i>
-                        </div>
-                        <h4 class="fw-bold mb-3">Frequência</h4>
-                        <p class="text-muted">Presença consistente em aulas e atividades demonstra comprometimento e dedicação.</p>
+                <div class="col-lg-3 col-sm-6">
+                    <div class="feature-card text-center">
+                        <div class="feature-icon"><i class="bi bi-calendar-check"></i></div>
+                        <h6 class="fw-semibold mt-3 mb-1">Frequência</h6>
+                        <p class="text-muted small mb-0">Presença consistente demonstra dedicação e comprometimento.</p>
                     </div>
                 </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <div class="how-it-works-card h-100 text-center">
-                        <div class="icon-wrapper bg-warning mb-4">
-                            <i class="bi bi-people text-white fs-1"></i>
-                        </div>
-                        <h4 class="fw-bold mb-3">Participação</h4>
-                        <p class="text-muted">Engajamento em discussões, projetos e atividades extracurriculares conta pontos extras.</p>
+                <div class="col-lg-3 col-sm-6">
+                    <div class="feature-card text-center">
+                        <div class="feature-icon"><i class="bi bi-people"></i></div>
+                        <h6 class="fw-semibold mt-3 mb-1">Networking</h6>
+                        <p class="text-muted small mb-0">Visibilidade para empresas parceiras e recrutadores.</p>
                     </div>
                 </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <div class="how-it-works-card h-100 text-center">
-                        <div class="icon-wrapper bg-info mb-4">
-                            <i class="bi bi-award text-white fs-1"></i>
-                        </div>
-                        <h4 class="fw-bold mb-3">Recompensas</h4>
-                        <p class="text-muted">Benefícios exclusivos são oferecidos baseados na posição no ranking geral.</p>
+                <div class="col-lg-3 col-sm-6">
+                    <div class="feature-card text-center">
+                        <div class="feature-icon"><i class="bi bi-award"></i></div>
+                        <h6 class="fw-semibold mt-3 mb-1">Recompensas</h6>
+                        <p class="text-muted small mb-0">Benefícios exclusivos para quem se destaca no ranking.</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Benefits Section -->
-    <section id="beneficios" class="py-5 bg-gradient-light">
-        <div class="container">
-            <div class="row justify-content-center mb-5">
-                <div class="col-lg-8 text-center">
-                    <h2 class="display-4 fw-bold mb-4">
-                        Benefícios <span class="gradient-text-secondary">Exclusivos</span>
-                    </h2>
-                    <p class="lead text-muted">
-                        Reconhecemos e recompensamos a excelência acadêmica com benefícios tangíveis que impactam positivamente sua jornada universitária.
-                    </p>
-                </div>
-            </div>
-            
-            <div class="row g-4 mb-5">
-                <div class="col-lg-4 col-md-6">
-                    <div class="benefit-card h-100">
-                        <img src="https://images.pexels.com/photos/5212345/pexels-photo-5212345.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Bolsas de Estudo" class="benefit-image">
-                        <div class="p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="icon-wrapper bg-primary">
-                                    <i class="bi bi-mortarboard text-white"></i>
-                                </div>
-                                <span class="badge bg-primary">Até 100%</span>
-                            </div>
-                            <h5 class="fw-bold mb-3">Bolsas de Estudo</h5>
-                            <p class="text-muted">Bolsas parciais e integrais para os alunos melhor classificados no ranking.</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-4 col-md-6">
-                    <div class="benefit-card h-100">
-                        <img src="https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Descontos Exclusivos" class="benefit-image">
-                        <div class="p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="icon-wrapper bg-success">
-                                    <i class="bi bi-currency-dollar text-white"></i>
-                                </div>
-                                <span class="badge bg-success">Até 50%</span>
-                            </div>
-                            <h5 class="fw-bold mb-3">Descontos Exclusivos</h5>
-                            <p class="text-muted">Descontos em mensalidades, material didático e eventos da universidade.</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-4 col-md-6">
-                    <div class="benefit-card h-100">
-                        <img src="https://images.pexels.com/photos/5940721/pexels-photo-5940721.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Certificados de Mérito" class="benefit-image">
-                        <div class="p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="icon-wrapper bg-warning">
-                                    <i class="bi bi-award text-white"></i>
-                                </div>
-                                <span class="badge bg-warning">Oficial</span>
-                            </div>
-                            <h5 class="fw-bold mb-3">Certificados de Mérito</h5>
-                            <p class="text-muted">Certificados oficiais de reconhecimento acadêmico para seu currículo.</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-4 col-md-6">
-                    <div class="benefit-card h-100">
-                        <img src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Oportunidades de Estágio" class="benefit-image">
-                        <div class="p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="icon-wrapper bg-purple">
-                                    <i class="bi bi-briefcase text-white"></i>
-                                </div>
-                                <span class="badge bg-purple">Exclusivo</span>
-                            </div>
-                            <h5 class="fw-bold mb-3">Oportunidades de Estágio</h5>
-                            <p class="text-muted">Acesso prioritário a vagas de estágio em empresas parceiras.</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-4 col-md-6">
-                    <div class="benefit-card h-100">
-                        <img src="https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Networking Premium" class="benefit-image">
-                        <div class="p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="icon-wrapper bg-danger">
-                                    <i class="bi bi-people text-white"></i>
-                                </div>
-                                <span class="badge bg-danger">VIP</span>
-                            </div>
-                            <h5 class="fw-bold mb-3">Networking Premium</h5>
-                            <p class="text-muted">Eventos exclusivos com profissionais e alumni de destaque.</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-4 col-md-6">
-                    <div class="benefit-card h-100">
-                        <img src="https://images.pexels.com/photos/2582937/pexels-photo-2582937.jpeg?auto=compress&cs=tinysrgb&w=400" alt="Acesso Antecipado" class="benefit-image">
-                        <div class="p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="icon-wrapper bg-info">
-                                    <i class="bi bi-lightning text-white"></i>
-                                </div>
-                                <span class="badge bg-info">Primeiro</span>
-                            </div>
-                            <h5 class="fw-bold mb-3">Acesso Antecipado</h5>
-                            <p class="text-muted">Prioridade na matrícula de disciplinas e uso de laboratórios.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Ranking Tiers -->
-            <div class="ranking-tiers">
-                <h3 class="text-center fw-bold mb-5 display-5">Níveis de Recompensa</h3>
-                <div class="row g-4">
-                    <div class="col-lg-4">
-                        <div class="tier-card tier-gold text-center">
-                            <div class="tier-icon">
-                                <i class="bi bi-award"></i>
-                            </div>
-                            <h4 class="fw-bold">Top 5%</h4>
-                            <div class="tier-name">Ouro</div>
-                            <p class="text-muted">Todos os benefícios + Bolsa integral + Mentoria exclusiva</p>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="tier-card tier-silver text-center">
-                            <div class="tier-icon">
-                                <i class="bi bi-award"></i>
-                            </div>
-                            <h4 class="fw-bold">Top 15%</h4>
-                            <div class="tier-name">Prata</div>
-                            <p class="text-muted">Bolsa parcial + Descontos + Certificados + Networking</p>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="tier-card tier-bronze text-center">
-                            <div class="tier-icon">
-                                <i class="bi bi-award"></i>
-                            </div>
-                            <h4 class="fw-bold">Top 30%</h4>
-                            <div class="tier-name">Bronze</div>
-                            <p class="text-muted">Descontos + Certificados + Acesso prioritário</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Ranking Preview Section -->
+    <!-- Ranking -->
     <section id="ranking" class="py-5 bg-white">
         <div class="container">
-            <div class="row justify-content-center mb-5">
-                <div class="col-lg-8 text-center">
-                    <h2 class="display-4 fw-bold mb-4">
-                        <span class="gradient-text-warning">Ranking</span>
-                        <span class="text-dark"> dos Melhores</span>
-                    </h2>
-                    <p class="lead text-muted">
-                        Conheça os alunos que se destacam pela excelência acadêmica e dedicação aos estudos.
-                    </p>
-                </div>
+            <div class="section-header text-center mb-5">
+                <h2 class="fw-bold">Top 5 do <span class="gradient-text">Ranking</span></h2>
+                <p class="text-muted mt-2">Os alunos que mais se destacaram pela excelência acadêmica.</p>
             </div>
-            
-            <div class="mb-5" id="rankingList">
-                <!-- Ranking items will be populated by JavaScript -->
-            </div>
-            
-            <!-- Stats Overview -->
-            <div class="row g-4">
-                <div class="col-lg-3 col-md-6">
-                    <div class="stats-overview bg-primary">
-                        <div class="display-4 fw-bold text-white mb-2">2,847</div>
-                        <div class="text-white-50">Alunos Ativos</div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stats-overview bg-success">
-                        <div class="display-4 fw-bold text-white mb-2">156</div>
-                        <div class="text-white-50">Bolsas Concedidas</div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stats-overview bg-purple">
-                        <div class="display-4 fw-bold text-white mb-2">98.5%</div>
-                        <div class="text-white-50">Taxa de Satisfação</div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="stats-overview bg-warning">
-                        <div class="display-4 fw-bold text-white mb-2">45</div>
-                        <div class="text-white-50">Cursos Participantes</div>
+            <div class="row justify-content-center">
+                <div class="col-lg-7" id="rankingList">
+                    <div class="text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                        Carregando ranking...
                     </div>
                 </div>
             </div>
@@ -389,217 +150,72 @@
     </section>
 
     <!-- Footer -->
-    <footer class="bg-dark text-white py-5">
+    <footer class="site-footer">
         <div class="container">
-            <div class="row g-4">
-                <div class="col-lg-4">
-                    <div class="d-flex align-items-center mb-4">
-                        <div>
-                            <h5 class="mb-0 gradient-text fw-bold"></h5>
-                            <img src="../images/logob.png" alt="Logo" class="logo" style="height: 50px; width: auto;">
-                        </div>
-                    </div>
-                    <p class="text-muted mb-4">
-                        Transformando a educação através do reconhecimento e recompensa da excelência acadêmica.
-                    </p>
-                    <div class="d-flex gap-3">
-                        <a href="https://github.com/enzio-alby/ranking-plus" class="text-white fs-4"><i class="bi bi-github"></i></a>
-                        <a href="#" class="text-white fs-4"><i class="bi bi-linkedin"></i></a>
-                    </div>
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <img src="../images/logoc.png" alt="Ranking+" style="height: 40px;">
+                    <p class="text-muted small mt-2 mb-0">Transformando desempenho acadêmico em reconhecimento real.</p>
                 </div>
-                
-                <div class="col-lg-2 col-md-6">
-                    <h6 class="fw-bold mb-3"></h6>
-                    <ul class="list-unstyled">
-                        <li><a href="#inicio" class="text-muted text-decoration-none">Início</a></li>
-                        <li><a href="#como-funciona" class="text-muted text-decoration-none">Como Funciona</a></li>
-                        <li><a href="#beneficios" class="text-muted text-decoration-none">Benefícios</a></li>
-                        <li><a href="#ranking" class="text-muted text-decoration-none">Ranking</a></li>
-                    </ul>
+                <div class="footer-links">
+                    <a href="#inicio">Início</a>
+                    <a href="#como-funciona">Como Funciona</a>
+                    <a href="#ranking">Ranking</a>
+                    <!-- <a href="talentos.html">Portal de Talentos</a> -->
+                    <a href="termodeuso.html">Termos de Uso</a>
                 </div>
-                
-                <div class="col-lg-2 col-md-6">
-                    <h6 class="fw-bold mb-3"></h6>
-                    <ul class="list-unstyled">
-                        <li><a href="#" class="text-muted text-decoration-none">FAQ</a></li>
-                        <li><a href="#" class="text-muted text-decoration-none">Contato</a></li>
-                        <li><a href="#" class="text-muted text-decoration-none">Ajuda</a></li>
-                        <li><a href="#" class="text-muted text-decoration-none">Termos</a></li>
-                    </ul>
-                </div>
-                
-                <div class="col-lg-4">
-                    <h6 class="fw-bold mb-3">Fique por Dentro</h6>
-                    <p class="text-muted mb-3">Receba atualizações sobre o ranking e novos benefícios.</p>
-                    <div class="input-group mb-3">
-                        <input type="email" class="form-control" placeholder="Seu e-mail">
-                        <button class="btn btn-primary" type="button">Inscrever</button>
-                    </div>
-                    <button class="btn btn-gradient btn-lg w-100" onclick="handleGetStarted()">
-                        Participar do Ranking
-                    </button>
+                <div class="footer-social">
+                    <a href="https://github.com/enzio-alby/ranking-plus" title="GitHub"><i class="bi bi-github"></i></a>
+                    <a href="#" title="LinkedIn"><i class="bi bi-linkedin"></i></a>
                 </div>
             </div>
-            
-            <hr class="my-4">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <p class="text-muted mb-0">&copy; 2024 Rankingplus. Todos os direitos reservados.</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <a href="termodeuso.html" class="text-muted text-decoration-none me-3">Política de Privacidade</a>
-                    <a href="termodeuso.html" class="text-muted text-decoration-none">Termos de Uso</a>
-                </div>
+            <div class="footer-copy">
+                <span>&copy; 2025 Ranking+. Todos os direitos reservados.</span>
             </div>
         </div>
     </footer>
 
-    <!-- Login Modal -->
+    <!-- Modal Login -->
     <div class="modal fade" id="loginModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header border-0">
+                <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-bold">Acessar o Ranking+</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="container px-0">
-                        <header class="text-center mb-3">
-                            <img src="../images/logoa.png" alt="Logo" style="max-width: 150px; display: block; margin: 0 auto;">
-                        </header>
-                        <h2 class="fw-bold text-center mb-4" style="color: #da6900;">Faça seu login</h2>
-                        <form id="loginForm">
-                            <div class="mb-3">
-                                <label for="tipoUsuario" class="form-label">Tipo de usuário<span class="text-danger">*</span></label>
-                                <select id="loginTipo" class="form-select" required>
-                                    <option value="">Selecione...</option>
-                                    <option value="aluno">Aluno</option>
-                                    <option value="professor">Professor</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="loginUser" class="form-label">E-mail/Matricula:<span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="loginUser" required placeholder="Digite seu acesso">
-                            </div>
-                            <div class="mb-3">
-                                <label for="loginPass" class="form-label">Senha<span class="text-danger">*</span></label>
-                                <div class="position-relative">
-                                    <input type="password" class="form-control" id="loginPass" required placeholder="Sua senha">
-                                    <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y border-0" onclick="togglePasswordVisibility('loginPass')">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="lembrar" name="lembrar">
-                                <label class="form-check-label" for="lembrar">Lembrar senha</label>
-                            </div>
-                            <button type="submit" class="btn btn-gradient w-100 mb-3">Entrar</button>
-                            <div class="text-center">
-                                <a href="recuperarsenha.html" class="text-decoration-none">Esqueceu sua senha?</a>
-                            </div>
-                        </form>
+                <div class="modal-body pt-2">
+                    <div class="text-center mb-4">
+                        <img src="../images/logoa.png" alt="Logo" style="max-width:120px;">
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Register Modal (Atualizado para Tabela Alunos) -->
-    <div class="modal fade" id="registerModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Cadastro de Aluno</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="registerForm">
-                        <div class="row g-3">
-                            <!-- Dados Pessoais -->
-                            <div class="col-md-6">
-                                <label class="form-label">Nome Completo</label>
-                                <input type="text" class="form-control" id="regNome" name="nome" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">E-mail</label>
-                                <input type="email" class="form-control" id="regEmail" name="email" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">CPF</label>
-                                <input type="text" class="form-control" id="regCpf" name="cpf" required placeholder="000.000.000-00">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Telefone</label>
-                                <input type="text" class="form-control" id="regTelefone" name="telefone" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Data de Nascimento</label>
-                                <input type="date" class="form-control" id="regNascimento" name="data_nascimento" required>
-                            </div>
-
-                            <!-- Dados Acadêmicos -->
-                            <div class="col-md-4">
-                                <label class="form-label">Matrícula</label>
-                                <input type="text" class="form-control" id="regMatricula" name="matricula" required>
-                            </div>
-                            <div class="col-md-8">
-                                <label class="form-label">Curso</label>
-                                <select class="form-select" id="regCurso" name="curso" required>
-                                    <option value="">Selecione um curso</option>
-                                    <option value="Algoritmos e Estruturas de Dados">Algoritmos e Estruturas de Dados</option>
-                                    <option value="Banco de Dados Relacional">Banco de Dados Relacional</option>
-                                    <option value="Engenharia de Software">Engenharia de Software</option>
-                                    <option value="Inteligência Artificial">Inteligência Artificial</option>
-                                    <option value="Redes de Computadores">Redes de Computadores</option>
-                                    <option value="Compiladores">Compiladores</option>
-                                    <option value="Sistemas Operacionais">Sistemas Operacionais</option>
-                                    <option value="Matemática Discreta">Matemática Discreta</option>
-                                    <option value="Ética e Computação">Ética e Computação</option>
-                                    <option value="Gestão de Projetos de TI">Gestão de Projetos de TI</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Semestre</label>
-                                <input type="number" class="form-control" id="regSemestre" name="semestre" min="1" max="10" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Turno</label>
-                                <select class="form-select" id="regTurno" name="turno" required>
-                                    <option value="">Selecione</option>
-                                    <option value="Matutino">Matutino</option>
-                                    <option value="Vespertino">Vespertino</option>
-                                    <option value="Noturno">Noturno</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Campus</label>
-                                <select class="form-select" id="regCampus" name="campus" required>
-                                    <option value="">Selecione</option>
-                                    <option value="Asa Norte">Asa Norte</option>
-                                    <option value="Taguatinga">Taguatinga</option>
-                                </select>
-                            </div>
-
-                            <!-- Senha -->
-                            <div class="col-md-6">
-                                <label class="form-label">Senha</label>
-                                <input type="password" class="form-control" id="regSenha" name="senha" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Confirmação de Senha</label>
-                                <input type="password" class="form-control" id="regSenhaConf" name="senha_confirmacao" required>
-                            </div>
-                            <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="acceptTerms" name="acceptTerms" required>
-                            <label class="form-check-label" for="acceptTerms">
-                                Aceito os <a href="termodeuso.html" class="text-decoration-none">termos de uso</a>
-                            </label>
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Tipo de usuário <span class="text-danger">*</span></label>
+                            <select id="loginTipo" class="form-select" required>
+                                <option value="">Selecione...</option>
+                                <option value="aluno">Aluno</option>
+                                <option value="professor">Professor</option>
+                            </select>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">E-mail / Matrícula <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="loginUser" required placeholder="Digite seu acesso">
                         </div>
-                        
-                        <div class="mt-4">
-                            <button type="submit" class="btn btn-gradient w-100">Finalizar Cadastro</button>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Senha <span class="text-danger">*</span></label>
+                            <div class="position-relative">
+                                <input type="password" class="form-control" id="loginPass" required placeholder="Sua senha">
+                                <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y border-0 py-0 px-2" onclick="togglePasswordVisibility('loginPass')">
+                                    <i class="bi bi-eye text-muted"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="lembrar">
+                            <label class="form-check-label small" for="lembrar">Lembrar senha</label>
+                        </div>
+                        <button type="submit" class="btn btn-gradient w-100 mb-2">Entrar</button>
+                        <div class="text-center">
+                            <a href="recuperarsenha.html" class="text-muted small text-decoration-none">Esqueceu sua senha?</a>
                         </div>
                     </form>
                 </div>
@@ -607,9 +223,155 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
+    <!-- Modal Cadastro -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Cadastro de Aluno</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <p class="text-muted small mb-3"><span class="text-danger">*</span> campos obrigatórios</p>
+                    <form id="registerForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Nome Completo <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="regNome" required placeholder="Seu nome completo">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">E-mail <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="regEmail" required placeholder="seu@email.com">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">CPF <span class="text-muted">(opcional)</span></label>
+                                <input type="text" class="form-control" id="regCpf" placeholder="000.000.000-00">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Telefone <span class="text-muted">(opcional)</span></label>
+                                <input type="text" class="form-control" id="regTelefone" placeholder="(61) 99999-9999">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Nascimento <span class="text-muted">(opcional)</span></label>
+                                <input type="date" class="form-control" id="regNascimento">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Matrícula <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="regMatricula" required placeholder="Ex: 20241001">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label small fw-semibold">Curso <span class="text-danger">*</span></label>
+                                <select class="form-select" id="regCurso" required>
+                                    <option value="">Selecione um curso</option>
+                                    <option>Ciência da Computação</option>
+                                    <option>Engenharia de Software</option>
+                                    <option>Sistemas de Informação</option>
+                                    <option>Análise e Desenvolvimento de Sistemas</option>
+                                    <option>Redes de Computadores</option>
+                                    <option>Inteligência Artificial</option>
+                                    <option>Gestão de TI</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Semestre <span class="text-muted">(opcional)</span></label>
+                                <input type="number" class="form-control" id="regSemestre" min="1" max="10" placeholder="1–10">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Turno <span class="text-muted">(opcional)</span></label>
+                                <select class="form-select" id="regTurno">
+                                    <option value="">Selecione</option>
+                                    <option>Matutino</option>
+                                    <option>Vespertino</option>
+                                    <option>Noturno</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Campus <span class="text-muted">(opcional)</span></label>
+                                <select class="form-select" id="regCampus">
+                                    <option value="">Selecione</option>
+                                    <option>Asa Norte</option>
+                                    <option>Taguatinga</option>
+                                </select>
+                            </div>
+                            <div class="col-12"><hr class="my-1"><p class="text-muted small mb-0">Redes Profissionais <span class="text-muted">(opcional — visibilidade no Portal de Talentos)</span></p></div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold"><i class="bi bi-github me-1"></i>GitHub</label>
+                                <input type="url" class="form-control" id="regGithub" placeholder="https://github.com/usuario">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold"><i class="bi bi-linkedin me-1"></i>LinkedIn</label>
+                                <input type="url" class="form-control" id="regLinkedin" placeholder="https://linkedin.com/in/usuario">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Senha <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="regSenha" required placeholder="Mínimo 4 caracteres">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Confirmar Senha <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="regSenhaConf" required placeholder="Repita a senha">
+                            </div>
+                        </div>
+                        <div class="mt-3 mb-2 form-check">
+                            <input type="checkbox" class="form-check-input" id="acceptTerms" required>
+                            <label class="form-check-label small" for="acceptTerms">
+                                Li e aceito os <a href="termodeuso.html" class="text-decoration-none" target="_blank">termos de uso</a> e a política de privacidade <span class="text-danger">*</span>
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-gradient w-100">Finalizar Cadastro</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal OTP — 2FA por e-mail -->
+    <div class="modal fade" id="otpModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="otpModalLabel" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="otpModalLabel">
+                        <i class="bi bi-shield-lock-fill text-primary me-2"></i>Verificação em 2 Etapas
+                    </h5>
+                </div>
+                <div class="modal-body text-center px-4 pb-4">
+                    <p class="text-muted small mb-1">Enviamos um código de 6 dígitos para</p>
+                    <p class="fw-semibold mb-4" id="otpEmailDisplay">seu e-mail</p>
+                    <form id="otpForm" novalidate>
+                        <div class="mb-4">
+                            <input type="text" class="form-control form-control-lg text-center fw-bold"
+                                   id="otpCodigo" maxlength="6" placeholder="000000"
+                                   inputmode="numeric" autocomplete="one-time-code"
+                                   aria-label="Código de verificação de 6 dígitos"
+                                   style="letter-spacing:0.55em; font-size:1.6rem;">
+                        </div>
+                        <button type="submit" class="btn btn-gradient w-100 mb-3">
+                            <i class="bi bi-check-circle me-1"></i> Verificar Código
+                        </button>
+                    </form>
+                    <p class="text-muted small mb-1">Não recebeu o e-mail?</p>
+                    <button class="btn btn-link btn-sm p-0 text-decoration-none" id="otpReenviarBtn" onclick="reenviarOtp()">
+                        Reenviar código <span id="otpContagem" class="text-muted"></span>
+                    </button>
+                    <p class="text-muted" style="font-size:0.72rem; margin-top:16px;">
+                        O código expira em 10 minutos. Verifique também a pasta de spam.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JavaScript -->
     <script src="../javascript/index.js"></script>
+
+    <!-- VLibras — Acessibilidade em Libras (Gov.br) -->
+    <div vw class="enabled">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper>
+            <div class="vw-plugin-top-wrapper"></div>
+        </div>
+    </div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+    <script src="../javascript/acessibilidade.js"></script>
 </body>
 </html>

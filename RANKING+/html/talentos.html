@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Talentos - Ranking+</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root { --primary: #020122; --accent: #F4442E; --light-bg: #f8f9fb; }
+        body { background: var(--light-bg); font-family: 'Segoe UI', Arial, sans-serif; color: #333; }
+        .hero { background: linear-gradient(135deg, var(--primary) 0%, #1a1a6e 55%, var(--accent) 100%); padding: 60px 0 40px; color: #fff; }
+        .hero h1 { font-size: 2.4rem; font-weight: 800; }
+        .search-bar { max-width: 600px; }
+        .search-bar .form-control { border-radius: 30px 0 0 30px; border: none; font-size: 1rem; }
+        .search-bar .btn { border-radius: 0 30px 30px 0; background: var(--accent); border: none; }
+        .filter-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.06); padding: 20px; }
+        .filter-card h6 { font-weight: 700; color: var(--primary); }
+        .filter-divider { border-top: 1px solid #eee; margin: 16px 0; }
+        .talent-card { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); transition: transform .18s, box-shadow .18s; overflow: hidden; cursor: pointer; }
+        .talent-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(0,0,0,.12); }
+        .talent-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 800; color: #fff; flex-shrink: 0; }
+        .skill-pill { display: inline-block; background: #e8f4ff; color: #1565c0; border-radius: 20px; padding: 2px 10px; font-size: 0.75rem; margin: 2px 2px 2px 0; font-weight: 500; }
+        .stats-bar { background: #fff; border-bottom: 1px solid #eee; padding: 14px 0; }
+        .stats-bar .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
+        .stats-bar .stat-label { font-size: 0.8rem; color: #888; }
+        .lgpd-badge { background: #e8f5e9; color: #2e7d32; border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; font-weight: 600; }
+        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.75); z-index: 9999; align-items: center; justify-content: center; }
+        .loading-overlay.show { display: flex; }
+        /* Navbar empresa logada */
+        .empresa-badge { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); border-radius: 20px; padding: 5px 14px; color: #fff; font-size: .85rem; }
+        /* Drawer de perfil */
+        .perfil-drawer { position: fixed; top: 0; right: -520px; width: 500px; height: 100vh; background: #fff; z-index: 1060; box-shadow: -4px 0 30px rgba(0,0,0,.18); transition: right .3s ease; overflow-y: auto; }
+        .perfil-drawer.open { right: 0; }
+        .perfil-drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1055; }
+        .perfil-drawer-backdrop.open { display: block; }
+        .drawer-header { background: linear-gradient(135deg, var(--primary), #1a1a6e); color: #fff; padding: 22px 24px 18px; }
+        .drawer-avatar { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; color: #fff; }
+        .metric-box { background: #f8f9fb; border-radius: 10px; padding: 12px; text-align: center; }
+        .metric-box .val { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+        .metric-box .lbl { font-size: .72rem; color: #888; }
+        /* interesses banner */
+        .interesses-banner { background: linear-gradient(90deg,#e8f4ff,#f0e8ff); border-left: 4px solid #1565c0; border-radius: 8px; padding: 12px 16px; }
+    </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="text-center">
+        <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
+        <p class="text-muted fw-semibold" id="loadingMsg">Buscando talentos...</p>
+    </div>
+</div>
+
+<!-- Backdrop drawer -->
+<div class="perfil-drawer-backdrop" id="drawerBackdrop" onclick="fecharDrawer()"></div>
+
+<!-- Drawer Perfil do Aluno -->
+<div class="perfil-drawer" id="perfilDrawer">
+    <div class="drawer-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex align-items-center gap-3">
+                <div class="drawer-avatar" id="drawerAvatar">?</div>
+                <div>
+                    <h5 class="mb-0 fw-bold" id="drawerNome">—</h5>
+                    <small class="opacity-75" id="drawerCurso">—</small><br>
+                    <span class="badge bg-light text-dark mt-1" id="drawerSemestre">—</span>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-outline-light" onclick="fecharDrawer()"><i class="bi bi-x-lg"></i></button>
+        </div>
+    </div>
+    <div class="p-4" id="drawerBody">
+        <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+    </div>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark" style="background:var(--primary);">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
+            <span class="fw-bold fs-5 text-white"><i class="bi bi-trophy-fill text-warning me-1"></i>RANKING+</span>
+        </a>
+        <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+            <span class="lgpd-badge"><i class="bi bi-shield-check me-1"></i>LGPD</span>
+            <!-- Estado: não logado -->
+            <div id="navNaoLogado" class="d-flex gap-2">
+                <button class="btn btn-outline-light btn-sm" onclick="abrirModalLogin()">
+                    <i class="bi bi-building me-1"></i>Entrar como Empresa
+                </button>
+                <button class="btn btn-sm text-white" style="background:var(--accent);" onclick="abrirModalCadastro()">
+                    <i class="bi bi-plus-circle me-1"></i>Cadastrar Empresa
+                </button>
+            </div>
+            <!-- Estado: empresa logada -->
+            <div id="navLogado" class="d-none d-flex align-items-center gap-2">
+                <span class="empresa-badge"><i class="bi bi-building-check me-1"></i><span id="navEmpresaNome">Empresa</span></span>
+                <button class="btn btn-sm btn-outline-warning" onclick="abrirModalInteresses()">
+                    <i class="bi bi-sliders me-1"></i>Interesses de Perfil
+                </button>
+                <button class="btn btn-sm btn-outline-light" onclick="logoutEmpresa()">
+                    <i class="bi bi-box-arrow-right me-1"></i>Sair
+                </button>
+            </div>
+            <!-- Estado: aluno ou professor logado -->
+            <div id="navLogadoUser" class="d-none d-flex align-items-center gap-2">
+                <span class="empresa-badge"><i class="bi bi-person-fill me-1"></i><span id="navUserNome">Usuário</span></span>
+                <span class="badge bg-secondary" id="navUserTipo"></span>
+            </div>
+            <a href="index.html" class="btn btn-outline-light btn-sm"><i class="bi bi-house me-1"></i>Início</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+    <div class="container text-center">
+        <h1><i class="bi bi-people-fill me-2"></i>Portal de Talentos</h1>
+        <p class="mb-4">Encontre os melhores alunos para oportunidades de estágio, emprego e pesquisa.</p>
+        <div class="input-group search-bar mx-auto">
+            <input type="text" class="form-control py-3 px-4" id="searchHabilidade" placeholder="Buscar por habilidade, disciplina ou área...">
+            <button class="btn px-4" id="searchBtn" type="button"><i class="bi bi-search text-white"></i></button>
+        </div>
+        <small class="text-white-50 mt-2 d-block">Ex: "Algoritmos", "Banco de Dados", "Inteligência Artificial"</small>
+    </div>
+</div>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+    <div class="container">
+        <div class="row justify-content-center g-3">
+            <div class="col-auto text-center"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Talentos encontrados</div></div>
+            <div class="col-auto d-flex align-items-center text-muted px-4">|</div>
+            <div class="col-auto text-center"><div class="stat-value text-success" id="statComGithub">—</div><div class="stat-label">Com GitHub</div></div>
+            <div class="col-auto d-flex align-items-center text-muted px-4">|</div>
+            <div class="col-auto text-center"><div class="stat-value text-primary" id="statComLinkedin">—</div><div class="stat-label">Com LinkedIn</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container py-4">
+    <div class="row g-4">
+        <!-- Sidebar Filtros -->
+        <div class="col-lg-3">
+            <div class="filter-card sticky-top" style="top:20px;">
+                <h6><i class="bi bi-funnel-fill me-2"></i>Filtros</h6>
+                <div class="filter-divider"></div>
+                <label class="form-label small fw-semibold mb-1">Curso</label>
+                <select class="form-select form-select-sm mb-3" id="filtCurso"><option value="">Todos os cursos</option></select>
+                <label class="form-label small fw-semibold mb-1">Semestre mínimo</label>
+                <select class="form-select form-select-sm mb-3" id="filtSemestre"><option value="">Qualquer semestre</option></select>
+                <div class="filter-divider"></div>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="filtSoGithub">
+                    <label class="form-check-label small" for="filtSoGithub"><i class="bi bi-github me-1"></i>Somente com GitHub</label>
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="filtSoLinkedin">
+                    <label class="form-check-label small" for="filtSoLinkedin"><i class="bi bi-linkedin me-1"></i>Somente com LinkedIn</label>
+                </div>
+                <div class="filter-divider"></div>
+                <button class="btn btn-primary w-100 btn-sm" id="aplicarFiltros"><i class="bi bi-search me-1"></i>Buscar Talentos</button>
+                <button class="btn btn-outline-secondary w-100 btn-sm mt-2" id="limparFiltros"><i class="bi bi-x-circle me-1"></i>Limpar Filtros</button>
+                <div class="filter-divider"></div>
+                <div class="small text-muted text-center">
+                    <i class="bi bi-shield-check text-success me-1"></i>Apenas alunos que consentiram com a exibição pública aparecem aqui (LGPD Art. 7º).
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid de Talentos -->
+        <div class="col-lg-9">
+            <!-- Banner interesses (empresa logada) -->
+            <div id="interessesBanner" class="interesses-banner mb-3 d-none">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong><i class="bi bi-info-circle me-1"></i>Seus Interesses de Perfil</strong>
+                        <span class="ms-2 text-muted small" id="interessesResumo">—</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="abrirModalInteresses()">Editar</button>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="mb-0">Candidatos</h5>
+                    <small class="text-muted" id="resultadoDesc">Carregando...</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" id="viewGrid"><i class="bi bi-grid"></i></button>
+                    <button class="btn btn-outline-secondary btn-sm" id="viewList"><i class="bi bi-list-ul"></i></button>
+                </div>
+            </div>
+            <div class="row g-3" id="talentosGrid">
+                <div class="col-12 text-center py-5 text-muted">
+                    <div class="spinner-border text-primary mb-3"></div><p>Carregando talentos...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-dark text-white py-3 mt-5">
+    <div class="container text-center">
+        <small class="text-muted">© 2025 Ranking+ · Portal de Talentos · <a href="termodeuso.html" class="text-muted text-decoration-none ms-2">Política de Privacidade</a></small>
+    </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL LOGIN EMPRESA
+══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalLoginEmpresa" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--primary);">
+                <h5 class="modal-title text-white"><i class="bi bi-building me-2"></i>Login Corporativo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="loginAlerta" class="alert d-none"></div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">E-mail corporativo</label>
+                    <input type="email" class="form-control" id="loginEmail" placeholder="empresa@exemplo.com">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Senha</label>
+                    <input type="password" class="form-control" id="loginSenha">
+                </div>
+                <button class="btn btn-primary w-100" id="btnLoginEmpresa">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Entrar
+                </button>
+                <hr>
+                <p class="text-center small text-muted mb-0">Ainda não tem conta? <a href="#" onclick="trocarParaCadastro()">Cadastre sua empresa</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL CADASTRO EMPRESA
+══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalCadastroEmpresa" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--primary);">
+                <h5 class="modal-title text-white"><i class="bi bi-building-add me-2"></i>Cadastrar Empresa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="cadastroAlerta" class="alert d-none"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Razão Social *</label>
+                        <input type="text" class="form-control" id="cadRazaoSocial">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Nome Fantasia</label>
+                        <input type="text" class="form-control" id="cadNomeFantasia">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">CNPJ *</label>
+                        <input type="text" class="form-control" id="cadCnpj" placeholder="00.000.000/0001-00">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Setor *</label>
+                        <select class="form-select" id="cadSetor"><option value="">Selecione...</option></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">E-mail corporativo *</label>
+                        <input type="email" class="form-control" id="cadEmail">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Telefone</label>
+                        <input type="tel" class="form-control" id="cadTelefone">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Site</label>
+                        <input type="url" class="form-control" id="cadSite" placeholder="https://empresa.com">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">LinkedIn da empresa</label>
+                        <input type="url" class="form-control" id="cadLinkedin" placeholder="https://linkedin.com/company/...">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Senha *</label>
+                        <input type="password" class="form-control" id="cadSenha">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Confirmar Senha *</label>
+                        <input type="password" class="form-control" id="cadSenhaConf">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" id="btnCadastroEmpresa">
+                    <i class="bi bi-check-circle me-1"></i>Cadastrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL INTERESSES DE PERFIL
+══════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalInteresses" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--primary);">
+                <h5 class="modal-title text-white"><i class="bi bi-sliders me-2"></i>Interesses de Perfil</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">Defina o perfil de aluno que sua empresa busca. Esses dados ajudam a refinar os resultados.</p>
+                <div id="interessesAlerta" class="alert d-none"></div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Área de Foco</label>
+                    <select class="form-select" id="intAreaFoco"><option value="">Qualquer área</option></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Tipo de Vaga</label>
+                    <select class="form-select" id="intTipoVaga"><option value="">Qualquer tipo</option></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Curso preferido</label>
+                    <select class="form-select" id="intCurso"><option value="">Todos os cursos</option></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Semestre mínimo</label>
+                    <select class="form-select" id="intSemestreMin">
+                        <option value="1">1º semestre ou mais</option>
+                        <option value="2">2º semestre ou mais</option>
+                        <option value="3">3º semestre ou mais</option>
+                        <option value="4">4º semestre ou mais</option>
+                        <option value="5">5º semestre ou mais</option>
+                        <option value="6">6º semestre ou mais</option>
+                        <option value="7">7º semestre ou mais</option>
+                        <option value="8">8º semestre ou mais</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" id="btnSalvarInteresses">
+                    <i class="bi bi-check-circle me-1"></i>Salvar Interesses
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../javascript/talentos.js"></script>
+
+    <!-- VLibras — Acessibilidade em Libras (Gov.br) -->
+    <div vw class="enabled">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper>
+            <div class="vw-plugin-top-wrapper"></div>
+        </div>
+    </div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+    <script src="../javascript/acessibilidade.js"></script>
+</body>
+</html>
