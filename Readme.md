@@ -193,11 +193,6 @@ http://localhost:4000/html/index.html
 - Grade horária sincronizada
 - Geração de relatório PDF por aluno com opção de incluir Perfil ATS
 
-### Recrutador (Portal de Talentos)
-- Busca de talentos com filtros por curso, semestre e habilidades
-- Cards com perfil acadêmico, repositórios GitHub e skills
-- Filtragem LGPD automática (exibe apenas quem optou por aparecer)
-
 ### Administrador
 - Painel separado (`admin.html`) com login por e-mail + token
 - Listagem de alunos, professores e empresas com busca em tempo real
