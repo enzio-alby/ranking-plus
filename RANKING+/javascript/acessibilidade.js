@@ -3,9 +3,7 @@
 
 (function () {
 
-  // ──────────────────────────────────────────────────────────────────
   // 1. INJEÇÃO DE CSS (único bloco, gerado via JS)
-  // ──────────────────────────────────────────────────────────────────
   function injectStyles() {
     const style = document.createElement('style');
     style.id = 'a11y-global-styles';
@@ -237,9 +235,7 @@
     document.head.appendChild(style);
   }
 
-  // ──────────────────────────────────────────────────────────────────
   // 2. SKIP-LINK
-  // ──────────────────────────────────────────────────────────────────
   function addSkipLink() {
     // Evita duplicar se o script rodar duas vezes
     if (document.querySelector('.skip-link')) return;
@@ -266,9 +262,7 @@
     document.body.insertBefore(skip, document.body.firstChild);
   }
 
-  // ──────────────────────────────────────────────────────────────────
   // 3. TOOLKIT FLUTUANTE — Fonte e Alto Contraste
-  // ──────────────────────────────────────────────────────────────────
   const FONT_LEVELS = [100, 115, 130];
 
   function getFontLevel() {
@@ -294,7 +288,7 @@
     applyFontSize(fontIdx);
     applyContrast(contrastOn);
 
-    // ── FAB ──
+    // FAB
     const fab = document.createElement('button');
     fab.id = 'a11yFab';
     fab.className = 'a11y-fab';
@@ -309,7 +303,7 @@
       ? '<i class="bi bi-universal-access" aria-hidden="true"></i>'
       : '<span aria-hidden="true" style="font-size:20px;line-height:1">&#9855;</span>';
 
-    // ── Painel ──
+    // Painel
     const panel = document.createElement('div');
     panel.id = 'a11yPanel';
     panel.className = 'a11y-panel';
@@ -343,7 +337,28 @@
     document.body.appendChild(panel);
     document.body.appendChild(fab);
 
-    // ── Eventos ──
+    // Em páginas com sidebar fixa à esquerda (área do aluno/professor, admin), o FAB
+    // no canto inferior esquerdo pode cair em cima do rodapé da sidebar (nome do
+    // usuário, botão "Sair" etc.) — detecta a sidebar de verdade (mede o elemento
+    // renderizado, não um valor fixo chutado) e empurra o FAB pra fora dela.
+    // Sem sidebar visível (a maioria das páginas, ou sidebar escondida no mobile),
+    // fica no padrão de 16px da borda.
+    function ajustarPosicaoFab() {
+      const sidebar = document.querySelector('.admin-sidebar, .sidebar');
+      const rect = sidebar ? sidebar.getBoundingClientRect() : null;
+      const dentroDaSidebar = rect && rect.width > 0 && rect.left <= 0;
+      const left = dentroDaSidebar ? Math.round(rect.right) + 16 : 16;
+      fab.style.left = left + 'px';
+      panel.style.left = left + 'px';
+    }
+    ajustarPosicaoFab();
+    let _resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(_resizeTimer);
+      _resizeTimer = setTimeout(ajustarPosicaoFab, 150);
+    });
+
+    // Eventos
     fab.addEventListener('click', (e) => {
       e.stopPropagation();
       const isOpen = panel.classList.toggle('open');
@@ -393,9 +408,7 @@
     });
   }
 
-  // ──────────────────────────────────────────────────────────────────
   // 4. FOCUS TRAP — Modais Bootstrap 5
-  // ──────────────────────────────────────────────────────────────────
   function setupFocusTrap() {
     const FOCUSABLE_SELECTORS = [
       'a[href]:not([disabled])',
@@ -461,9 +474,7 @@
     }, true);
   }
 
-  // ──────────────────────────────────────────────────────────────────
   // HELPERS ARIA (existentes, mantidos)
-  // ──────────────────────────────────────────────────────────────────
   function fixImages() {
     document.querySelectorAll('img:not([alt])').forEach(img => img.setAttribute('alt', ''));
   }
@@ -493,9 +504,7 @@
     });
   }
 
-  // ──────────────────────────────────────────────────────────────────
   // INIT
-  // ──────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
     injectStyles();
     addSkipLink();

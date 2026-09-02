@@ -1,0 +1,172 @@
+/* styleavaliacaocomportamental.css — Mapeamento de Perfil Comportamental
+   Usa --primary/--accent de design-tokens.css (compartilhado). */
+
+body {
+    background: #f4f5f9;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #1a1c29;
+    min-height: 100vh;
+}
+
+.ac-header {
+    background: var(--primary);
+    padding: 14px 0;
+}
+.ac-header-inner {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.ac-logo {
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.1rem;
+    text-decoration: none;
+}
+.ac-sair {
+    color: rgba(255, 255, 255, .7);
+    font-size: 1.2rem;
+    text-decoration: none;
+    transition: color .15s;
+}
+.ac-sair:hover { color: #fff; }
+
+.ac-main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+}
+
+.ac-card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 40px 36px;
+    box-shadow: 0 12px 40px rgba(2, 1, 34, .08);
+}
+
+/* ── Introdução ── */
+.ac-intro { text-align: center; }
+.ac-intro-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--primary), #1a1a6e);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; color: var(--accent);
+    margin: 0 auto 20px;
+}
+.ac-como-preencher {
+    background: #f0f2fb;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 0 auto 20px;
+    max-width: 520px;
+    text-align: left;
+    font-size: .88rem;
+    color: #444;
+}
+.ac-como-preencher strong { color: var(--primary); }
+.ac-intro h1 { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 12px; }
+.ac-intro p { max-width: 480px; margin: 0 auto 20px; }
+.ac-intro-lista {
+    list-style: none; padding: 0; margin: 0 0 28px;
+    display: inline-flex; flex-direction: column; gap: 8px; text-align: left;
+}
+.ac-intro-lista li { font-size: .92rem; color: #444; }
+.ac-intro-lista i { color: #22C55E; margin-right: 8px; }
+
+.ac-btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    padding: 12px 32px;
+    border-radius: 12px;
+    transition: transform .15s, background .15s;
+}
+.ac-btn-primary:hover { background: #d63a26; border-color: #d63a26; color: #fff; transform: translateY(-1px); }
+
+/* ── Progresso ── */
+.ac-progress-wrap { margin-bottom: 24px; }
+.ac-progress-bar {
+    height: 10px; background: #e3e5f0; border-radius: 20px; overflow: hidden;
+}
+.ac-progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), #ff7a5c);
+    width: 0%; transition: width .3s ease;
+}
+.ac-progress-texto { text-align: right; font-size: .8rem; color: #666; margin-top: 6px; }
+
+/* ── Perguntas ── */
+.ac-pagina { display: none; }
+.ac-pagina.active { display: block; }
+
+.ac-pergunta {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px 26px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 18px rgba(2, 1, 34, .06);
+}
+.ac-pergunta-num { font-size: .72rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .5px; }
+.ac-pergunta-enunciado { font-weight: 600; margin: 6px 0 4px; color: #1a1c29; }
+.ac-pergunta-hint { font-size: .78rem; color: #888; margin-bottom: 12px; }
+
+.ac-opcoes { display: flex; flex-direction: column; gap: 8px; }
+.ac-opcao {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border: 1.5px solid #e3e5f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.ac-opcao:hover { border-color: var(--accent); background: #fff7f6; }
+.ac-opcao.selecionada { border-color: var(--accent); background: #fff1ef; }
+.ac-opcao input[type="radio"], .ac-opcao input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; flex-shrink: 0; }
+.ac-opcao span { font-size: .92rem; }
+
+.ac-nav-botoes {
+    display: flex; justify-content: space-between; gap: 12px; margin-top: 8px;
+}
+
+/* ── Resultado ── */
+.ac-resultado-topo { text-align: center; margin-bottom: 24px; }
+.ac-resultado-icone { font-size: 3rem; color: #22C55E; margin-bottom: 10px; }
+.ac-resultado-topo h2 { font-weight: 800; color: var(--primary); }
+
+.ac-perfil-dominante {
+    background: linear-gradient(135deg, var(--primary), #1a1a6e);
+    border-radius: 14px;
+    padding: 22px;
+    text-align: center;
+    margin-bottom: 24px;
+}
+.ac-perfil-label { display: block; color: rgba(255, 255, 255, .7); font-size: .78rem; text-transform: uppercase; letter-spacing: .5px; }
+.ac-perfil-nome { display: block; color: var(--accent); font-size: 1.8rem; font-weight: 800; margin-top: 4px; }
+
+.ac-perfis-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 28px;
+}
+.ac-perfil-item {
+    background: #f8f9fc; border-radius: 12px; padding: 14px; text-align: center;
+    border: 2px solid transparent;
+}
+.ac-perfil-item.dominante { border-color: var(--accent); background: #fff1ef; }
+.ac-perfil-item-nome { font-size: .78rem; color: #666; font-weight: 600; }
+.ac-perfil-item-pct { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
+
+.ac-secao-titulo { font-weight: 700; color: var(--primary); margin-bottom: 14px; }
+.ac-eixo-item { margin-bottom: 14px; }
+.ac-eixo-topo { display: flex; justify-content: space-between; font-size: .85rem; margin-bottom: 4px; }
+.ac-eixo-nome { font-weight: 600; }
+.ac-eixo-valor { color: var(--accent); font-weight: 700; }
+.ac-eixo-barra-fundo { height: 8px; background: #e3e5f0; border-radius: 20px; overflow: hidden; }
+.ac-eixo-barra-fill { height: 100%; background: var(--accent); border-radius: 20px; }
+
+@media (max-width: 576px) {
+    .ac-card { padding: 28px 20px; }
+    .ac-perfis-grid { grid-template-columns: 1fr; }
+}

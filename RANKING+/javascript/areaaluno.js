@@ -18,6 +18,14 @@ const ALUNO_API = 'http://localhost:4000';
 function initializeApp() {
     console.log('Student Academic System initialized');
 
+    // Sessão salva sem token válido (achado S1): toda rota autenticada vai dar
+    // 401. Em vez de mostrar a página inteira quebrada, manda de volta pro login.
+    if (localStorage.getItem('alunoId') && !localStorage.getItem('unirank_token')) {
+        localStorage.clear();
+        window.location.href = 'index.html';
+        return;
+    }
+
     showPage('dashboard');
 
     const content = document.getElementById('pageContent');
@@ -39,6 +47,384 @@ function initializeApp() {
     // Busca dados completos do aluno na API
     const alunoId = localStorage.getItem('alunoId');
     if (alunoId) loadAlunoData(alunoId);
+    if (alunoId) setupNotificacoes(alunoId);
+    if (alunoId) _setupPerfilComportamental(alunoId);
+    if (alunoId) _checarReaceiteTermos(alunoId);
+}
+
+// PERFIL COMPORTAMENTAL — gate de acesso + card no Meu Perfil
+let _pcAvaliacao = null; // null = ainda carregando; false = sem avaliação vigente; objeto = vigente
+
+async function _setupPerfilComportamental(alunoId) {
+    try {
+        const res = await fetch(`${ALUNO_API}/alunos/${alunoId}/avaliacao-comportamental`);
+        const data = res.ok ? await res.json() : { avaliacao: null };
+        const vigente = data.avaliacao && new Date(data.avaliacao.valido_ate) > new Date();
+        _pcAvaliacao = vigente ? data.avaliacao : false;
+    } catch (_) {
+        _pcAvaliacao = false; // API fora do ar — trata como pendente, não libera por engano
+    }
+    _renderPcCard();
+    _wirePcGate();
+}
+
+function _pcNomePerfil(chave) {
+    return { executor: 'Executor', comunicador: 'Comunicador', planejador: 'Planejador', analista: 'Analista' }[chave] || chave;
+}
+
+function _renderPcCard() {
+    const body = document.getElementById('pcCardBody');
+    if (!body) return;
+    if (!_pcAvaliacao) {
+        body.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h6 class="mb-1"><i class="bi bi-clipboard2-pulse text-primary me-2"></i>Perfil Comportamental</h6>
+                    <p class="text-muted small mb-0">Você ainda não concluiu o Mapeamento de Perfil Comportamental.</p>
+                </div>
+                <a href="avaliacaocomportamental.html" class="btn btn-primary btn-sm">Responder agora</a>
+            </div>`;
+        return;
+    }
+    const a = _pcAvaliacao;
+    const validoAte = new Date(a.valido_ate).toLocaleDateString('pt-BR');
+    const eixosHtml = Object.entries(a.eixos).map(([chave, valor]) => {
+        const nome = { execucao: 'Execução & Disciplina', comunicacao: 'Comunicação & Influência', colaboracao: 'Colaboração', resiliencia: 'Resiliência sob Pressão', aprendizado: 'Aprendizado & Inovação' }[chave] || chave;
+        return `
+            <div class="mb-2">
+                <div class="d-flex justify-content-between small mb-1"><span>${nome}</span><span class="fw-semibold text-primary">${valor}</span></div>
+                <div class="progress" style="height:6px;"><div class="progress-bar" style="width:${valor}%"></div></div>
+            </div>`;
+    }).join('');
+    body.innerHTML = `
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <h6 class="mb-0"><i class="bi bi-clipboard2-pulse text-primary me-2"></i>Perfil Comportamental</h6>
+            <span class="badge bg-light text-dark border">Válido até ${validoAte}</span>
+        </div>
+        <div class="row align-items-center">
+            <div class="col-md-4 text-center mb-3 mb-md-0">
+                <div class="text-muted small text-uppercase">Perfil dominante</div>
+                <div class="h3 text-primary fw-bold mb-0">${_pcNomePerfil(a.perfil_dominante)}</div>
+            </div>
+            <div class="col-md-8">${eixosHtml}</div>
+        </div>`;
+}
+
+// Bloqueia o toggle "Aparecer no ranking" (visibilidade pública pra outros
+// alunos/empresas) e o link do Portal de Talentos enquanto não houver
+// avaliação vigente. O link de só VISUALIZAR o Ranking (nav "colegas") não é
+// mais travado — decisão de 27/08/2026: travar o Ranking inteiro (feature de
+// uso casual/frequente) gerava fricção desproporcional; o que de fato precisa
+// do perfil comportamental é onde a empresa te vê (Portal de Talentos) e o
+// toggle que te torna visível publicamente, não a simples leitura do ranking.
+// Não modifica loadAlunoData — só some quando o próprio toggle roda
+// (_wireToggleAluno já chamado antes).
+function _wirePcGate() {
+    const toggle = document.getElementById('showInRanking');
+    if (toggle && !toggle.dataset.pcGateWired) {
+        toggle.dataset.pcGateWired = '1';
+        // No momento do 'click', o browser já aplicou o novo .checked mas o evento
+        // ainda é cancelável — preventDefault() desfaz a marcação E impede o
+        // 'change' de disparar depois, então o _wireToggleAluno nunca chega a
+        // salvar no backend. Corre por cima de qualquer corrida entre os dois
+        // fetches assíncronos (dados do aluno vs. avaliação comportamental).
+        toggle.addEventListener('click', (e) => {
+            if (!_pcAvaliacao && toggle.checked) {
+                e.preventDefault();
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPerfilComportamentalPendente')).show();
+            }
+        });
+    }
+
+    const linkTalentos = document.querySelector('.nav-link[href="talentos.html"]');
+    if (linkTalentos && !linkTalentos.dataset.pcGateWired) {
+        linkTalentos.dataset.pcGateWired = '1';
+        linkTalentos.addEventListener('click', (e) => {
+            if (!_pcAvaliacao) {
+                e.preventDefault();
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPerfilComportamentalPendente')).show();
+            }
+        });
+    }
+}
+
+// REACEITE DE TERMOS (versionamento)
+function _checarReaceiteTermos(alunoId) {
+    if (localStorage.getItem('precisa_reaceitar_termos') !== '1') return;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalReaceiteTermos')).show();
+    document.getElementById('btnAceitarNovosTermos')?.addEventListener('click', async function () {
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+        try {
+            await fetch(`${ALUNO_API}/alunos/${alunoId}/termos/reaceitar`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('unirank_token')}` }
+            });
+        } catch (_) { /* mesmo se falhar, não trava o aluno — ele pode tentar de novo no próximo login */ }
+        localStorage.removeItem('precisa_reaceitar_termos');
+        bootstrap.Modal.getInstance(document.getElementById('modalReaceiteTermos'))?.hide();
+    }, { once: true });
+}
+
+// Notificações
+function setupNotificacoes(alunoId) {
+    const carregar = () => carregarNotificacoes(alunoId);
+    carregar();
+    document.querySelector('[data-bs-toggle="dropdown"][aria-label="Notificações"]')
+        ?.addEventListener('click', carregar);
+    document.getElementById('notifMarcarTodasLidas')?.addEventListener('click', async () => {
+        await fetch(`${ALUNO_API}/alunos/${alunoId}/notificacoes/marcar-todas-lidas`, { method: 'PUT' });
+        carregar();
+    });
+}
+
+async function carregarNotificacoes(alunoId) {
+    const lista = document.getElementById('notifLista');
+    const badge = document.getElementById('notifBadge');
+    try {
+        const res  = await fetch(`${ALUNO_API}/alunos/${alunoId}/notificacoes`);
+        const data = await res.json();
+
+        if (badge) {
+            if (data.nao_lidas > 0) {
+                badge.textContent = data.nao_lidas > 9 ? '9+' : data.nao_lidas;
+                badge.classList.remove('d-none');
+            } else {
+                badge.classList.add('d-none');
+            }
+        }
+
+        if (!lista) return;
+        if (!data.notificacoes.length) {
+            lista.innerHTML = '<div class="text-center text-muted small py-4">Nenhuma notificação por aqui.</div>';
+            return;
+        }
+
+        lista.innerHTML = data.notificacoes.map(n => `
+            <a href="#" class="dropdown-item py-2 px-3 border-bottom notif-item ${n.lida ? '' : 'bg-light'}" data-notif-id="${n.id}" data-tipo="${_esc(n.tipo)}" data-referencia-id="${n.referencia_id ?? ''}">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="bi ${n.tipo === 'visualizacao_perfil' ? 'bi-eye' : 'bi-bell'} text-primary mt-1"></i>
+                    <div>
+                        <div class="small fw-semibold">${_esc(n.titulo)}</div>
+                        <div class="small text-muted">${_esc(n.mensagem)}</div>
+                        <div class="small text-muted" style="font-size:.7rem;">${_formatarDataRelativa(n.criado_em)}</div>
+                    </div>
+                </div>
+            </a>
+        `).join('');
+
+        lista.querySelectorAll('.notif-item').forEach(item => {
+            item.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const id = item.dataset.notifId;
+                await fetch(`${ALUNO_API}/alunos/${alunoId}/notificacoes/${id}/lida`, { method: 'PUT' });
+                carregarNotificacoes(alunoId);
+
+                // Notificação de mensagem — leva direto pra aba Mensagens na conversa.
+                if (item.dataset.tipo === 'nova_mensagem' && item.dataset.referenciaId) {
+                    document.querySelector('.nav-link[data-page="mensagens"]')?.click();
+                    if (typeof window.abrirConversaPorId === 'function') {
+                        window.abrirConversaPorId(parseInt(item.dataset.referenciaId, 10));
+                    }
+                }
+            });
+        });
+    } catch (_) {
+        if (lista) lista.innerHTML = '<div class="text-center text-muted small py-4">Não foi possível carregar.</div>';
+    }
+}
+
+function _formatarDataRelativa(iso) {
+    const diffMin = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (diffMin < 1) return 'agora';
+    if (diffMin < 60) return `há ${diffMin} min`;
+    const diffH = Math.round(diffMin / 60);
+    if (diffH < 24) return `há ${diffH}h`;
+    return `há ${Math.round(diffH / 24)}d`;
+}
+
+// Insight de performance real (antes era um texto fixo, sempre "Algoritmos")
+function setupInsightPerformance(boletim) {
+    const el = document.getElementById('insightPerformance');
+    if (!el || !Array.isArray(boletim) || !boletim.length) return;
+
+    const porDisciplina = new Map();
+    boletim.forEach(b => porDisciplina.set(b.nome_materia, b));
+    const disciplinas = [...porDisciplina.values()];
+
+    const AULAS_POR_SEMESTRE = 20;
+    const comFrequencia = disciplinas.map(d => ({
+        ...d,
+        frequencia: Math.max(0, Math.min(100, Math.round((1 - (d.faltas || 0) / AULAS_POR_SEMESTRE) * 100)))
+    }));
+
+    const pior = comFrequencia.reduce((a, b) => (a.frequencia <= b.frequencia ? a : b));
+    const icone = el.querySelector('i');
+    const texto = el.querySelector('p');
+
+    if (pior.frequencia < 75) {
+        icone.className = 'bi bi-exclamation-triangle text-danger me-2';
+        texto.textContent = `Sua frequência em ${pior.nome_materia} está em ${pior.frequencia}% — abaixo do mínimo recomendado. Fique de olho nas próximas aulas.`;
+    } else {
+        const melhor = disciplinas.reduce((a, b) => (Number(a.nota_avaliacao) >= Number(b.nota_avaliacao) ? a : b));
+        icone.className = 'bi bi-lightbulb text-warning me-2';
+        texto.textContent = `Seu melhor desempenho é em ${melhor.nome_materia}, com nota ${Number(melhor.nota_avaliacao).toFixed(1)}. Continue assim!`;
+    }
+}
+
+// Meta pessoal de CRA — guardada em localStorage por aluno, sem prêmio inventado
+function setupMetaCRA(alunoId, craAtual) {
+    const chaveMeta = `meta_cra_${alunoId}`;
+    const barra = document.getElementById('metaProgressBar');
+    const texto = document.getElementById('metaTexto');
+    const visualizacao = document.getElementById('metaVisualizacao');
+    const edicao = document.getElementById('metaEdicao');
+    const input = document.getElementById('metaInput');
+    if (!barra || !texto) return;
+
+    function renderizar() {
+        const meta = parseFloat(localStorage.getItem(chaveMeta));
+        if (!Number.isFinite(meta) || meta <= 0) {
+            barra.style.width = '0%';
+            texto.textContent = 'Defina uma meta de CRA para acompanhar seu progresso.';
+            return;
+        }
+        if (!Number.isFinite(craAtual)) {
+            texto.textContent = `Meta definida: CRA ${meta.toFixed(1)}. Ainda sem notas suficientes pra calcular o progresso.`;
+            return;
+        }
+        const progresso = Math.min(100, Math.round((craAtual / meta) * 100));
+        barra.style.width = `${progresso}%`;
+        barra.classList.toggle('bg-success', craAtual >= meta);
+        barra.classList.toggle('bg-warning', craAtual < meta);
+        texto.textContent = craAtual >= meta
+            ? `Meta atingida! CRA atual: ${craAtual.toFixed(1)}.`
+            : `${progresso}% para atingir CRA ${meta.toFixed(1)} (atual: ${craAtual.toFixed(1)}).`;
+    }
+
+    document.getElementById('metaEditarBtn')?.addEventListener('click', () => {
+        const metaAtual = localStorage.getItem(chaveMeta);
+        if (input) input.value = metaAtual || '';
+        visualizacao.classList.add('d-none');
+        edicao.classList.remove('d-none');
+        input?.focus();
+    });
+
+    document.getElementById('metaSalvarBtn')?.addEventListener('click', () => {
+        const valor = parseFloat(input.value);
+        if (Number.isFinite(valor) && valor > 0 && valor <= 10) {
+            localStorage.setItem(chaveMeta, valor);
+        }
+        visualizacao.classList.remove('d-none');
+        edicao.classList.add('d-none');
+        renderizar();
+    });
+
+    renderizar();
+}
+
+// Avatar real (upload) — antes era sempre o mesmo ícone genérico
+function _renderAvatar(dataUrl) {
+    ['perfilAvatarView', 'perfilAvatarEdit'].forEach(elId => {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        el.innerHTML = dataUrl
+            ? `<img src="${dataUrl}" alt="Foto de perfil" style="width:96px;height:96px;border-radius:50%;object-fit:cover;">`
+            : '<i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>';
+    });
+}
+
+function _redimensionarImagemAvatar(file, tamanho) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = tamanho;
+                canvas.height = tamanho;
+                const ctx = canvas.getContext('2d');
+                const lado = Math.min(img.width, img.height);
+                const sx = (img.width - lado) / 2;
+                const sy = (img.height - lado) / 2;
+                ctx.drawImage(img, sx, sy, lado, lado, 0, 0, tamanho, tamanho);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+function setupAvatarUpload(alunoId) {
+    const fileInput = document.getElementById('avatarFileInput');
+    const alterarBtn = document.getElementById('avatarAlterarBtn');
+    const removerBtn = document.getElementById('avatarRemoverBtn');
+    if (!fileInput || alterarBtn?.dataset.wired) return; // evita ligar o listener duas vezes
+    if (alterarBtn) alterarBtn.dataset.wired = '1';
+
+    alterarBtn?.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', async () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const aviso = document.getElementById('avatarAviso');
+        if (aviso) aviso.textContent = '';
+        if (file.size > 5 * 1024 * 1024) {
+            if (aviso) aviso.textContent = 'Imagem muito grande — escolha um arquivo de até 5MB.';
+            fileInput.value = '';
+            return;
+        }
+        try {
+            const dataUrl = await _redimensionarImagemAvatar(file, 200);
+            await fetch(`${ALUNO_API}/alunos/${alunoId}/avatar`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ avatar_base64: dataUrl })
+            });
+            _renderAvatar(dataUrl);
+        } catch (_) {
+            if (aviso) aviso.textContent = 'Não foi possível atualizar a foto. Tente novamente.';
+        }
+        fileInput.value = '';
+    });
+
+    removerBtn?.addEventListener('click', async () => {
+        await fetch(`${ALUNO_API}/alunos/${alunoId}/avatar`, { method: 'DELETE' });
+        _renderAvatar(null);
+    });
+}
+
+// Liga um toggle (form-switch) da aba Editar Perfil a uma coluna real da tabela alunos.
+// defaultQuandoNulo: valor a assumir quando o banco retorna null/undefined (colunas
+// antigas de contas criadas antes da migration, por ex.) — os toggles "por padrão
+// ligados" (ranking, contato) usam true; "por padrão desligado" (progresso) usa false.
+function _wireToggleAluno(elId, campo, aluno, alunoId, defaultQuandoNulo) {
+    const toggle = document.getElementById(elId);
+    if (!toggle) return;
+    const valorAtual = aluno[campo];
+    toggle.checked = valorAtual === null || valorAtual === undefined ? defaultQuandoNulo : Number(valorAtual) !== 0;
+    toggle.onchange = async function() {
+        try {
+            const res = await fetch(`${ALUNO_API}/alunos/${alunoId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [campo]: this.checked ? 1 : 0 })
+            });
+            if (!res.ok) console.warn(`Erro ao salvar ${campo}:`, await res.json());
+        } catch (e) { console.warn(`Erro ao salvar ${campo}:`, e); }
+    };
+}
+
+function _toggleAlunoDataError(mostrar, id) {
+    const banner = document.getElementById('alunoDataErrorBanner');
+    if (!banner) return;
+    banner.classList.toggle('d-none', !mostrar);
+    banner.classList.toggle('d-flex', mostrar);
+    const retryBtn = document.getElementById('alunoDataRetryBtn');
+    if (retryBtn) retryBtn.onclick = () => loadAlunoData(id);
 }
 
 async function loadAlunoData(id) {
@@ -50,7 +436,8 @@ async function loadAlunoData(id) {
             fetch(`${ALUNO_API}/ranking/detalhado`)
         ]);
 
-        if (!resAluno.ok) return;
+        if (!resAluno.ok) { _toggleAlunoDataError(true, id); return; }
+        _toggleAlunoDataError(false, id);
         const aluno    = await resAluno.json();
         const metricas = resMetricas.ok ? await resMetricas.json() : null;
         const boletim  = resBoletim.ok  ? await resBoletim.json()  : [];
@@ -63,9 +450,9 @@ async function loadAlunoData(id) {
         const cra        = metricas?.media_geral ?? '—';
         const presenca   = metricas ? `${metricas.presenca_geral ?? '—'}%` : '—';
 
-        // ── Dashboard stat cards ──────────────────────────────────────
-        _setEl('dashCRA',  cra !== '—' ? cra : '—');
-        _setEl('dashFreq', metricas ? `${metricas.presenca_geral ?? '—'}%` : '—');
+        // Dashboard stat cards
+        animateCounter(document.getElementById('dashCRA'), cra !== '—' ? parseFloat(cra) : null, { decimals: 1 });
+        animateCounter(document.getElementById('dashFreq'), metricas ? metricas.presenca_geral : null, { suffix: '%' });
 
         const totalFaltas = metricas?.total_faltas ?? 0;
         const freqLabel   = totalFaltas > 0 ? `${totalFaltas} falta(s) registrada(s)` : 'sem faltas';
@@ -73,19 +460,24 @@ async function loadAlunoData(id) {
         _setEl('dashCRALabel',  cra !== '—' ? 'média geral' : 'sem notas ainda');
 
         const discCount = Array.isArray(boletim) ? boletim.length : 0;
-        _setEl('dashDisc', discCount || '—');
+        animateCounter(document.getElementById('dashDisc'), discCount || null);
         _setEl('dashDiscLabel', discCount > 0 ? 'disciplinas matriculadas' : 'nenhuma disciplina');
 
         if (rankData && Array.isArray(rankData.alunos)) {
             const pos   = rankData.alunos.findIndex(a => a.id == id) + 1;
             const total = rankData.total || rankData.alunos.length;
-            _setEl('dashRanking',      pos > 0 ? `#${pos}` : '—');
+            animateCounter(document.getElementById('dashRanking'), pos > 0 ? pos : null, { prefix: '#' });
             _setEl('dashRankingLabel', pos > 0 ? `de ${total} alunos` : 'sem dados de ranking');
         }
 
         // Cabeçalho e welcome
         _setEl('headerUserName', aluno.nome || 'Aluno');
         _setEl('welcomeName', firstName);
+
+        setupInsightPerformance(boletim);
+        setupMetaCRA(id, cra !== '—' ? parseFloat(cra) : null);
+        _renderAvatar(aluno.avatar_base64);
+        setupAvatarUpload(id);
 
         // Aba Relatórios
         _setEl('reportName',   aluno.nome  || '');
@@ -114,21 +506,10 @@ async function loadAlunoData(id) {
             situacaoEl.className = `badge ${situacao === 'Ativo' ? 'bg-success' : 'bg-secondary'}`;
         }
 
-        // Toggle permitir_exibicao_ranking — carrega do banco e salva ao mudar
-        const rankToggle = document.getElementById('showInRanking');
-        if (rankToggle) {
-            rankToggle.checked = aluno.permitir_exibicao_ranking !== 0; // default = mostrar
-            rankToggle.onchange = async function() {
-                try {
-                    const res = await fetch(`${ALUNO_API}/alunos/${id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ permitir_exibicao_ranking: this.checked ? 1 : 0 })
-                    });
-                    if (!res.ok) console.warn('Erro ao salvar preferência de ranking:', await res.json());
-                } catch(e) { console.warn('Erro ao salvar preferência de ranking:', e); }
-            };
-        }
+        // Toggles de privacidade — carregam do banco e salvam de verdade ao mudar
+        _wireToggleAluno('showInRanking', 'permitir_exibicao_ranking', aluno, id, true);
+        _wireToggleAluno('allowContact',  'permitir_contato',          aluno, id, true);
+        _wireToggleAluno('shareProgress', 'compartilhar_progresso',    aluno, id, false);
 
         // Aba Editar Perfil — dados pessoais
         const nameParts = (aluno.nome || '').trim().split(' ');
@@ -175,6 +556,7 @@ async function loadAlunoData(id) {
 
     } catch (err) {
         console.warn('Não foi possível carregar dados do aluno:', err);
+        _toggleAlunoDataError(true, id);
     }
 }
 
@@ -341,6 +723,109 @@ async function initializeDisciplinasPage() {
     }
 }
 
+// ─── Vagas — listagem + "Tenho interesse" (base do chat por match mútuo) ─────
+async function initializeVagasPage() {
+    const grid = document.getElementById('vagasGrid');
+    const alunoId = localStorage.getItem('alunoId');
+    if (!grid || !alunoId) return;
+
+    grid.innerHTML = '<div class="col-12 text-center py-5 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Carregando vagas...</div>';
+
+    try {
+        const res = await fetch(`${ALUNO_API}/alunos/${alunoId}/vagas`);
+        const vagas = await res.json();
+
+        if (!Array.isArray(vagas) || vagas.length === 0) {
+            grid.innerHTML = '<div class="col-12 text-center py-4 text-muted">Nenhuma vaga aberta no momento.</div>';
+            return;
+        }
+
+        grid.innerHTML = '';
+        vagas.forEach(v => grid.appendChild(_vagaCardEl(v)));
+    } catch (err) {
+        console.error('Erro ao carregar vagas:', err);
+        grid.innerHTML = '<div class="col-12 text-center py-4 text-danger">Erro ao carregar vagas.</div>';
+    }
+}
+
+function _vagaCardEl(v) {
+    const col = document.createElement('div');
+    col.className = 'col-lg-4 col-md-6 mb-2';
+    const interessado = !!v.tenho_interesse;
+
+    // Compatibilidade com esta vaga (calculada no servidor). Mostra o % e, no
+    // tooltip, o detalhamento por componente.
+    const c = v.compatibilidade;
+    let compatHtml = '';
+    if (c && c.score != null) {
+        const cor = c.faixa === 'alta' ? 'success' : c.faixa === 'media' ? 'warning' : 'secondary';
+        const tt = (c.componentes || []).filter(x => x.aplicavel)
+            .map(x => `${x.rotulo}: ${x.detalhe} (${x.obtido}/${x.peso})`).join('\n');
+        compatHtml = `<p class="mb-1"><span class="badge bg-${cor}-subtle text-${cor}-emphasis border border-${cor}-subtle" title="${_esc(tt)}"><i class="bi bi-magnet me-1"></i>${c.score}% compatível com você</span></p>`;
+    }
+
+    col.innerHTML = `
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="card-title mb-0">${_esc(v.titulo)}</h6>
+                    ${v.tipo_vaga_nome ? `<span class="badge bg-secondary">${_esc(v.tipo_vaga_nome)}</span>` : ''}
+                </div>
+                ${compatHtml}
+                <p class="text-muted small mb-1"><i class="bi bi-building me-1"></i>${_esc(v.empresa_nome)}</p>
+                ${v.area_foco_nome ? `<p class="text-muted small mb-1"><i class="bi bi-diagram-3 me-1"></i>${_esc(v.area_foco_nome)}</p>` : ''}
+                ${v.curso_preferido ? `<p class="text-muted small mb-1"><i class="bi bi-mortarboard me-1"></i>${_esc(v.curso_preferido)}${v.semestre_minimo ? ` · ${v.semestre_minimo}º semestre+` : ''}</p>` : ''}
+                ${v.descricao ? `<p class="small mt-2 mb-3 flex-grow-1">${_esc(v.descricao)}</p>` : '<div class="flex-grow-1"></div>'}
+                <button class="btn btn-sm ${interessado ? 'btn-success' : 'btn-outline-primary'} w-100 mt-auto"
+                        onclick="_toggleInteresseVaga(${v.id}, this)" data-interesse="${interessado ? '1' : '0'}">
+                    <i class="bi ${interessado ? 'bi-check-circle-fill' : 'bi-hand-thumbs-up'} me-1"></i>
+                    ${interessado ? 'Interesse marcado' : 'Tenho interesse'}
+                </button>
+            </div>
+        </div>`;
+    return col;
+}
+
+async function _toggleInteresseVaga(vagaId, btnEl) {
+    const alunoId = localStorage.getItem('alunoId');
+    if (!alunoId) return;
+    const jaInteressado = btnEl.dataset.interesse === '1';
+    btnEl.disabled = true;
+    try {
+        if (jaInteressado) {
+            await fetch(`${ALUNO_API}/alunos/${alunoId}/vagas/${vagaId}/interesse`, { method: 'DELETE' });
+            btnEl.dataset.interesse = '0';
+            btnEl.className = 'btn btn-sm btn-outline-primary w-100 mt-auto';
+            btnEl.innerHTML = '<i class="bi bi-hand-thumbs-up me-1"></i>Tenho interesse';
+        } else {
+            const res = await fetch(`${ALUNO_API}/alunos/${alunoId}/vagas/${vagaId}/interesse`, { method: 'POST' });
+            const data = await res.json();
+            btnEl.dataset.interesse = '1';
+            btnEl.className = 'btn btn-sm btn-success w-100 mt-auto';
+            btnEl.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Interesse marcado';
+            if (data.match) {
+                _mostrarToastVagas('🎉 Match! Vocês têm interesse mútuo — um chat foi aberto. Confira em Mensagens.');
+            }
+        }
+    } catch (err) {
+        console.error('Erro ao marcar interesse:', err);
+    } finally {
+        btnEl.disabled = false;
+    }
+}
+
+function _mostrarToastVagas(msg) {
+    const div = document.createElement('div');
+    div.className = 'position-fixed bottom-0 end-0 p-3';
+    div.style.zIndex = 1080;
+    div.innerHTML = `<div class="toast align-items-center text-white bg-success border-0 show" role="alert">
+        <div class="d-flex"><div class="toast-body">${msg}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.closest('.position-fixed').remove()"></button></div>
+    </div>`;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 6000);
+}
+
 function _mencaoToNota(mencao) {
     const map = { SS: 10, MS: 8.5, MM: 6.5, MI: 4, II: 2, SR: 0 };
     return map[mencao] ?? 0;
@@ -387,18 +872,6 @@ async function loadQuadroProfissional() {
 
         let html = '';
 
-        // LinkedIn resumo
-        if (data.linkedin || data.linkedin_resumo) {
-            html += `
-            <div class="mb-4 p-3 border rounded bg-light">
-                <div class="d-flex align-items-center mb-2">
-                    <i class="bi bi-linkedin text-primary fs-5 me-2"></i>
-                    <strong>Resumo Profissional</strong>
-                </div>
-                <p class="mb-0 text-muted small">${data.linkedin_resumo || 'Sem resumo disponível.'}</p>
-            </div>`;
-        }
-
         // GitHub repos
         if (data.repos && data.repos.length > 0) {
             html += `
@@ -417,8 +890,8 @@ async function loadQuadroProfissional() {
                 <div class="col-md-4">
                     <div class="card h-100 shadow-sm">
                         <div class="card-body">
-                            <h6 class="card-title mb-1"><a href="${r.url}" target="_blank" class="text-decoration-none">${r.nome}</a></h6>
-                            <p class="card-text text-muted small mb-2" style="font-size:0.78rem;">${r.descricao}</p>
+                            <h6 class="card-title mb-1"><a href="${encodeURI(r.url)}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">${_esc(r.nome)}</a></h6>
+                            <p class="card-text text-muted small mb-2" style="font-size:0.78rem;">${_esc(r.descricao)}</p>
                             <div class="d-flex align-items-center gap-2 mt-auto">
                                 ${lang ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;"><span style="width:10px;height:10px;border-radius:50%;background:${langColor};display:inline-block;"></span>${lang}</span>` : ''}
                                 <span class="text-muted" style="font-size:0.75rem;"><i class="bi bi-star me-1"></i>${r.stars}</span>
@@ -526,7 +999,6 @@ async function _carregarFiltrosRanking() {
         const selCurso = document.getElementById('rankFiltCurso');
         const selSem   = document.getElementById('rankFiltSemestre');
         const selDisc  = document.getElementById('rankFiltDisciplina');
-        const repDisc  = document.getElementById('reportDisciplinaFilter');
 
         if (selCurso) filtros.cursos.forEach(c => {
             selCurso.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`);
@@ -536,10 +1008,6 @@ async function _carregarFiltrosRanking() {
         });
         if (selDisc) filtros.disciplinas.forEach(d => {
             selDisc.insertAdjacentHTML('beforeend', `<option value="${d.id}">${d.nome_materia}</option>`);
-        });
-        // Filtro no relatório
-        if (repDisc) filtros.disciplinas.forEach(d => {
-            repDisc.insertAdjacentHTML('beforeend', `<option value="${d.id}">${d.nome_materia}</option>`);
         });
     } catch(e) { console.warn('Filtros não carregados:', e); }
 }
@@ -595,7 +1063,7 @@ function _renderRankingTable(alunos) {
     tbody.innerHTML = '';
 
     if (!alunos.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">Nenhum aluno encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Nenhum aluno encontrado.</td></tr>';
         return;
     }
 
@@ -607,8 +1075,16 @@ function _renderRankingTable(alunos) {
         const posIcon = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}º`;
         const ocultoPorPreferencia = !isMe && a.permitir_exibicao_ranking === 0;
         const nomeExibido = _rankingNomesVisiveis
-            ? (isMe ? `<strong>Você (${a.nome})</strong>` : (ocultoPorPreferencia ? `<span class="text-muted">Aluno Anônimo</span>` : a.nome))
+            ? (isMe ? `<strong>Você (${_esc(a.nome)})</strong>` : (ocultoPorPreferencia ? `<span class="text-muted">Aluno Anônimo</span>` : _esc(a.nome)))
             : (isMe ? '<strong>Você</strong>' : `Aluno-${String(a.id).padStart(3,'0')}`);
+
+        // Respeita a preferência de anonimato: só oferece "ver desempenho" para si mesmo
+        // ou para colegas que não optaram por ficar anônimos no ranking (LGPD).
+        const btnDesempenho = (isMe || !ocultoPorPreferencia)
+            ? `<button type="button" class="btn btn-sm btn-outline-primary" title="Ver desempenho nos últimos semestres"
+                   onclick="abrirDesempenhoColega(${a.id}, '${isMe ? 'Você' : (a.nome || '').replace(/'/g, "\\'")}', '${(a.curso || '').replace(/'/g, "\\'")}')">
+                   <i class="bi bi-graph-up"></i></button>`
+            : '<span class="text-muted small">—</span>';
 
         const tr = document.createElement('tr');
         if (isMe) tr.className = 'table-primary';
@@ -619,10 +1095,85 @@ function _renderRankingTable(alunos) {
             <td><small class="text-muted">${a.curso || '—'}</small></td>
             <td><span class="badge bg-primary">${a.pontuacao ?? '—'}</span></td>
             <td>${a.frequencia ?? '—'}%</td>
-            <td><span class="badge bg-${status[0]}">${status[1]}</span></td>`;
+            <td><span class="badge bg-${status[0]}">${status[1]}</span></td>
+            <td>${btnDesempenho}</td>`;
         tbody.appendChild(tr);
     });
 }
+
+// Desempenho por Período (colega no Ranking) — Semestral / Anual / Curso Todo
+let _desempenhoColegaIdAtual = null;
+let _desempenhoColegaFiltroAtual = 'anual';
+
+async function _carregarDesempenhoColega(alunoId, filtro) {
+    _desempenhoColegaFiltroAtual = filtro;
+    const loadingEl = document.getElementById('desempenhoColegaLoading');
+    const chartEl   = document.getElementById('desempenhoColegaChart');
+    loadingEl.style.display = '';
+    chartEl.style.display = 'none';
+
+    try {
+        // "Anual" sem agrupar=ano mostrava rótulo de semestre cru (ex: "26.1") em vez
+        // de anos de verdade — daí a sensação de "ano solto". O seletor de períodos
+        // reaproveita o ?periodos= que o backend já suportava mas ninguém nunca ligava.
+        const periodos = document.getElementById('desempenhoColegaPeriodo')?.value;
+        let url = `${ALUNO_API}/alunos/${alunoId}/desempenho-semestral?filtro=${filtro}`;
+        if (filtro === 'anual') url += '&agrupar=ano';
+        if (periodos) url += `&periodos=${periodos}`;
+
+        const res  = await fetch(url);
+        const data = res.ok ? await res.json() : { labels: [], values: [] };
+
+        loadingEl.style.display = 'none';
+        chartEl.style.display = '';
+
+        if (typeof window.frappe !== 'undefined' && data.values?.length) {
+            chartEl.innerHTML = '';
+            new window.frappe.Chart(chartEl, {
+                title: 'Desempenho (CRA) por período',
+                type: 'line',
+                height: 240,
+                colors: ['#F4442E'],
+                data: {
+                    labels: data.labels,
+                    datasets: [{ name: 'CRA', values: data.values }]
+                }
+            });
+        } else {
+            chartEl.innerHTML = '<p class="text-muted text-center py-4">Sem dados suficientes para exibir o gráfico.</p>';
+        }
+    } catch (e) {
+        loadingEl.style.display = 'none';
+        chartEl.style.display = '';
+        chartEl.innerHTML = '<p class="text-danger text-center py-4">Erro ao carregar desempenho.</p>';
+    }
+}
+
+window.abrirDesempenhoColega = function(alunoId, nome, curso) {
+    _desempenhoColegaIdAtual = alunoId;
+    document.getElementById('desempenhoColegaNome').textContent = nome || '';
+    document.getElementById('desempenhoColegaCurso').textContent = curso || '';
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDesempenhoColega')).show();
+    _carregarDesempenhoColega(alunoId, 'anual');
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const grupo = document.getElementById('desempenhoColegaFiltro');
+    if (!grupo) return;
+    grupo.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-filtro]');
+        if (!btn || !_desempenhoColegaIdAtual) return;
+        grupo.querySelectorAll('button').forEach(b => b.className = 'btn btn-outline-primary');
+        btn.className = 'btn btn-primary';
+        _carregarDesempenhoColega(_desempenhoColegaIdAtual, btn.dataset.filtro);
+    });
+
+    document.getElementById('desempenhoColegaPeriodo')?.addEventListener('change', () => {
+        if (!_desempenhoColegaIdAtual) return;
+        _carregarDesempenhoColega(_desempenhoColegaIdAtual, _desempenhoColegaFiltroAtual);
+    });
+});
 
 function _renderGradeDistributionFromRanking(alunos) {
     const counts = [0,0,0,0,0]; // 9-10, 8-8.9, 7-7.9, 5-6.9, <5
@@ -814,6 +1365,7 @@ function updatePageTitle(pageId) {
         dashboard: 'Dashboard - Espaço do Aluno',
         disciplinas: 'Disciplinas - Espaço do Aluno',
         colegas: 'Colegas - Espaço do Aluno',
+        vagas: 'Vagas - Espaço do Aluno',
         perfil: 'Perfil - Espaço do Aluno'
     };
 
@@ -1107,9 +1659,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Geração de Relatório PDF com html2pdf.js
-// ─────────────────────────────────────────────────────────────────────────────
 
 function _svgToDataUrl(containerId) {
     const container = document.getElementById(containerId);
@@ -1286,7 +1836,7 @@ async function generateStudentReport() {
     }
 }
 
-// ─── Bindings dos botões da aba Relatórios ────────────────────────────────────
+// Bindings dos botões da aba Relatórios
 document.addEventListener('DOMContentLoaded', () => {
     const genBtn = document.getElementById('generateReportBtn');
     if (genBtn) genBtn.addEventListener('click', e => { e.preventDefault(); generateStudentReport(); });
@@ -1328,11 +1878,17 @@ function initializePageSpecificFeatures(pageId) {
         case 'colegas':
             initializeColegasPage();
             break;
+        case 'vagas':
+            initializeVagasPage();
+            break;
         case 'perfil':
             initializePerfilPage();
             break;
         case 'relatorios':
             initializeRelatoriosPage();
+            break;
+        case 'mensagens':
+            if (typeof window.initChat === 'function') window.initChat();
             break;
     }
 }
@@ -1361,46 +1917,6 @@ function initializePageSpecificFeatures(pageId) {
     return new window.frappe.Chart(el, config);
   }
 
-  // ── Datasets estáticos para os filtros ───────────────────────────────────
-  const _PERF_DATA = {
-    mes: {
-      labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5'],
-      datasets: [
-        { name: 'Suas Notas',     values: [8.2, 8.5, 8.8, 9.0, 8.9] },
-        { name: 'Média da Turma', values: [7.8, 8.0, 8.1, 8.3, 8.1] }
-      ]
-    },
-    semestre: {
-      labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
-      datasets: [
-        { name: 'Suas Notas',     values: [7.5, 8.1, 8.7, 8.4, 9.2, 8.9] },
-        { name: 'Média da Turma', values: [7.2, 7.8, 8.0, 7.9, 8.3, 8.1] }
-      ]
-    },
-    ano: {
-      labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
-      datasets: [
-        { name: 'Suas Notas',     values: [7.5, 8.1, 8.7, 8.4, 9.2, 8.9, 8.7, 8.8, 9.1, 9.0, 8.8, 9.2] },
-        { name: 'Média da Turma', values: [7.2, 7.8, 8.0, 7.9, 8.3, 8.1, 7.9, 8.1, 8.3, 8.4, 8.2, 8.5] }
-      ]
-    }
-  };
-
-  const _CRA_DATA = {
-    '2anos': {
-      labels: ['2023.1', '2023.2', '2024.1', '2024.2'],
-      values: [8.4, 8.6, 8.7, 8.9]
-    },
-    '3anos': {
-      labels: ['2022.1', '2022.2', '2023.1', '2023.2', '2024.1', '2024.2'],
-      values: [8.3, 8.0, 8.4, 8.6, 8.7, 8.9]
-    },
-    tudo: {
-      labels: ['2021.1', '2021.2', '2022.1', '2022.2', '2023.1', '2023.2', '2024.1'],
-      values: [7.8, 8.1, 8.3, 8.0, 8.4, 8.6, 8.7]
-    }
-  };
-
   // Marca o botão ativo e desmarca os demais dentro de um btn-group
   function _setFiltroAtivo(groupId, attrName, valor) {
     const grupo = document.getElementById(groupId);
@@ -1411,49 +1927,121 @@ function initializePageSpecificFeatures(pageId) {
     });
   }
 
-  function initializePerformanceChart(filtro = 'mes') {
-    const data = _PERF_DATA[filtro] || _PERF_DATA.mes;
+  // Evolução real de notas por semestre — vem de boletim.semestre_cursado, não é mais
+  // um dataset estático (antes era o mesmo gráfico Jan-Dez pra todo aluno).
+  // Modo "ano" agrega de verdade por ano civil (média dos semestres daquele ano),
+  // não é só uma janela maior de semestres com rótulo de semestre.
+  async function initializePerformanceChart(filtro = 'semestre') {
     _setFiltroAtivo('perfFiltroGrupo', 'data-perf-filtro', filtro);
-    return renderChart('performanceChart', {
-      title: 'Evolução das notas',
-      type: 'line',
-      height: 280,
-      colors: ['#F4442E', '#020122'],
-      data
-    });
+    const alunoId = localStorage.getItem('alunoId');
+    const chartEl = document.getElementById('performanceChart');
+    if (!alunoId || !chartEl) return;
+
+    const anosSelect = document.getElementById('perfAnosSelect');
+    anosSelect?.classList.toggle('d-none', filtro !== 'ano');
+
+    let query;
+    if (filtro === 'ano') {
+      // "0" = Todos os anos — não pode usar `|| 3` aqui, 0 é falsy e cairia sempre no padrão
+      const anosRaw = anosSelect ? parseInt(anosSelect.value, 10) : NaN;
+      const anos = Number.isFinite(anosRaw) ? anosRaw : 3;
+      query = anos > 0 ? `agrupar=ano&periodos=${anos}` : 'agrupar=ano&filtro=completo';
+    } else {
+      query = 'filtro=semestral';
+    }
+
+    try {
+      const res  = await fetch(`${ALUNO_API}/alunos/${alunoId}/desempenho-semestral?${query}`);
+      const data = res.ok ? await res.json() : { labels: [], values: [] };
+
+      if (!data.values?.length) {
+        chartEl.innerHTML = '<p class="text-muted text-center py-4">Sem dados suficientes para exibir o gráfico.</p>';
+        return;
+      }
+
+      return renderChart('performanceChart', {
+        title: 'Evolução das notas',
+        type: 'line',
+        height: 280,
+        colors: ['#F4442E'],
+        data: {
+          labels: data.labels,
+          datasets: [{ name: 'Suas Notas', values: data.values }]
+        }
+      });
+    } catch (_) {
+      chartEl.innerHTML = '<p class="text-muted text-center py-4">Não foi possível carregar o gráfico.</p>';
+    }
   }
 
   // Wira os botões de filtro do gráfico de Evolução das Notas
   function _wirePerfFiltro() {
     const grupo = document.getElementById('perfFiltroGrupo');
-    if (!grupo) return;
-    const clone = grupo.cloneNode(true);
-    grupo.replaceWith(clone);
-    clone.addEventListener('click', e => {
-      const btn = e.target.closest('[data-perf-filtro]');
-      if (btn) initializePerformanceChart(btn.dataset.perfFiltro);
-    });
+    if (grupo) {
+      const clone = grupo.cloneNode(true);
+      grupo.replaceWith(clone);
+      clone.addEventListener('click', e => {
+        const btn = e.target.closest('[data-perf-filtro]');
+        if (btn) initializePerformanceChart(btn.dataset.perfFiltro);
+      });
+    }
+    const anosSelect = document.getElementById('perfAnosSelect');
+    if (anosSelect) {
+      const cloneSel = anosSelect.cloneNode(true);
+      anosSelect.replaceWith(cloneSel);
+      cloneSel.addEventListener('change', () => initializePerformanceChart('ano'));
+    }
   }
 
-  function initializeFrequencyChart() {
-    return renderChart('frequencyChart', {
-      title: 'Frequência por disciplina',
-      type: 'bar',
-      height: 280,
-      colors: ['#F4442E'],
-      data: {
-        labels: ['Algoritmos', 'BD', 'Cálculo', 'POO', 'Redes', 'Eng. Software'],
-        datasets: [
-          { name: 'Frequência', values: [96, 92, 88, 98, 94, 96] }
-        ]
-      },
-      axisOptions: {
-        xIsSeries: true
-      },
-      barOptions: {
-        spaceRatio: 0.25
+  // Frequência real por disciplina — vem de boletim.faltas (antes era um array
+  // fixo idêntico pra todo aluno). Sem coluna de "total de aulas" no banco,
+  // assume um semestre padrão de 20 aulas por disciplina pra converter faltas
+  // em percentual — aproximação, mas real e distinta por aluno.
+  const AULAS_POR_SEMESTRE = 20;
+
+  async function initializeFrequencyChart() {
+    const chartEl = document.getElementById('frequencyChart');
+    const alunoId = localStorage.getItem('alunoId');
+    if (!chartEl || !alunoId) return;
+
+    try {
+      const res = await fetch(`${ALUNO_API}/alunos/${alunoId}/boletim-detalhado`);
+      const boletim = res.ok ? await res.json() : [];
+
+      if (!Array.isArray(boletim) || !boletim.length) {
+        chartEl.innerHTML = '<p class="text-muted text-center py-4">Sem dados suficientes para exibir o gráfico.</p>';
+        return;
       }
-    });
+
+      // Uma disciplina pode aparecer mais de uma vez (histórico de semestres) — mantém a ocorrência mais recente
+      const porDisciplina = new Map();
+      boletim.forEach(b => porDisciplina.set(b.nome_materia, b));
+
+      const labels = [...porDisciplina.keys()];
+      const values = labels.map(nome => {
+        const faltas = porDisciplina.get(nome).faltas || 0;
+        return Math.max(0, Math.min(100, Math.round((1 - faltas / AULAS_POR_SEMESTRE) * 100)));
+      });
+
+      return renderChart('frequencyChart', {
+        title: 'Frequência por disciplina',
+        type: 'bar',
+        height: 280,
+        colors: ['#F4442E'],
+        data: {
+          labels,
+          datasets: [{ name: 'Frequência', values }]
+        },
+        axisOptions: {
+          xIsSeries: true
+        },
+        barOptions: {
+          spaceRatio: 0.25
+        }
+      });
+    } catch (_) {
+      chartEl.innerHTML = '<p class="text-muted text-center py-4">Não foi possível carregar o gráfico.</p>';
+    }
   }
 
   function initializeGradeDistributionChart() {
@@ -1473,19 +2061,41 @@ function initializePageSpecificFeatures(pageId) {
     });
   }
 
-  function initializeCRAHistoryChart(filtro = '2anos') {
-    const d = _CRA_DATA[filtro] || _CRA_DATA['2anos'];
+  // Histórico real de CRA por semestre — vem de boletim.semestre_cursado (mesmo
+  // endpoint do gráfico "Evolução das Notas"), não é mais uma curva sintética.
+  async function initializeCRAHistoryChart(filtro = '2anos') {
     _setFiltroAtivo('craFiltroGrupo', 'data-cra-filtro', filtro);
-    return renderChart('craHistoryChart', {
-      title: 'Histórico de CRA',
-      type: 'line',
-      height: 280,
-      colors: ['#020122'],
-      data: {
-        labels: d.labels,
-        datasets: [{ name: 'CRA', values: d.values }]
+    const alunoId = localStorage.getItem('alunoId');
+    const chartEl = document.getElementById('craHistoryChart');
+    if (!alunoId || !chartEl) return;
+
+    const params = filtro === 'tudo'  ? 'filtro=completo'
+                  : filtro === '3anos' ? 'periodos=6'
+                  : filtro === '1ano'  ? 'periodos=2'
+                  : 'periodos=4';
+
+    try {
+      const res  = await fetch(`${ALUNO_API}/alunos/${alunoId}/desempenho-semestral?${params}`);
+      const data = res.ok ? await res.json() : { labels: [], values: [] };
+
+      if (!data.values?.length) {
+        chartEl.innerHTML = '<p class="text-muted text-center py-4">Sem dados suficientes para exibir o gráfico.</p>';
+        return;
       }
-    });
+
+      return renderChart('craHistoryChart', {
+        title: 'Histórico de CRA',
+        type: 'line',
+        height: 280,
+        colors: ['#020122'],
+        data: {
+          labels: data.labels,
+          datasets: [{ name: 'CRA', values: data.values }]
+        }
+      });
+    } catch (_) {
+      chartEl.innerHTML = '<p class="text-muted text-center py-4">Não foi possível carregar o gráfico.</p>';
+    }
   }
 
   // Wira os botões de filtro do Histórico de CRA
@@ -1611,6 +2221,11 @@ async function initializeRelatoriosPage() {
         window.initializeReportPieChart();
     }
 
+    // Filtro precisa listar só as disciplinas do próprio aluno, não a lista
+    // global do Ranking (achado do usuário: estava vindo de /filtros, que traz
+    // toda disciplina do sistema — a maioria nem é do aluno logado).
+    await _popularFiltroDisciplinaRelatorio();
+
     // Monta gráfico de frequência por disciplina (com filtro)
     await _renderReportFreqChart();
 
@@ -1623,11 +2238,38 @@ async function initializeRelatoriosPage() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ─── PERFIL PROFISSIONAL ───────────────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
+async function _popularFiltroDisciplinaRelatorio() {
+    const alunoId = localStorage.getItem('alunoId');
+    const sel = document.getElementById('reportDisciplinaFilter');
+    if (!alunoId || !sel) return;
+    try {
+        const res = await fetch(`${ALUNO_API}/alunos/${alunoId}/boletim-detalhado`);
+        const disciplinas = await res.json();
+        sel.innerHTML = '<option value="">Todas</option>' +
+            disciplinas.map(d => `<option value="${_esc(d.nome_materia)}">${_esc(d.nome_materia)}</option>`).join('');
+    } catch (e) { console.warn('Filtro de disciplinas do relatório não carregado:', e); }
+}
 
-let _ppState = { resumo: '', experiencias: [], formacoes: [], idiomas: [], habilidades: [], certificacoes: [] };
+// PERFIL PROFISSIONAL
+
+let _ppState = { resumo: '', area_interesse_id: '', experiencias: [], formacoes: [], idiomas: [], habilidades: [], certificacoes: [] };
+let _ppAreasFoco = null; // cache de dom_areas_foco — não precisa recarregar a cada visita
+
+// Popula o <select> de Área de Interesse a partir de dom_areas_foco (mesmo domínio usado pelas empresas)
+async function _ppCarregarAreasFoco() {
+    const sel = document.getElementById('ppAreaInteresse');
+    if (_ppAreasFoco) {
+        if (sel) sel.innerHTML = '<option value="">Ainda não defini</option>' + _ppAreasFoco.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+        return;
+    }
+    try {
+        const res = await fetch(`${ALUNO_API}/dom/areas-foco`);
+        _ppAreasFoco = res.ok ? await res.json() : [];
+    } catch (_) {
+        _ppAreasFoco = [];
+    }
+    if (sel) sel.innerHTML = '<option value="">Ainda não defini</option>' + _ppAreasFoco.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+}
 
 async function loadPerfilProfissional() {
     const alunoId  = localStorage.getItem('alunoId');
@@ -1639,10 +2281,14 @@ async function loadPerfilProfissional() {
     if (formEl) formEl.style.display = 'none';
 
     try {
-        const res = await fetch(`${ALUNO_API}/alunos/${alunoId}/perfil-profissional`);
+        const [res] = await Promise.all([
+            fetch(`${ALUNO_API}/alunos/${alunoId}/perfil-profissional`),
+            _ppCarregarAreasFoco()
+        ]);
         const data = res.ok ? await res.json() : {};
         _ppState = {
-            resumo:        data.resumo        || '',
+            resumo:            data.resumo            || '',
+            area_interesse_id: data.area_interesse_id  || '',
             experiencias:  data.experiencias  || [],
             formacoes:     data.formacoes     || [],
             idiomas:       data.idiomas       || [],
@@ -1650,7 +2296,7 @@ async function loadPerfilProfissional() {
             certificacoes: data.certificacoes || []
         };
     } catch (_) {
-        _ppState = { resumo: '', experiencias: [], formacoes: [], idiomas: [], habilidades: [], certificacoes: [] };
+        _ppState = { resumo: '', area_interesse_id: '', experiencias: [], formacoes: [], idiomas: [], habilidades: [], certificacoes: [] };
     } finally {
         if (loadEl) loadEl.style.display = 'none';
         if (formEl) formEl.style.display = '';
@@ -1668,6 +2314,8 @@ async function loadPerfilProfissional() {
 function _ppRenderAll() {
     const resumoEl = document.getElementById('ppResumo');
     if (resumoEl) resumoEl.value = _ppState.resumo || '';
+    const areaEl = document.getElementById('ppAreaInteresse');
+    if (areaEl) areaEl.value = _ppState.area_interesse_id || '';
     _ppRenderExperiencias();
     _ppRenderFormacoes();
     _ppRenderIdiomas();
@@ -1675,7 +2323,7 @@ function _ppRenderAll() {
     _ppRenderCertificacoes();
 }
 
-// ── Experiências ──────────────────────────────────────────────────────────────
+// Experiências
 function _ppExpRow(e, i) {
     return `<div class="card mb-2 border-start border-primary border-3" id="ppExp-${i}">
         <div class="card-body py-2 px-3">
@@ -1743,7 +2391,7 @@ function _ppCollectExperiencias() {
     return _ppState.experiencias;
 }
 
-// ── Formações ─────────────────────────────────────────────────────────────────
+// Formações
 function _ppFormRow(f, i) {
     return `<div class="card mb-2 border-start border-success border-3" id="ppForm-${i}">
         <div class="card-body py-2 px-3">
@@ -1799,7 +2447,7 @@ function _ppCollectFormacoes() {
     return _ppState.formacoes;
 }
 
-// ── Idiomas ───────────────────────────────────────────────────────────────────
+// Idiomas
 const _PP_NIVEIS = ['Básico','Intermediário','Avançado','Fluente','Nativo'];
 
 function _ppIdiomaRow(id, i) {
@@ -1844,7 +2492,7 @@ function _ppCollectIdiomas() {
     return _ppState.idiomas;
 }
 
-// ── Habilidades ───────────────────────────────────────────────────────────────
+// Habilidades
 function _ppRenderHabilidades() {
     const el = document.getElementById('ppHabilidadesTags');
     if (!el) return;
@@ -1878,7 +2526,7 @@ function ppRemoveHabilidade(i) {
     _ppRenderHabilidades();
 }
 
-// ── Certificações ─────────────────────────────────────────────────────────────
+// Certificações
 function _ppCertRow(c, i) {
     return `<div class="card mb-2 border-start border-warning border-3" id="ppCert-${i}">
         <div class="card-body py-2 px-3">
@@ -1934,13 +2582,14 @@ function _ppCollectCertificacoes() {
     })).filter(c => c.nome.trim());
 }
 
-// ── Salvar ────────────────────────────────────────────────────────────────────
+// Salvar
 async function savePerfilProfissional() {
     const alunoId = localStorage.getItem('alunoId');
     if (!alunoId) return;
 
     const payload = {
-        resumo:        document.getElementById('ppResumo')?.value || '',
+        resumo:            document.getElementById('ppResumo')?.value || '',
+        area_interesse_id: document.getElementById('ppAreaInteresse')?.value || null,
         experiencias:  _ppCollectExperiencias(),
         formacoes:     _ppCollectFormacoes(),
         idiomas:       _ppCollectIdiomas(),
@@ -1962,7 +2611,7 @@ async function savePerfilProfissional() {
     }
 }
 
-// ── Upload PDF LinkedIn ───────────────────────────────────────────────────────
+// Upload PDF LinkedIn
 async function ppHandleLinkedinUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -2006,7 +2655,7 @@ async function ppHandleLinkedinUpload(event) {
     }
 }
 
-// ── ATS: página extra no PDF ──────────────────────────────────────────────────
+// ATS: página extra no PDF
 function _ppAppendAtsPdf(pdf, name, course, email) {
     pdf.addPage();
     const margin = 18;
@@ -2101,11 +2750,6 @@ function _ppAppendAtsPdf(pdf, name, course, email) {
     pdf.setTextColor(150);
     pdf.text('Perfil Profissional — Formato ATS — gerado por Ranking+', margin, y);
     pdf.setTextColor(0);
-}
-
-// ── Helper: escapa HTML para uso em innerHTML ─────────────────────────────────
-function _esc(str) {
-    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 async function _renderReportFreqChart() {

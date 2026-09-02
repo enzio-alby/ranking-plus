@@ -1,4 +1,4 @@
-// --- ABA RELATÓRIOS: Funções e dados isolados ---
+// ABA RELATÓRIOS: Funções e dados isolados
 const reportsStudentsData = [
     {
         id: 1,
@@ -325,7 +325,7 @@ function exportReportsToExcel() {
     }
 }
 
-// ── Helpers de cálculo do boletim ──────────────────────────────────────────
+// Helpers de cálculo do boletim
 function _calcMediaBoletim(boletim) {
     if (!boletim || !boletim.length) return 0;
     const soma = boletim.reduce((s, d) => s + _mencaoToNotaProf(d.mencao), 0);
@@ -422,14 +422,14 @@ async function generateReportsPDF() {
 
         for (const aluno of studentsToExport) {
 
-            // ── Busca boletim detalhado do aluno para dados reais ──────────
+            // Busca boletim detalhado do aluno para dados reais
             let boletim = [];
             try {
                 const rb = await fetch(`${PROF_API}/alunos/${aluno.id}/boletim-detalhado`);
                 if (rb.ok) boletim = await rb.json();
             } catch(_) {}
 
-            // ── Busca perfil profissional (se checkbox marcado) ────────────
+            // Busca perfil profissional (se checkbox marcado)
             let perfil = null;
             if (incPerfilProf) {
                 try {
@@ -439,7 +439,7 @@ async function generateReportsPDF() {
             }
             perfis.push(perfil);
 
-            // ── Calcula métricas a partir dos dados reais ─────────────────
+            // Calcula métricas a partir dos dados reais
             // media: usa campo "media" (endpoint /alunos), ou "mencao" (endpoint /discId/alunos), ou calcula do boletim
             const mediaNum = (typeof aluno.media === 'number' || (aluno.media !== undefined && aluno.media !== null))
                 ? parseFloat(aluno.media)
@@ -458,7 +458,7 @@ async function generateReportsPDF() {
 
             const posicao = rankMap[aluno.id] || '—';
 
-            // ── Gráficos offscreen ────────────────────────────────────────
+            // Gráficos offscreen
             let imgDonut = '', imgBar = '';
             if (incGraficos && typeof window.Chart !== 'undefined') {
                 // Donut: distribuição de desempenho por disciplina (mencão → nota)
@@ -497,7 +497,7 @@ async function generateReportsPDF() {
             }
 
 
-            // ── Projetos/Atividades por disciplina ────────────────────────
+            // Projetos/Atividades por disciplina
             let projetosHtml = '';
             if (incDisciplinas && boletim.length) {
                 const rows = boletim.map(d => {
@@ -535,7 +535,7 @@ async function generateReportsPDF() {
                 </div>`;
             }
 
-            // ── Pontos fortes/fracos baseados em dados reais ──────────────
+            // Pontos fortes/fracos baseados em dados reais
             let pontosHtml = '';
             if (incPontos) {
                 const fortes = [];
@@ -686,7 +686,7 @@ async function generateReportsPDF() {
 
         hideReportsLoading();
 
-        // ── Renderiza cada aluno como canvas individual e monta o PDF ──────────
+        // Renderiza cada aluno como canvas individual e monta o PDF
         // Mesma técnica do areaaluno: html2canvas + jsPDF, garante A4 sem cortes.
         if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
             showReportsToast('Bibliotecas de PDF não carregadas. Recarregue.', 'error');
@@ -753,7 +753,7 @@ async function generateReportsPDF() {
                 pdf.addImage(imgData, 'JPEG', xOff, margin, finalW, maxH);
             }
 
-            // ── Página ATS do perfil profissional (texto limpo, sem imagens) ──
+            // Página ATS do perfil profissional (texto limpo, sem imagens)
             const perf = perfis[i];
             const temConteudo = perf && !!(perf.resumo || perf.experiencias?.length || perf.formacoes?.length || perf.idiomas?.length || perf.habilidades?.length);
             if (incPerfilProf && temConteudo) {
@@ -772,7 +772,7 @@ async function generateReportsPDF() {
     }
 }
 
-// ── Página ATS de perfil profissional para o PDF do professor ─────────────────
+// Página ATS de perfil profissional para o PDF do professor
 function _appendAtsPdfProf(pdf, perfil, aluno) {
     const margin = 18;
     const maxW   = pdf.internal.pageSize.getWidth() - margin * 2;
@@ -948,13 +948,15 @@ window.showTab = function(tabName) {
         loadScheduleTab();
     } else if (tabName === 'reports') {
         loadReportsTab();
+    } else if (tabName === 'mensagens') {
+        if (typeof window.initChat === 'function') window.initChat();
     }
 };
 
 window.toggleSidebar = function() {
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.querySelector('.main-content');
-    
+
     sidebar.classList.toggle('show');
     if (window.innerWidth <= 768) {
         if (sidebar.classList.contains('show')) {
@@ -962,6 +964,101 @@ window.toggleSidebar = function() {
         } else {
             mainContent.style.marginLeft = '0';
         }
+    }
+};
+
+// PERFIL DO PROFESSOR — ações reais (antes eram alert() decorativos)
+// Indicador "Salvo ✓" reaproveitando o mesmo padrão já usado no Portal de
+// Talentos (notas privadas de favorito) — aparece e some sozinho, sem alert().
+function _feedbackInline(elId, texto, classe) {
+    let el = document.getElementById(elId);
+    if (!el) return;
+    el.textContent = texto;
+    el.className = `small ms-2 ${classe}`;
+    el.style.display = 'inline';
+    if (classe === 'text-success') setTimeout(() => { el.style.display = 'none'; }, 2000);
+}
+
+window.salvarDadosProfessor = async function(btn) {
+    const profId = localStorage.getItem('professorId');
+    if (!profId) return;
+    const original = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+    try {
+        const body = {
+            nome: document.getElementById('profEditNome').value.trim(),
+            email: document.getElementById('profEditEmail').value.trim(),
+            telefone: document.getElementById('profEditTelefone').value.trim(),
+            titulacao: document.getElementById('profEditTitulacao').value,
+            area_atuacao: document.getElementById('profEditArea').value.trim()
+        };
+        const res = await fetch(`${PROF_API}/professores/${profId}`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao salvar.');
+        _feedbackInline('profDadosFeedback', 'Salvo ✓', 'text-success');
+        ['sidebarProfName', 'dashProfName', 'profPerfilNome'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = body.nome || '—';
+        });
+    } catch (err) {
+        _feedbackInline('profDadosFeedback', err.message, 'text-danger');
+    } finally {
+        btn.disabled = false; btn.innerHTML = original;
+    }
+};
+
+window.alterarSenhaProfessor = async function(btn) {
+    const profId = localStorage.getItem('professorId');
+    if (!profId) return;
+    const nova = document.getElementById('profSenhaNova').value;
+    const conf = document.getElementById('profSenhaConf').value;
+    if (!nova || !conf) { _feedbackInline('profSenhaFeedback', 'Preencha os dois campos.', 'text-danger'); return; }
+    if (nova !== conf) { _feedbackInline('profSenhaFeedback', 'As senhas não coincidem.', 'text-danger'); return; }
+    if (nova.length < 6) { _feedbackInline('profSenhaFeedback', 'A senha deve ter pelo menos 6 caracteres.', 'text-danger'); return; }
+
+    const original = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+    try {
+        const res = await fetch(`${PROF_API}/professores/${profId}/senha`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nova_senha: nova })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao alterar senha.');
+        document.getElementById('profSenhaNova').value = '';
+        document.getElementById('profSenhaConf').value = '';
+        _feedbackInline('profSenhaFeedback', 'Senha alterada ✓', 'text-success');
+    } catch (err) {
+        _feedbackInline('profSenhaFeedback', err.message, 'text-danger');
+    } finally {
+        btn.disabled = false; btn.innerHTML = original;
+    }
+};
+
+window.salvarPreferenciasProfessor = async function(btn) {
+    const profId = localStorage.getItem('professorId');
+    if (!profId) return;
+    const original = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+    try {
+        const body = {
+            idioma_preferido: document.getElementById('profPrefIdioma').value,
+            notif_notas: document.getElementById('profNotifNotas').checked ? 1 : 0,
+            notif_faltas: document.getElementById('profNotifFaltas').checked ? 1 : 0,
+            notif_ranking: document.getElementById('profNotifRanking').checked ? 1 : 0,
+            notif_eventos: document.getElementById('profNotifEventos').checked ? 1 : 0
+        };
+        const res = await fetch(`${PROF_API}/professores/${profId}/preferencias`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao salvar preferências.');
+        _feedbackInline('profPrefFeedback', 'Salvo ✓', 'text-success');
+    } catch (err) {
+        _feedbackInline('profPrefFeedback', err.message, 'text-danger');
+    } finally {
+        btn.disabled = false; btn.innerHTML = original;
     }
 };
 
@@ -1144,6 +1241,14 @@ let _profDisciplinas = []; // cache das disciplinas do professor
 let _profTodosAlunos = []; // cache de todos os alunos do professor
 
 async function initializePage() {
+    // Sessão salva sem token válido (achado S1): toda rota autenticada vai dar
+    // 401. Em vez de mostrar a página inteira quebrada, manda de volta pro login.
+    if (localStorage.getItem('professorId') && !localStorage.getItem('unirank_token')) {
+        localStorage.clear();
+        window.location.href = 'index.html';
+        return;
+    }
+
     const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
     ['current-date','current-date-prof'].forEach(id => {
         const el = document.getElementById(id);
@@ -1187,11 +1292,23 @@ async function initializePage() {
 
         // Preenche campos de edição
         const fields = { profEditNome: prof.nome, profEditEmail: prof.email,
-                         profEditTelefone: prof.telefone, profEditCampus: prof.campus };
+                         profEditTelefone: prof.telefone, profEditCampus: prof.campus,
+                         profEditTitulacao: prof.titulacao, profEditArea: prof.area_atuacao };
         Object.entries(fields).forEach(([id, val]) => {
             const el = document.getElementById(id);
             if (el) el.value = val || '';
         });
+
+        // Preenche preferências (idioma + notificações) — antes eram só valores
+        // hardcoded no HTML, nunca lidos nem salvos de verdade
+        const idiomaEl = document.getElementById('profPrefIdioma');
+        if (idiomaEl) idiomaEl.value = prof.idioma_preferido || 'pt-BR';
+        [['profNotifNotas', prof.notif_notas], ['profNotifFaltas', prof.notif_faltas],
+         ['profNotifRanking', prof.notif_ranking], ['profNotifEventos', prof.notif_eventos]]
+            .forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (el) el.checked = Number(val) !== 0;
+            });
     } catch(_) {}
 
     // Stats do dashboard + perfil
@@ -1199,16 +1316,16 @@ async function initializePage() {
         const res   = await fetch(`${PROF_API}/professores/${profId}/stats`);
         const stats = await res.json();
         const pairs = [
-            ['dashStatAlunos', stats.alunos],
-            ['dashStatTurmas', stats.turmas],
-            ['dashStatPresenca', stats.presenca_media !== '—' ? stats.presenca_media + '%' : '—'],
-            ['dashStatMedia', stats.media_geral],
-            ['profStatAlunos', stats.alunos],
-            ['profStatTurmas', stats.turmas],
-            ['profStatMedia', stats.media_geral],
-            ['profStatPresenca', stats.presenca_media !== '—' ? stats.presenca_media + '%' : '—']
+            ['dashStatAlunos',   stats.alunos,        {}],
+            ['dashStatTurmas',   stats.turmas,         {}],
+            ['dashStatPresenca', stats.presenca_media, { suffix: '%' }],
+            ['dashStatMedia',    stats.media_geral,    { decimals: 1 }],
+            ['profStatAlunos',   stats.alunos,         {}],
+            ['profStatTurmas',   stats.turmas,         {}],
+            ['profStatMedia',    stats.media_geral,    { decimals: 1 }],
+            ['profStatPresenca', stats.presenca_media, { suffix: '%' }]
         ];
-        pairs.forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.textContent = val ?? '—'; });
+        pairs.forEach(([id, val, opts]) => animateCounter(document.getElementById(id), val, opts));
     } catch(_) {}
 }
 
@@ -1221,7 +1338,7 @@ function setupEventListeners() {
     }
 }
 
-// ─── ABA TURMAS ──────────────────────────────────────────────────────────────
+// ABA TURMAS
 async function loadClasses() {
     const container = document.getElementById('classes-container');
     const badge     = document.getElementById('turmasTotalBadge');
@@ -1248,18 +1365,26 @@ async function loadClasses() {
             col.className = 'col-lg-6 mb-4';
             col.innerHTML = `
                 <div class="custom-card class-card h-100">
-                    <div class="card-body">
+                    <div class="card-body d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
-                                <h5 class="card-title text-primary mb-1">${d.nome_materia}</h5>
+                                <h5 class="card-title mb-1">${d.nome_materia}</h5>
                                 <p class="text-muted mb-1 small"><i class="fas fa-clock me-1"></i>${d.dia_semana || '—'} ${d.horario || ''}</p>
                                 <p class="text-muted mb-0 small"><i class="fas fa-map-marker-alt me-1"></i>${d.sala || '—'} · ${d.campus || '—'}</p>
                             </div>
-                            <span class="badge bg-primary">${d.total_alunos} aluno${d.total_alunos !== 1 ? 's' : ''}</span>
+                            <span class="badge class-card-badge">${d.total_alunos} aluno${d.total_alunos !== 1 ? 's' : ''}</span>
                         </div>
-                        <button class="btn btn-outline-primary w-100 btn-sm" onclick="verAlunosDisciplina(${d.id}, '${d.nome_materia.replace(/'/g, "\\'")}')">
+                        <button class="btn btn-outline-primary w-100 btn-sm mt-auto" onclick="verAlunosDisciplina(${d.id}, '${d.nome_materia.replace(/'/g, "\\'")}')">
                             <i class="fas fa-users me-2"></i>Ver Alunos
                         </button>
+                        <div class="d-flex gap-2 mt-2">
+                            <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="abrirModalAviso(${d.id}, '${d.nome_materia.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-bullhorn me-1"></i>Aviso
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="abrirModalEvolucaoTurma(${d.id}, '${d.nome_materia.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-chart-line me-1"></i>Evolução
+                            </button>
+                        </div>
                     </div>
                 </div>`;
             container.appendChild(col);
@@ -1283,6 +1408,31 @@ function _popularSelectDisciplinas() {
     });
 }
 
+// Exporta a lista de alunos exibida na aba (respeita o filtro de turma atual)
+window.exportarAlunosCSV = function() {
+    const alunos = window._alunosParaExportar || [];
+    if (!alunos.length) return;
+
+    const escapeCsv = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const cabecalho = ['Nome', 'Matrícula', 'Curso', 'Desempenho', 'Frequência (%)', 'Atividades Entregues', 'Disciplinas'];
+    const linhas = alunos.map(a => [
+        a.nome, a.matricula || '', a.curso || '',
+        a.mencao || (a.media != null ? Number(a.media).toFixed(1) : ''),
+        a.frequencia ?? '', a.atividades_entregues ?? a.total_atividades ?? '', a.disciplinas || ''
+    ].map(escapeCsv).join(';'));
+
+    const csv = '﻿' + [cabecalho.map(escapeCsv).join(';'), ...linhas].join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `alunos_ranking_plus_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+};
+
 window.verAlunosDisciplina = function(discId, _nome) {
     const sel = document.getElementById('class-selector');
     if (sel) sel.value = String(discId);
@@ -1290,7 +1440,7 @@ window.verAlunosDisciplina = function(discId, _nome) {
     loadStudentsTab();
 };
 
-// ─── ABA ALUNOS ──────────────────────────────────────────────────────────────
+// ABA ALUNOS
 async function loadStudentsTab() {
     const tbody  = document.getElementById('students-table');
     const topDiv = document.getElementById('top-students');
@@ -1317,6 +1467,7 @@ async function loadStudentsTab() {
         }
 
         if (badge) badge.textContent = `${alunos.length} aluno${alunos.length !== 1 ? 's' : ''}`;
+        window._alunosParaExportar = alunos; // usado por exportarAlunosCSV() — respeita o filtro de turma atual
 
         // Top 3
         if (topDiv) {
@@ -1352,7 +1503,7 @@ async function loadStudentsTab() {
         // Tabela completa
         tbody.innerHTML = '';
         if (!alunos.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Nenhum aluno encontrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Nenhum aluno encontrado.</td></tr>';
             return;
         }
         alunos.forEach((a, i) => {
@@ -1371,6 +1522,12 @@ async function loadStudentsTab() {
                     <td>${a.frequencia ?? '—'}%</td>
                     <td>${a.atividades_entregues ?? a.total_atividades ?? '—'}</td>
                     <td><small class="text-muted">${a.disciplinas || '—'}</small></td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-primary" title="Ver desempenho nos últimos semestres"
+                            onclick="abrirDesempenhoAluno(${a.id}, '${(a.nome || '').replace(/'/g, "\\'")}', '${(a.curso || '').replace(/'/g, "\\'")}')">
+                            <i class="fas fa-chart-line"></i>
+                        </button>
+                    </td>
                 </tr>`;
         });
     } catch (err) {
@@ -1384,21 +1541,27 @@ function _mencaoToNotaProf(mencao) {
     return map[mencao] ?? 0;
 }
 
-// ─── ABA HORÁRIOS ─────────────────────────────────────────────────────────────
+// ABA HORÁRIOS
 async function loadScheduleTab() {
     const profId = localStorage.getItem('professorId');
     if (!profId) return;
 
-    // Garante que as disciplinas estejam carregadas
-    if (!_profDisciplinas.length) {
-        const res = await fetch(`${PROF_API}/professores/${profId}/disciplinas`);
-        _profDisciplinas = await res.json();
-    }
+    try {
+        // Garante que as disciplinas estejam carregadas
+        if (!_profDisciplinas.length) {
+            const res = await fetch(`${PROF_API}/professores/${profId}/disciplinas`);
+            _profDisciplinas = await res.json();
+        }
 
-    _renderEventos();
-    _renderScheduleGrid();
-    _renderProximasAulas();
-    _renderScheduleResumo();
+        _renderEventos();
+        _renderScheduleGrid();
+        _renderProximasAulas();
+        _renderScheduleResumo();
+    } catch (err) {
+        console.error('Erro horários:', err);
+        const grid = document.getElementById('scheduleGridBody');
+        if (grid) grid.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Erro ao carregar horários. <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="loadScheduleTab()">Tentar de novo</button></td></tr>';
+    }
 }
 
 // Normaliza variações de nome de dia para a forma curta padrão
@@ -1555,7 +1718,7 @@ function _renderScheduleResumo() {
     });
 }
 
-// ─── ABA RELATÓRIOS ───────────────────────────────────────────────────────────
+// ABA RELATÓRIOS
 let _repAllAlunos      = [];
 let _repFilteredData   = [];
 let _repRankingData    = [];
@@ -1749,6 +1912,156 @@ function getPerformanceText(grade) {
     return 'Insuficiente';
 }
 
+// DESEMPENHO POR PERÍODO (Semestral / Anual / Curso Todo)
+let _desempenhoAlunoIdAtual = null;
+let _desempenhoAlunoFiltroAtual = 'anual';
+
+async function _carregarDesempenhoAluno(alunoId, filtro) {
+    _desempenhoAlunoFiltroAtual = filtro;
+    const loadingEl = document.getElementById('desempenhoAlunoLoading');
+    const chartEl   = document.getElementById('desempenhoAlunoChart');
+    loadingEl.style.display = '';
+    chartEl.style.display = 'none';
+
+    try {
+        // "Anual" sem agrupar=ano mostrava rótulo de semestre cru (ex: "26.1") em vez
+        // de anos de verdade. O seletor de períodos reaproveita o ?periodos= que o
+        // backend já suportava mas ninguém nunca ligava.
+        const periodos = document.getElementById('desempenhoAlunoPeriodo')?.value;
+        let url = `${PROF_API}/alunos/${alunoId}/desempenho-semestral?filtro=${filtro}`;
+        if (filtro === 'anual') url += '&agrupar=ano';
+        if (periodos) url += `&periodos=${periodos}`;
+
+        const res  = await fetch(url);
+        const data = res.ok ? await res.json() : { labels: [], values: [] };
+
+        loadingEl.style.display = 'none';
+        chartEl.style.display = '';
+
+        if (typeof window.frappe !== 'undefined' && data.values?.length) {
+            chartEl.innerHTML = '';
+            new window.frappe.Chart(chartEl, {
+                title: 'Desempenho (CRA) por período',
+                type: 'line',
+                height: 240,
+                colors: ['#F4442E'],
+                data: {
+                    labels: data.labels,
+                    datasets: [{ name: 'CRA', values: data.values }]
+                }
+            });
+        } else {
+            chartEl.innerHTML = '<p class="text-muted text-center py-4">Sem dados suficientes para exibir o gráfico.</p>';
+        }
+    } catch (e) {
+        loadingEl.style.display = 'none';
+        chartEl.style.display = '';
+        chartEl.innerHTML = '<p class="text-danger text-center py-4">Erro ao carregar desempenho.</p>';
+    }
+}
+
+window.abrirDesempenhoAluno = function(alunoId, nome, curso) {
+    _desempenhoAlunoIdAtual = alunoId;
+    document.getElementById('desempenhoAlunoNome').textContent = nome || '';
+    document.getElementById('desempenhoAlunoCurso').textContent = curso || '';
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDesempenhoAluno')).show();
+    _carregarDesempenhoAluno(alunoId, 'anual');
+};
+
+// Wira os botões de filtro do modal (bind único, feito fora da função de abertura)
+document.addEventListener('DOMContentLoaded', () => {
+    const grupo = document.getElementById('desempenhoAlunoFiltro');
+    if (!grupo) return;
+    grupo.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-filtro]');
+        if (!btn || !_desempenhoAlunoIdAtual) return;
+        grupo.querySelectorAll('button').forEach(b => b.className = 'btn btn-outline-primary');
+        btn.className = 'btn btn-primary';
+        _carregarDesempenhoAluno(_desempenhoAlunoIdAtual, btn.dataset.filtro);
+    });
+
+    document.getElementById('desempenhoAlunoPeriodo')?.addEventListener('change', () => {
+        if (!_desempenhoAlunoIdAtual) return;
+        _carregarDesempenhoAluno(_desempenhoAlunoIdAtual, _desempenhoAlunoFiltroAtual);
+    });
+});
+
+// AVISO PRA TURMA
+let _avisoDiscIdAtual = null;
+
+window.abrirModalAviso = function(discId, nomeMateria) {
+    _avisoDiscIdAtual = discId;
+    document.getElementById('avisoTurmaNome').textContent = nomeMateria || '';
+    document.getElementById('avisoTurmaTexto').value = '';
+    document.getElementById('avisoTurmaStatus').textContent = '';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAvisoTurma')).show();
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('avisoTurmaEnviarBtn')?.addEventListener('click', async () => {
+        const texto = document.getElementById('avisoTurmaTexto').value.trim();
+        const status = document.getElementById('avisoTurmaStatus');
+        if (!texto || !_avisoDiscIdAtual) return;
+
+        try {
+            const res = await fetch(`${PROF_API}/disciplinas/${_avisoDiscIdAtual}/aviso`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mensagem: texto })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                status.className = 'text-success small mt-2 mb-0';
+                status.textContent = data.mensagem;
+                setTimeout(() => bootstrap.Modal.getInstance(document.getElementById('modalAvisoTurma'))?.hide(), 1200);
+            } else {
+                status.className = 'text-danger small mt-2 mb-0';
+                status.textContent = data.error || 'Não foi possível enviar o aviso.';
+            }
+        } catch (_) {
+            status.className = 'text-danger small mt-2 mb-0';
+            status.textContent = 'Erro de conexão ao enviar o aviso.';
+        }
+    });
+});
+
+// EVOLUÇÃO DA TURMA POR SEMESTRE
+window.abrirModalEvolucaoTurma = async function(discId, nomeMateria) {
+    document.getElementById('evolucaoTurmaNome').textContent = nomeMateria || '';
+    const loadingEl = document.getElementById('evolucaoTurmaLoading');
+    const chartEl   = document.getElementById('evolucaoTurmaChart');
+    loadingEl.style.display = '';
+    chartEl.style.display = 'none';
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEvolucaoTurma')).show();
+
+    try {
+        const res  = await fetch(`${PROF_API}/disciplinas/${discId}/evolucao`);
+        const data = res.ok ? await res.json() : { labels: [], values: [] };
+
+        loadingEl.style.display = 'none';
+        chartEl.style.display = '';
+
+        if (typeof window.frappe !== 'undefined' && data.values?.length) {
+            chartEl.innerHTML = '';
+            new window.frappe.Chart(chartEl, {
+                title: 'Média da turma por período',
+                type: 'line',
+                height: 240,
+                colors: ['#020122'],
+                data: { labels: data.labels, datasets: [{ name: 'Média', values: data.values }] }
+            });
+        } else {
+            chartEl.innerHTML = '<p class="text-muted text-center py-4">Sem dados suficientes para exibir o gráfico.</p>';
+        }
+    } catch (_) {
+        loadingEl.style.display = 'none';
+        chartEl.style.display = '';
+        chartEl.innerHTML = '<p class="text-danger text-center py-4">Erro ao carregar a evolução da turma.</p>';
+    }
+};
+
 window.openEvaluationModal = function(studentId) {
     // Encontrar o estudante
     let student = null;
@@ -1893,7 +2206,7 @@ async function initializeCharts() {
     const abreviar = nome => nome.length > 18 ? nome.substring(0, 16) + '…' : nome;
     const labels   = disciplinasStats.map(d => abreviar(d.nome_materia));
 
-    // ── Gráfico 1: Média por Turma (barra) ───────────────────────────────────
+    // Gráfico 1: Média por Turma (barra)
     const performanceEl = document.getElementById('performanceChart');
     if (performanceEl) {
         charts.performance = new frappe.Chart('#performanceChart', {
@@ -1913,7 +2226,7 @@ async function initializeCharts() {
         });
     }
 
-    // ── Gráfico 2: Frequência por Disciplina (barra horizontal / bar) ────────
+    // Gráfico 2: Frequência por Disciplina (barra horizontal / bar)
     const attendanceEl = document.getElementById('attendanceChart');
     if (attendanceEl) {
         charts.attendance = new frappe.Chart('#attendanceChart', {
@@ -1987,7 +2300,7 @@ window.confirmLogout = function(event) {
     window.location.href = '../html/index.html';
 };
 
-// ─── EDITAR LANÇAMENTOS ───────────────────────────────────────────────────────
+// EDITAR LANÇAMENTOS
 window.abrirModalLancamentos = function() {
     const profId = localStorage.getItem('professorId');
     if (!profId) return;

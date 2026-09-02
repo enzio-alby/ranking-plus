@@ -19,12 +19,11 @@
 
         <!-- Header -->
         <header class="header">
-            <div class="logo">
-                <i class="fas fa-trophy"></i>
-                <h1>Ranking+</h1>
-            </div>
+            <a href="index.html" class="logo">
+                <img src="../images/logob.png" alt="Ranking+" class="logo-img">
+            </a>
             <nav class="nav">
-                <a href="index.html">Home</a>
+                <a href="index.html">Início</a>
                 <a href="suporte.html" class="active">Suporte</a>
             </nav>
         </header>
@@ -195,6 +194,18 @@
                     <form id="ticketForm">
                         <div class="form-grid">
                             <div class="input-group">
+                                <label for="ticketNome">Seu nome</label>
+                                <input type="text" id="ticketNome" name="nome" placeholder="Como podemos te chamar?" required>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="ticketEmail">Seu e-mail</label>
+                                <input type="email" id="ticketEmail" name="email" placeholder="Para onde enviamos a resposta" required>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="input-group">
                                 <label for="ticketCategory">Categoria</label>
                                 <select id="ticketCategory" name="category" required>
                                     <option value="">Selecione uma categoria</option>
@@ -257,7 +268,7 @@
                         </div>
                         <div class="contact-details">
                             <h4>Email</h4>
-                            <p>suporte@rankingplus.edu.br</p>
+                            <p>admin.rankingplus@gmail.com</p>
                             <span>Resposta em até 24h</span>
                         </div>
                     </div>
@@ -297,26 +308,27 @@
                 <div class="footer-section">
                     <h4>Links Úteis</h4>
                     <ul>
-                        <li><a href="termos.html">Termos de Uso</a></li>
-                        <li><a href="privacidade.html">Política de Privacidade</a></li>
-                        <li><a href="sobre.html">Sobre Nós</a></li>
+                        <li><a href="termodeuso.html">Termos de Uso</a></li>
+                        <li><a href="termodeuso.html#politica-privacidade">Política de Privacidade</a></li>
+                        <li><a href="index.html">Início</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
                     <h4>Suporte</h4>
                     <ul>
                         <li><a href="#faq-section">FAQ</a></li>
-                        <li><a href="tutoriais.html">Tutoriais</a></li>
-                        <li><a href="status.html">Status do Sistema</a></li>
+                        <li><a href="#" onclick="showForm('chat'); return false;">Chat ao Vivo</a></li>
+                        <li><a href="#" onclick="showForm('ticket'); return false;">Abrir Ticket</a></li>
                     </ul>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 Ranking+. Todos os direitos reservados.</p>
+                <p>&copy; 2026 Ranking+. Todos os direitos reservados.</p>
             </div>
         </footer>
     </div>
 
+    <script src="../javascript/auth-token.js"></script>
     <script src="../javascript/suporte.js"></script>
 
     <!-- VLibras — Acessibilidade em Libras (Gov.br) -->

@@ -46,15 +46,28 @@ function initializeFormHandlers() {
     if (registerForm) {
         registerForm.addEventListener('submit', handleRegister);
     }
+    setupCadastroMasks();
 
     // OTP 2FA
     const otpForm = document.getElementById('otpForm');
     if (otpForm) {
         otpForm.addEventListener('submit', handleOtpSubmit);
     }
+
+    // Filtro de curso no ranking público
+    document.getElementById('rankingFiltroCurso')?.addEventListener('change', (e) => {
+        _rankingCursoFiltro = e.target.value;
+        rankingPage = 1;
+        renderRankingPage();
+    });
 }
 
-// --- NOVA FUNÇÃO: CARREGAR RANKING DO BANCO ---
+// CARREGAR RANKING DO BANCO (com paginação de 5 em 5)
+let rankingData = [];
+let rankingPage = 1;
+let _rankingCursoFiltro = '';
+const RANKING_PAGE_SIZE = 5;
+
 async function loadRanking() {
     const rankingList = document.getElementById('rankingList');
     if (!rankingList) return;
@@ -63,26 +76,101 @@ async function loadRanking() {
 
     try {
         const response = await fetch(`${API_URL}/ranking`);
-        const students = await response.json();
+        rankingData = await response.json();
 
-        rankingList.innerHTML = ''; // Limpar loading
-
-        if (students.length === 0) {
+        if (rankingData.length === 0) {
             rankingList.innerHTML = '<div class="text-center py-4 text-muted">Nenhum aluno classificado ainda.</div>';
+            renderRankingPagination();
             return;
         }
 
-        // Renderizar Top 5 alunos
-        students.slice(0, 5).forEach((student, index) => {
-            const position = index + 1;
-            const item = createRankingItem(student, position);
-            rankingList.appendChild(item);
-        });
+        _popularFiltroCursoRanking();
+        rankingPage = 1;
+        renderRankingPage();
 
     } catch (error) {
         console.error('Erro ao carregar ranking:', error);
-        rankingList.innerHTML = '<div class="text-center py-4 text-danger">Erro ao carregar o ranking. Tente novamente mais tarde.</div>';
+        rankingList.innerHTML = '<div class="text-center py-4 text-danger">Não foi possível carregar o ranking. <button class="btn btn-sm btn-outline-danger ms-2" onclick="loadRanking()">Tentar de novo</button></div>';
     }
+}
+
+// Popula o filtro de curso com os cursos reais presentes no ranking
+function _popularFiltroCursoRanking() {
+    const select = document.getElementById('rankingFiltroCurso');
+    if (!select) return;
+    const cursos = [...new Set(rankingData.map(a => a.curso).filter(Boolean))].sort();
+    select.innerHTML = '<option value="">Todos os cursos</option>' +
+        cursos.map(c => `<option value="${c}">${c}</option>`).join('');
+    select.value = _rankingCursoFiltro;
+}
+
+function _rankingFiltrado() {
+    if (!_rankingCursoFiltro) return rankingData;
+    return rankingData.filter(a => a.curso === _rankingCursoFiltro);
+}
+
+// Renderiza a página atual do ranking (5 posições por página)
+function renderRankingPage() {
+    const rankingList = document.getElementById('rankingList');
+    if (!rankingList) return;
+
+    rankingList.innerHTML = '';
+
+    const filtrado = _rankingFiltrado();
+    if (!filtrado.length) {
+        rankingList.innerHTML = '<div class="text-center py-4 text-muted">Nenhum aluno encontrado para esse curso.</div>';
+        renderRankingPagination();
+        return;
+    }
+
+    const start = (rankingPage - 1) * RANKING_PAGE_SIZE;
+    filtrado.slice(start, start + RANKING_PAGE_SIZE).forEach((student, i) => {
+        const position = start + i + 1;
+        rankingList.appendChild(createRankingItem(student, position, i));
+    });
+
+    renderRankingPagination();
+}
+
+// Monta os controles de paginação do ranking (Bootstrap pagination)
+// Prévia pública: só a 1ª página é navegável de verdade — clicar em qualquer
+// página além dela (ou em "Próxima" saindo da página 1) abre o convite pra
+// criar conta/entrar/falar com a gente em vez de mostrar o resto do ranking.
+function renderRankingPagination() {
+    const nav = document.getElementById('rankingPagination');
+    if (!nav) return;
+
+    const totalPages = Math.ceil(_rankingFiltrado().length / RANKING_PAGE_SIZE);
+    nav.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const addPageItem = (label, page, disabled, active) => {
+        const li = document.createElement('li');
+        li.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
+        const a = document.createElement('a');
+        a.className = 'page-link';
+        a.href = '#ranking';
+        a.textContent = label;
+        if (!disabled && !active) {
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (page !== 1) {
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRankingCompleto')).show();
+                    return;
+                }
+                rankingPage = page;
+                renderRankingPage();
+            });
+        }
+        li.appendChild(a);
+        nav.appendChild(li);
+    };
+
+    addPageItem('Anterior', rankingPage - 1, rankingPage === 1, false);
+    for (let p = 1; p <= totalPages; p++) {
+        addPageItem(String(p), p, false, p === rankingPage);
+    }
+    addPageItem('Próxima', rankingPage + 1, rankingPage === totalPages, false);
 }
 
 // Carrega estatísticas reais da plataforma
@@ -90,17 +178,16 @@ async function loadStats() {
     try {
         const res  = await fetch(`${API_URL}/stats`);
         const data = await res.json();
-        const fmt  = n => Number(n).toLocaleString('pt-BR');
-        const set  = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-        set('statAlunos',   fmt(data.total_alunos      ?? '—'));
-        set('statCursos',   fmt(data.total_cursos      ?? '—'));
-        set('statProfs',    fmt(data.total_professores ?? '—'));
-        set('statEmpresas', fmt(data.total_empresas    ?? '—'));
+        const set  = (id, val) => animateCounter(document.getElementById(id), val);
+        set('statAlunos',   data.total_alunos);
+        set('statCursos',   data.total_cursos);
+        set('statProfs',    data.total_professores);
+        set('statEmpresas', data.total_empresas);
     } catch (_) { /* stats são opcionais — silencia falha */ }
 }
 
 // Helper para criar o HTML de cada item do ranking
-function createRankingItem(student, position) {
+function createRankingItem(student, position, index) {
     const item = document.createElement('div');
 
     const anonimo     = student.permitir_exibicao_ranking === 0 || student.permitir_exibicao_ranking === '0';
@@ -112,7 +199,8 @@ function createRankingItem(student, position) {
         ? 'https://ui-avatars.com/api/?name=?&background=9e9e9e&color=fff&size=80'
         : `https://ui-avatars.com/api/?name=${encodeURIComponent(student.nome)}&background=random&color=fff&size=80`;
 
-    item.className = 'ranking-row';
+    item.className = 'ranking-row fade-in-item';
+    item.style.animationDelay = Math.min((index || 0) * 60, 240) + 'ms';
     item.innerHTML = `
         <div class="rank-pos ${posClass}">${position}</div>
         <img src="${avatarUrl}" alt="${nomeExibido}" class="rank-avatar">
@@ -125,7 +213,7 @@ function createRankingItem(student, position) {
     return item;
 }
 
-// --- FUNÇÃO DE LOGIN REAL (Corrigida para bater com o HTML) ---
+// FUNÇÃO DE LOGIN REAL (Corrigida para bater com o HTML)
 async function handleLogin(e) {
     e.preventDefault();
     
@@ -197,7 +285,57 @@ async function handleLogin(e) {
     }
 }
 
-// --- FUNÇÃO DE CADASTRO REAL ---
+// MÁSCARAS DOS CAMPOS DE CADASTRO
+function setupCadastroMasks() {
+    const cpfInput = document.getElementById('regCpf');
+    if (cpfInput) {
+        cpfInput.addEventListener('input', () => {
+            let v = cpfInput.value.replace(/\D/g, '').slice(0, 11);
+            v = v.replace(/(\d{3})(\d)/, '$1.$2');
+            v = v.replace(/(\d{3})(\d)/, '$1.$2');
+            v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            cpfInput.value = v;
+            cpfInput.classList.remove('is-invalid');
+        });
+    }
+
+    const telInput = document.getElementById('regTelefone');
+    if (telInput) {
+        telInput.addEventListener('input', () => {
+            let v = telInput.value.replace(/\D/g, '').slice(0, 11);
+            v = v.replace(/^(\d{2})(\d)/, '($1) $2');
+            v = v.replace(/(\d{5})(\d{1,4})$/, '$1-$2');
+            telInput.value = v;
+        });
+    }
+
+    const matriculaInput = document.getElementById('regMatricula');
+    if (matriculaInput) {
+        matriculaInput.addEventListener('input', () => {
+            matriculaInput.value = matriculaInput.value.replace(/\D/g, '').slice(0, 20);
+        });
+    }
+}
+
+// Validação de CPF por dígito verificador — só se aplica se o campo (opcional) foi preenchido
+function isValidCPF(cpf) {
+    const digits = cpf.replace(/\D/g, '');
+    if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
+
+    let soma = 0;
+    for (let i = 0; i < 9; i++) soma += parseInt(digits[i]) * (10 - i);
+    let resto = (soma * 10) % 11;
+    if (resto === 10) resto = 0;
+    if (resto !== parseInt(digits[9])) return false;
+
+    soma = 0;
+    for (let i = 0; i < 10; i++) soma += parseInt(digits[i]) * (11 - i);
+    resto = (soma * 10) % 11;
+    if (resto === 10) resto = 0;
+    return resto === parseInt(digits[10]);
+}
+
+// FUNÇÃO DE CADASTRO REAL
 async function handleRegister(e) {
     e.preventDefault();
 
@@ -208,6 +346,15 @@ async function handleRegister(e) {
         showAlert('As senhas não conferem!', 'warning');
         return;
     }
+
+    const cpfField = document.getElementById('regCpf');
+    const cpfValue = cpfField.value.trim();
+    if (cpfValue && !isValidCPF(cpfValue)) {
+        cpfField.classList.add('is-invalid');
+        showAlert('CPF inválido. Verifique os números digitados.', 'warning');
+        return;
+    }
+    cpfField.classList.remove('is-invalid');
 
     const _v = id => (document.getElementById(id)?.value || '').trim() || null;
     const semestreRaw = document.getElementById('regSemestre')?.value;
@@ -226,7 +373,8 @@ async function handleRegister(e) {
         github:          _v('regGithub'),
         linkedin:        _v('regLinkedin'),
         periodo_curso:   new Date().getFullYear() + '.' + (new Date().getMonth() < 6 ? '1' : '2'),
-        data_matricula:  new Date().toISOString().split('T')[0]
+        data_matricula:  new Date().toISOString().split('T')[0],
+        termos_aceitos:  document.getElementById('acceptTerms')?.checked || false
     };
 
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -357,15 +505,20 @@ function initializeAnimations() {
     document.querySelectorAll('.animate-fade-up').forEach(el => observer.observe(el));
 }
 
-// ─── 2FA — Funções auxiliares ────────────────────────────────────────────────
+// 2FA — Funções auxiliares
 
-function finalizarLogin(usuario, tipo) {
+function finalizarLogin(usuario, tipo, token, precisaReaceitarTermos) {
     currentUser = usuario;
     isAuthenticated = true;
     localStorage.setItem('unirank_user', JSON.stringify(currentUser));
+    if (token) localStorage.setItem('unirank_token', token); // correção do achado S1
     if (tipo === 'aluno') {
         localStorage.setItem('alunoId', currentUser.id);
         localStorage.removeItem('professorId');
+        // Termo de uso mudou de versão (ex: cláusula do Perfil Comportamental) —
+        // areaaluno.js mostra o modal de reaceite obrigatório antes de liberar o resto.
+        if (precisaReaceitarTermos) localStorage.setItem('precisa_reaceitar_termos', '1');
+        else localStorage.removeItem('precisa_reaceitar_termos');
     } else {
         localStorage.setItem('professorId', currentUser.id);
         localStorage.removeItem('alunoId');
@@ -398,7 +551,7 @@ async function handleOtpSubmit(e) {
             const otpModal = bootstrap.Modal.getInstance(document.getElementById('otpModal'));
             if (otpModal) otpModal.hide();
             clearInterval(_otpReenvioTimer);
-            finalizarLogin(data.usuario, _otpTipo);
+            finalizarLogin(data.usuario, _otpTipo, data.token, data.precisaReaceitarTermos);
         } else {
             showAlert(data.mensagem || 'Código inválido. Tente novamente.', 'danger');
             document.getElementById('otpCodigo').value = '';

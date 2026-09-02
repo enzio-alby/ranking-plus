@@ -6,7 +6,7 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #020122 0%, #1a1a3a 50%, #020122 100%);
     min-height: 100vh;
     color: #333;
@@ -78,7 +78,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 100;
-    border-bottom: 3px solid #F4442E;
+    border-bottom: 2px solid #020122;
 }
 
 .header-content {
@@ -93,23 +93,16 @@ body {
 .logo {
     display: flex;
     align-items: center;
-    gap: 10px;
+    transition: transform 0.3s ease;
 }
 
-.logo i {
-    font-size: 2rem;
-    color: #F4442E;
-    background: linear-gradient(45deg, #F4442E, #ff6b4a);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+.logo:hover {
+    transform: scale(1.05);
 }
 
-.logo h1 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #020122;
-    letter-spacing: -1px;
+.logo-img {
+    height: 44px;
+    width: auto;
 }
 
 .nav {
@@ -121,17 +114,13 @@ body {
     color: #020122;
     text-decoration: none;
     font-weight: 600;
-    padding: 10px 20px;
-    border-radius: 25px;
-    transition: all 0.3s ease;
-    position: relative;
+    padding: 10px 4px;
+    transition: color 0.2s ease;
 }
 
-.nav a:hover {
-    color: white;
-    background: linear-gradient(45deg, #F4442E, #ff6b4a);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(244, 68, 46, 0.3);
+.nav a:hover,
+.nav a.active {
+    color: #F4442E;
 }
 
 /* Hero Section */

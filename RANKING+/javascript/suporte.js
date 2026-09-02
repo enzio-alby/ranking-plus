@@ -1,4 +1,7 @@
 
+// CONFIGURAÇÃO DA API
+const API_URL = 'http://localhost:4000';
+
 // DOM Elements
 const actionCards = document.querySelectorAll('.action-card');
 const supportForms = document.getElementById('support-forms');
@@ -17,7 +20,19 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFAQ();
     setupChat();
     setupSearch();
+    prefillTicketNome();
 });
+
+// Pré-preenche o nome do ticket se o visitante já estiver logado na plataforma
+function prefillTicketNome() {
+    try {
+        const savedUser = JSON.parse(localStorage.getItem('unirank_user') || 'null');
+        const nomeInput = document.getElementById('ticketNome');
+        if (savedUser?.nome && nomeInput) {
+            nomeInput.value = savedUser.nome;
+        }
+    } catch (e) { /* sessão inválida — deixa o campo vazio */ }
+}
 
 // Setup Event Listeners
 function setupEventListeners() {
@@ -25,6 +40,11 @@ function setupEventListeners() {
     actionCards.forEach(card => {
         card.addEventListener('click', function() {
             const action = this.dataset.action;
+            if (action === 'faq' || action === 'tutorial') {
+                document.getElementById('faq-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                trackEvent('quick_action', 'support', action);
+                return;
+            }
             showForm(action);
         });
     });
@@ -93,11 +113,13 @@ function resetForms() {
     forms.forEach(form => {
         form.reset();
         clearValidationStates(form);
+        delete form.dataset.origem;
     });
-    
+
     // Reset chat
-    const userMessages = chatMessages.querySelectorAll('.user-message');
-    userMessages.forEach(msg => msg.remove());
+    const botMessages = chatMessages.querySelectorAll('.user-message, .bot-message:not(:first-child)');
+    botMessages.forEach(msg => msg.remove());
+    prefillTicketNome();
 }
 
 // Setup FAQ functionality
@@ -157,7 +179,7 @@ function sendChatMessage() {
     // Simulate bot response
     setTimeout(() => {
         const botResponse = generateBotResponse(message);
-        addChatMessage(botResponse, 'bot');
+        addChatMessage(botResponse.text, 'bot', botResponse.offerTicket);
     }, 1000 + Math.random() * 2000);
     
     // Track event
@@ -165,69 +187,110 @@ function sendChatMessage() {
 }
 
 // Add message to chat
-function addChatMessage(message, sender) {
+function addChatMessage(message, sender, offerTicket) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}-message`;
-    
+
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
     avatar.innerHTML = sender === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
-    
+
     const content = document.createElement('div');
     content.className = 'message-content';
-    
+
     const text = document.createElement('p');
     text.textContent = message;
-    
+
     const time = document.createElement('span');
     time.className = 'message-time';
-    time.textContent = new Date().toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+    time.textContent = new Date().toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
     });
-    
+
     content.appendChild(text);
+
+    if (sender === 'bot' && offerTicket) {
+        const ticketBtn = document.createElement('button');
+        ticketBtn.type = 'button';
+        ticketBtn.className = 'chat-ticket-btn';
+        ticketBtn.innerHTML = '<i class="fas fa-ticket-alt"></i> Abrir chamado com esta conversa';
+        ticketBtn.style.cssText = `
+            margin-top: 8px; padding: 8px 14px; border: none; border-radius: 8px;
+            background: linear-gradient(45deg, #F4442E, #ff6b4a); color: #fff;
+            font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex;
+            align-items: center; gap: 6px; transition: transform 0.2s ease;
+        `;
+        ticketBtn.addEventListener('mouseenter', () => ticketBtn.style.transform = 'translateY(-2px)');
+        ticketBtn.addEventListener('mouseleave', () => ticketBtn.style.transform = 'translateY(0)');
+        ticketBtn.addEventListener('click', openTicketFromChat);
+        content.appendChild(ticketBtn);
+    }
+
     content.appendChild(time);
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(content);
-    
+
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Generate bot response
+// Abre o formulário de ticket já preenchido com o histórico da conversa do chat
+function openTicketFromChat() {
+    const userMessages = [...chatMessages.querySelectorAll('.user-message .message-content p')]
+        .map(p => p.textContent);
+
+    showForm('ticket');
+
+    const descField = document.getElementById('ticketDescription');
+    if (descField && userMessages.length) {
+        descField.value = 'Conversa no chat:\n' + userMessages.map(m => `- ${m}`).join('\n');
+    }
+
+    const subjectField = document.getElementById('ticketSubject');
+    if (subjectField && !subjectField.value && userMessages.length) {
+        subjectField.value = userMessages[userMessages.length - 1].slice(0, 80);
+    }
+
+    document.getElementById('ticketNome')?.focus();
+    document.getElementById('ticketForm').dataset.origem = 'chat';
+    trackEvent('chat_to_ticket', 'support', 'abrir_chamado_do_chat');
+}
+
+// Generate bot response — respostas mapeadas por palavra-chave; quando o bot
+// não resolve a dúvida diretamente, oferece abrir um chamado com a conversa
 function generateBotResponse(userMessage) {
     const message = userMessage.toLowerCase();
-    
+
     if (message.includes('ranking') || message.includes('posição') || message.includes('colocação')) {
-        return 'O ranking é atualizado semanalmente com base em suas notas, participação e atividades. Você pode acompanhar sua posição no dashboard!';
+        return { text: 'O ranking é recalculado automaticamente com base em suas notas, participação e atividades. Você pode acompanhar sua posição no dashboard!', offerTicket: false };
     }
-    
+
     if (message.includes('benefício') || message.includes('recompensa') || message.includes('prêmio')) {
-        return 'Os melhores colocados têm acesso a bolsas de estudo, intercâmbios, vagas prioritárias em pesquisas e muito mais! Consulte a seção de benefícios no seu perfil.';
+        return { text: 'Os melhores colocados têm acesso a bolsas de estudo, intercâmbios, vagas prioritárias em pesquisas e muito mais! Consulte a seção de benefícios no seu perfil.', offerTicket: false };
     }
-    
+
     if (message.includes('nota') || message.includes('pontuação') || message.includes('score')) {
-        return 'Sua pontuação é calculada considerando notas das disciplinas, frequência, participação em atividades extracurriculares e projetos especiais. Cada item tem um peso específico.';
+        return { text: 'Sua pontuação é calculada considerando notas das disciplinas, frequência, participação em atividades extracurriculares e projetos especiais. Cada item tem um peso específico.', offerTicket: false };
     }
-    
+
     if (message.includes('problema') || message.includes('erro') || message.includes('bug')) {
-        return 'Entendo que você está enfrentando um problema técnico. Recomendo abrir um ticket de suporte para que nossa equipe possa ajudá-lo de forma mais detalhada.';
+        return { text: 'Entendo que você está enfrentando um problema técnico. Posso já abrir um chamado com o que você me contou para nossa equipe analisar.', offerTicket: true };
     }
-    
+
     if (message.includes('como') || message.includes('tutorial') || message.includes('ajuda')) {
-        return 'Temos uma seção completa de tutoriais disponível! Você também pode acessar o FAQ para respostas rápidas às dúvidas mais comuns.';
+        return { text: 'Você pode acessar o FAQ desta página para respostas rápidas às dúvidas mais comuns. Se preferir, também posso abrir um chamado para um atendimento mais detalhado.', offerTicket: true };
     }
-    
-    // Default responses
+
+    // Default responses — sem correspondência mapeada, oferece o chamado
     const defaultResponses = [
-        'Entendi sua dúvida! Posso ajudá-lo melhor se você abrir um ticket de suporte com mais detalhes.',
-        'Essa é uma ótima pergunta! Recomendo verificar nosso FAQ ou entrar em contato via ticket para uma resposta mais completa.',
-        'Para questões específicas como essa, nossa equipe de suporte pode ajudá-lo melhor através de um ticket.',
-        'Obrigado pela sua mensagem! Para um atendimento mais personalizado, sugiro abrir um ticket de suporte.'
+        'Não tenho uma resposta pronta para isso. Posso abrir um chamado com sua mensagem para nossa equipe responder diretamente.',
+        'Essa é uma ótima pergunta! Recomendo verificar nosso FAQ, ou posso já encaminhar um chamado com essa conversa para a equipe.',
+        'Para questões específicas como essa, nossa equipe pode ajudar melhor. Quer que eu abra um chamado com o que você escreveu?',
+        'Obrigado pela sua mensagem! Para um atendimento mais personalizado, posso abrir um chamado com esta conversa agora.'
     ];
-    
-    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+
+    return { text: defaultResponses[Math.floor(Math.random() * defaultResponses.length)], offerTicket: true };
 }
 
 // Setup Search functionality
@@ -348,32 +411,51 @@ function setupFormValidation() {
 }
 
 // Handle form submission
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
     e.preventDefault();
-    
+
     const form = e.target;
-    const formData = new FormData(form);
     const formType = form.id;
-    
+
     // Validate form
     if (!validateForm(form)) {
         return;
     }
-    
-    // Add loading state
+
     addLoadingState(form);
-    
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+        const chamado = {
+            nome:       document.getElementById('ticketNome').value.trim(),
+            email:      document.getElementById('ticketEmail').value.trim(),
+            categoria:  document.getElementById('ticketCategory').value,
+            prioridade: document.getElementById('priority').value,
+            assunto:    document.getElementById('ticketSubject').value.trim(),
+            descricao:  document.getElementById('ticketDescription').value.trim(),
+            origem:     form.dataset.origem === 'chat' ? 'chat' : 'formulario'
+        };
+
+        const response = await fetch(`${API_URL}/suporte/chamados`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(chamado)
+        });
+
+        const data = await response.json();
         removeLoadingState(form);
-        showSuccessMessage(formType, formData);
-        
-        // Close form after success
-        setTimeout(() => {
-            closeForms();
-        }, 2000);
-    }, 2000);
-    
+
+        if (response.ok) {
+            showSuccessMessage(formType, data.id);
+            setTimeout(() => closeForms(), 2000);
+        } else {
+            showToast(data.error || 'Não foi possível abrir o chamado. Tente novamente.', 'info');
+        }
+    } catch (error) {
+        console.error(error);
+        removeLoadingState(form);
+        showToast('Erro de conexão ao abrir o chamado. Verifique sua internet e tente novamente.', 'info');
+    }
+
     // Track submission
     trackEvent('form_submit', 'support', formType);
 }
@@ -523,13 +605,12 @@ function removeLoadingState(form) {
 }
 
 // Show success message
-function showSuccessMessage(formType, formData) {
+function showSuccessMessage(formType, chamadoId) {
     let message = '';
-    
+
     switch (formType) {
         case 'ticketForm':
-            const ticketId = 'TK' + Date.now().toString().slice(-6);
-            message = `Ticket ${ticketId} criado com sucesso! Nossa equipe entrará em contato em até 24 horas.`;
+            message = `Chamado #${chamadoId} aberto com sucesso! Nossa equipe entrará em contato em até 24 horas.`;
             break;
         default:
             message = 'Solicitação enviada com sucesso!';

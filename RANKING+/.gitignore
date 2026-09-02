@@ -1,0 +1,20 @@
+# Dependencias
+node_modules/
+Backend/node_modules/
+
+# Segredos e chaves — nunca versionar
+Backend/.env
+Backend/.chat-key
+Backend/uploads/
+
+# Dumps de banco com dados reais — nunca versionar (usar apenas as migrations)
+banco_sql/universidade_ranking*.sql
+
+# Arquivos temporarios / de teste
+Backend/del_admin_result.json
+dados/
+*.log
+
+# Config local de editor / ferramentas
+.vscode/
+.claude/

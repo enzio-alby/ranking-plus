@@ -11,8 +11,13 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
+    <link href="../css/design-tokens.css" rel="stylesheet">
     <link href="../css/styleareaaluno.css" rel="stylesheet">
+    <link href="../css/chat.css" rel="stylesheet">
 </head>
 
 <body>
@@ -38,6 +43,15 @@
                 <i class="bi bi-people-fill"></i>
                 Ranking
             </a>
+            <a href="#" class="nav-link" data-page="vagas">
+                <i class="bi bi-briefcase-fill"></i>
+                Vagas
+            </a>
+            <a href="#" class="nav-link" data-page="mensagens">
+                <i class="bi bi-chat-dots-fill"></i>
+                Mensagens
+                <span class="badge rounded-pill bg-danger d-none ms-1" id="chatNavBadge" style="font-size:.65rem;">0</span>
+            </a>
             <a href="#" class="nav-link" data-page="perfil">
                 <i class="bi bi-person-fill"></i>
                 Meu Perfil
@@ -46,10 +60,10 @@
                 <i class="bi bi-file-earmark-bar-graph me-2"></i>
                 Relatórios
             </a>
-            <!-- <a href="talentos.html" class="nav-link" target="_blank">
+            <a href="talentos.html" class="nav-link" target="_blank">
                 <i class="bi bi-people-fill"></i>
                 Portal de Talentos
-            </a> -->
+            </a>
             <a href="../html/index.html" class="nav-link mt-3">
                 <i class="bi bi-house-door-fill"></i>
                 Início
@@ -69,6 +83,23 @@
                     <i class="bi bi-list fs-4"></i>
                 </button>
                 <div class="ms-auto d-flex align-items-center">
+                    <div class="dropdown me-2">
+                        <button class="btn btn-link text-primary position-relative" type="button"
+                            data-bs-toggle="dropdown" aria-label="Notificações">
+                            <i class="bi bi-bell fs-4"></i>
+                            <span class="badge rounded-pill bg-danger d-none" id="notifBadge"
+                                  style="position:absolute; top:2px; right:0; font-size:.65rem;">0</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end p-0" style="width:340px; max-height:420px; overflow-y:auto;">
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                <strong class="small">Notificações</strong>
+                                <button class="btn btn-link btn-sm p-0 small" id="notifMarcarTodasLidas">Marcar todas como lidas</button>
+                            </div>
+                            <div id="notifLista">
+                                <div class="text-center text-muted small py-4">Carregando...</div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="dropdown">
                         <button class="btn btn-link text-primary dropdown-toggle" type="button"
                             data-bs-toggle="dropdown">
@@ -94,6 +125,11 @@
 
         <!-- Page Content -->
         <div class="content" id="pageContent">
+            <!-- Erro ao carregar dados do aluno -->
+            <div class="alert alert-danger d-none align-items-center justify-content-between mb-4" id="alunoDataErrorBanner">
+                <span><i class="bi bi-exclamation-triangle-fill me-2"></i>Não foi possível carregar seus dados. Verifique sua conexão e tente novamente.</span>
+                <button type="button" class="btn btn-sm btn-outline-danger ms-3" id="alunoDataRetryBtn">Tentar de novo</button>
+            </div>
             <!-- Dashboard Content (Default) -->
             <div id="dashboard-page" class="page-content active">
                 <!-- Welcome Banner -->
@@ -114,7 +150,7 @@
                 <!-- Stats Cards -->
                 <div class="row mb-4">
                     <div class="col-lg-3 col-md-6 mb-3">
-                        <div class="stat-card">
+                        <div class="stat-card reveal">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-muted mb-1">CRA Atual</p>
@@ -128,7 +164,7 @@
                         </div>
                     </div>
                     <div class="col-lg-3 col-md-6 mb-3">
-                        <div class="stat-card">
+                        <div class="stat-card reveal">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-muted mb-1">Frequência Média</p>
@@ -142,7 +178,7 @@
                         </div>
                     </div>
                     <div class="col-lg-3 col-md-6 mb-3">
-                        <div class="stat-card">
+                        <div class="stat-card reveal">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-muted mb-1">Posição no Ranking</p>
@@ -156,7 +192,7 @@
                         </div>
                     </div>
                     <div class="col-lg-3 col-md-6 mb-3">
-                        <div class="stat-card">
+                        <div class="stat-card reveal">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <p class="text-muted mb-1">Disciplinas Ativas</p>
@@ -174,13 +210,20 @@
                 <!-- Charts Section -->
                 <div class="row mb-4">
                     <div class="col-lg-6 mb-4">
-                        <div class="chart-card">
-                            <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="chart-card reveal">
+                            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                                 <h5 class="card-title mb-0">Evolução das Notas</h5>
-                                <div class="btn-group btn-group-sm" id="perfFiltroGrupo">
-                                    <button class="btn btn-dark"         data-perf-filtro="mes">Mês</button>
-                                    <button class="btn btn-outline-dark" data-perf-filtro="semestre">Semestre</button>
-                                    <button class="btn btn-outline-dark" data-perf-filtro="ano">Ano</button>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="btn-group btn-group-sm" id="perfFiltroGrupo">
+                                        <button class="btn btn-dark"         data-perf-filtro="semestre">Semestre</button>
+                                        <button class="btn btn-outline-dark" data-perf-filtro="ano">Ano</button>
+                                    </div>
+                                    <select class="form-select form-select-sm d-none" id="perfAnosSelect" style="width:auto;">
+                                        <option value="2">Últimos 2 anos</option>
+                                        <option value="3" selected>Últimos 3 anos</option>
+                                        <option value="5">Últimos 5 anos</option>
+                                        <option value="0">Todos os anos</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="chart-container">
@@ -189,7 +232,7 @@
                         </div>
                     </div>
                     <div class="col-lg-6 mb-4">
-                        <div class="chart-card">
+                        <div class="chart-card reveal">
                             <h5 class="card-title mb-3">Frequência por Disciplina</h5>
                             <div class="chart-container">
                                 <div id="frequencyChart" class="frappe-chart-slot"></div>
@@ -258,35 +301,32 @@
                                 <h5 class="mb-0">Insights de Estudo</h5>
                             </div>
                             <div class="card-body">
-                                <div class="insight-item mb-3">
+                                <div class="insight-item mb-3" id="insightPerformance">
                                     <div class="d-flex align-items-center mb-2">
                                         <i class="bi bi-lightbulb text-warning me-2"></i>
                                         <strong>Dica de Performance</strong>
                                     </div>
-                                    <p class="text-muted small">
-                                        Suas notas em Algoritmos estão consistentemente altas. Continue praticando
-                                        exercícios de complexidade!
-                                    </p>
-                                </div>
-                                <div class="insight-item mb-3">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <i class="bi bi-clock text-info me-2"></i>
-                                        <strong>Próximas Avaliações</strong>
-                                    </div>
-                                    <ul class="list-unstyled small text-muted">
-                                        <li>• Redes - Prova P2 (22/11)</li>
-                                        <li>• Eng. Software - Projeto (25/11)</li>
-                                    </ul>
+                                    <p class="text-muted small mb-0">Calculando...</p>
                                 </div>
                                 <div class="insight-item">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <i class="bi bi-target text-success me-2"></i>
-                                        <strong>Meta do Semestre</strong>
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div><i class="bi bi-target text-success me-2"></i><strong>Meta de CRA</strong></div>
+                                        <button class="btn btn-link btn-sm p-0" id="metaEditarBtn" title="Definir meta">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
                                     </div>
-                                    <div class="progress mb-2">
-                                        <div class="progress-bar bg-success" style="width: 87%"></div>
+                                    <div id="metaVisualizacao">
+                                        <div class="progress mb-2">
+                                            <div class="progress-bar bg-success" id="metaProgressBar" style="width: 0%"></div>
+                                        </div>
+                                        <p class="text-muted small mb-0" id="metaTexto">Defina uma meta de CRA para acompanhar seu progresso.</p>
                                     </div>
-                                    <p class="text-muted small">87% para atingir CRA 9.0</p>
+                                    <div id="metaEdicao" class="d-none">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control" id="metaInput" min="0" max="10" step="0.1" placeholder="Ex: 9.0">
+                                            <button class="btn btn-success" id="metaSalvarBtn">Salvar</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -393,10 +433,11 @@
                                         <th>Pontuação</th>
                                         <th>Frequência</th>
                                         <th>Status</th>
+                                        <th>Desempenho</th>
                                     </tr>
                                 </thead>
                                 <tbody id="rankingTableBody">
-                                    <tr><td colspan="6" class="text-center py-4 text-muted">
+                                    <tr><td colspan="7" class="text-center py-4 text-muted">
                                         <div class="spinner-border spinner-border-sm me-2"></div>Carregando...
                                     </td></tr>
                                 </tbody>
@@ -426,11 +467,20 @@
             <div id="perfil-page" class="page-content">
                 <h2 class="text-primary mb-4">Meu Perfil</h2>
 
+                <!-- Perfil Comportamental — card no topo, leitura (não editável fora da janela de 6 meses) -->
+                <div class="card mb-4" id="pcCard">
+                    <div class="card-body" id="pcCardBody">
+                        <div class="text-center text-muted py-3">
+                            <div class="spinner-border spinner-border-sm me-2"></div>Carregando Perfil Comportamental...
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row">
                     <div class="col-lg-4 mb-4">
                         <div class="card">
                             <div class="card-body text-center">
-                                <div class="profile-avatar mb-3">
+                                <div class="profile-avatar mb-3" id="perfilAvatarView">
                                     <i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>
                                 </div>
                                 <h4 class="text-primary" id="perfilNome">—</h4>
@@ -502,7 +552,8 @@
                         <div class="card">
                             <div class="card-header d-flex align-items-center justify-content-between">
                                 <h5 class="mb-0">Histórico de CRA</h5>
-                                <div class="btn-group btn-group-sm" id="craFiltroGrupo">
+                                <div class="btn-group btn-group-sm cra-filtro-grupo" id="craFiltroGrupo">
+                                    <button class="btn btn-outline-dark" data-cra-filtro="1ano">1 Ano</button>
                                     <button class="btn btn-dark"         data-cra-filtro="2anos">2 Anos</button>
                                     <button class="btn btn-outline-dark" data-cra-filtro="3anos">3 Anos</button>
                                     <button class="btn btn-outline-dark" data-cra-filtro="tudo">Completo</button>
@@ -550,7 +601,7 @@
                 <!-- Perfil Profissional Editável -->
                 <div class="row mt-2">
                     <div class="col-12 mb-4">
-                        <div class="card">
+                        <div class="card pp-compact">
                             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <h5 class="mb-0">
                                     <i class="bi bi-person-badge-fill me-2 text-primary"></i>Perfil Profissional
@@ -578,8 +629,16 @@
                                     <!-- Resumo -->
                                     <div class="mb-4">
                                         <label class="form-label fw-semibold">Resumo Profissional</label>
-                                        <textarea id="ppResumo" class="form-control" rows="3"
+                                        <textarea id="ppResumo" class="form-control form-control-sm" rows="2"
                                             placeholder="Ex: Desenvolvedor Full Stack com foco em Python e React, buscando oportunidades em startups de tecnologia..."></textarea>
+                                    </div>
+                                    <!-- Área de Interesse -->
+                                    <div class="mb-4">
+                                        <label class="form-label fw-semibold">Área de Interesse</label>
+                                        <select id="ppAreaInteresse" class="form-select form-select-sm">
+                                            <option value="">Ainda não defini</option>
+                                        </select>
+                                        <div class="form-text">Mostrada para as empresas no Portal de Talentos. Pode trocar quando quiser.</div>
                                     </div>
                                     <!-- Experiências -->
                                     <div class="mb-4">
@@ -614,7 +673,7 @@
                                     <!-- Habilidades / Skills -->
                                     <div class="mb-2">
                                         <label class="form-label fw-semibold">Habilidades / Skills</label>
-                                        <div class="input-group mb-2">
+                                        <div class="input-group input-group-sm mb-2">
                                             <input type="text" id="ppHabilidadeInput" class="form-control"
                                                 placeholder="Ex: React, Python, SQL... (Enter para adicionar)"
                                                 onkeydown="ppAddHabilidadeOnEnter(event)">
@@ -654,21 +713,23 @@
                                 <h5 class="mb-0">Foto do Perfil</h5>
                             </div>
                             <div class="card-body text-center">
-                                <div class="profile-avatar mb-3">
+                                <div class="profile-avatar mb-3" id="perfilAvatarEdit">
                                     <i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>
                                 </div>
-                                <button class="btn btn-outline-primary btn-sm mb-2">
+                                <input type="file" id="avatarFileInput" accept="image/png,image/jpeg" class="d-none">
+                                <button class="btn btn-outline-primary btn-sm mb-2" id="avatarAlterarBtn" type="button">
                                     <i class="bi bi-camera me-2"></i>
                                     Alterar Foto
                                 </button>
-                                <button class="btn btn-outline-danger btn-sm">
+                                <button class="btn btn-outline-danger btn-sm" id="avatarRemoverBtn" type="button">
                                     <i class="bi bi-trash me-2"></i>
                                     Remover Foto
                                 </button>
                                 <p class="text-muted small mt-3 mb-0">
                                     Formatos aceitos: JPG, PNG<br>
-                                    Tamanho máximo: 2MB
+                                    Redimensionada automaticamente
                                 </p>
+                                <p class="text-danger small mb-0" id="avatarAviso"></p>
                             </div>
                         </div>
 
@@ -1042,7 +1103,7 @@
                 </div>
             </div>
 
-            <!-- ─── Template oculto do relatório PDF (estilo LinkedIn) ─────────────── -->
+            <!-- Template oculto do relatório PDF (estilo LinkedIn) -->
             <div id="report-print" style="display:none; width:730px; background:#fff; font-family:'Segoe UI',Arial,sans-serif; box-sizing:border-box; padding:16px 20px;">
 
                 <!-- Banner -->
@@ -1128,7 +1189,6 @@
                     <span style="color:#F4442E; font-size:10px; font-weight:700;">ranking.plus</span>
                 </div>
             </div>
-            <!-- ──────────────────────────────────────────────────────────────────────── -->
 
             <script>
                 function confirmLogout(event) {
@@ -1137,6 +1197,144 @@
                     window.location.href = '../html/index.html';
                 }
             </script>
+
+            <!-- Vagas -->
+            <div id="vagas-page" class="page-content">
+                <h2 class="text-primary mb-4">Vagas</h2>
+                <p class="text-muted mb-4">Vagas abertas publicadas pelas empresas do Portal de Talentos. Marque interesse pra sinalizar pra empresa — se ela também demonstrar interesse em você, um chat abre automaticamente.</p>
+                <div id="vagasGrid" class="row g-3">
+                    <div class="col-12 text-center py-5 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Carregando vagas...</div>
+                </div>
+            </div>
+
+            <!-- Mensagens -->
+            <div id="mensagens-page" class="page-content">
+                <div class="chat-shell">
+                    <div class="chat-sidebar-list">
+                        <div class="chat-list-header">
+                            <h5 class="mb-0 fw-bold">Mensagens</h5>
+                            <button type="button" class="btn btn-sm btn-primary rounded-circle" id="chatNovaBtn" title="Nova conversa" style="width:32px;height:32px;">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                        <div class="chat-conversas" id="chatConversasList"></div>
+                    </div>
+                    <div class="chat-thread-panel">
+                        <div class="chat-thread-empty" id="chatEmptyState">
+                            <i class="bi bi-chat-dots display-4 text-muted"></i>
+                            <p class="text-muted mb-0">Selecione uma conversa ou inicie uma nova</p>
+                        </div>
+                        <div class="chat-thread d-none" id="chatThread">
+                            <div class="chat-thread-header">
+                                <div class="chat-avatar-mini" id="chatThreadAvatar">?</div>
+                                <strong id="chatThreadNome">—</strong>
+                            </div>
+                            <div class="chat-messages" id="chatMessages"></div>
+                            <div class="chat-composer">
+                                <button type="button" class="chat-icon-btn" id="chatAttachBtn" title="Anexar PDF"><i class="bi bi-paperclip"></i></button>
+                                <input type="file" id="chatFileInput" accept="application/pdf" class="d-none">
+                                <div class="chat-emoji-wrap">
+                                    <button type="button" class="chat-icon-btn" id="chatEmojiBtn" title="Emoji">🙂</button>
+                                    <div class="chat-emoji-picker d-none" id="chatEmojiPicker"></div>
+                                </div>
+                                <input type="text" class="chat-input" id="chatMsgInput" placeholder="Escreva uma mensagem..." maxlength="1000">
+                                <button type="button" class="chat-send-btn" id="chatSendBtn"><i class="bi bi-send-fill"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Nova Conversa -->
+            <div class="modal fade" id="modalNovaConversa" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h6 class="modal-title fw-bold">Nova conversa</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="text" class="form-control mb-2" id="chatBuscaContato" placeholder="Buscar por nome...">
+                            <div id="chatContatosList" style="max-height:340px; overflow-y:auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Desempenho do Colega -->
+            <div class="modal fade" id="modalDesempenhoColega" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="bi bi-graph-up me-2 text-primary"></i>
+                                Desempenho: <span id="desempenhoColegaNome"></span>
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                                <p class="text-muted small mb-0" id="desempenhoColegaCurso"></p>
+                                <div class="d-flex align-items-center gap-2">
+                                    <select class="form-select form-select-sm w-auto" id="desempenhoColegaPeriodo" title="Quantos anos/semestres mostrar">
+                                        <option value="">Padrão</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="6">6</option>
+                                        <option value="8">8</option>
+                                    </select>
+                                    <div class="btn-group btn-group-sm" id="desempenhoColegaFiltro">
+                                        <button type="button" class="btn btn-outline-primary" data-filtro="semestral">Semestral</button>
+                                        <button type="button" class="btn btn-primary" data-filtro="anual">Anual</button>
+                                        <button type="button" class="btn btn-outline-primary" data-filtro="completo">Curso Todo</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="desempenhoColegaLoading" class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary"></div>
+                            </div>
+                            <div id="desempenhoColegaChart" style="height:260px; display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Perfil Comportamental pendente — bloqueia Portal de Talentos / aparecer publicamente no Ranking -->
+            <div class="modal fade" id="modalPerfilComportamentalPendente" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-body text-center p-4">
+                            <i class="bi bi-clipboard2-pulse text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="fw-bold mt-3 mb-2">Perfil Comportamental pendente</h5>
+                            <p class="text-muted mb-4">
+                                Pra acessar o Portal de Talentos (ou aparecer publicamente no ranking pras empresas),
+                                você precisa concluir o Mapeamento de Perfil Comportamental — 50 perguntas rápidas, só de marcar.
+                            </p>
+                            <a href="avaliacaocomportamental.html" class="btn btn-primary w-100 mb-2">Responder agora</a>
+                            <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal">Agora não</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Reaceite de Termos — obrigatório quando o termo muda de versão -->
+            <div class="modal fade" id="modalReaceiteTermos" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-body text-center p-4">
+                            <i class="bi bi-file-earmark-text text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="fw-bold mt-3 mb-2">Nossos Termos de Uso foram atualizados</h5>
+                            <p class="text-muted mb-4">
+                                Adicionamos uma cláusula sobre o Mapeamento de Perfil Comportamental
+                                (LGPD e conformidade com o CFP/SATEPSI). Revise e aceite pra continuar usando a plataforma.
+                            </p>
+                            <a href="termodeuso.html" target="_blank" class="btn btn-outline-primary w-100 mb-2">Ler os Termos de Uso</a>
+                            <button type="button" class="btn btn-primary w-100" id="btnAceitarNovosTermos">Li e aceito os novos termos</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Bootstrap JS -->
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -1149,7 +1347,11 @@
             <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
             <!-- Área do Aluno -->
+            <script src="../javascript/auth-token.js"></script>
+            <script src="../javascript/esc.js"></script>
+            <script src="../javascript/motion.js"></script>
             <script src="../javascript/areaaluno.js"></script>
+            <script src="../javascript/chat.js"></script>
 
     <!-- VLibras — Acessibilidade em Libras (Gov.br) -->
     <div vw class="enabled">

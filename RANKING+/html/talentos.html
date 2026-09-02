@@ -6,27 +6,76 @@
     <title>Portal de Talentos - Ranking+</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="../css/design-tokens.css" rel="stylesheet">
+    <link href="../css/chat.css" rel="stylesheet">
     <style>
-        :root { --primary: #020122; --accent: #F4442E; --light-bg: #f8f9fb; }
-        body { background: var(--light-bg); font-family: 'Segoe UI', Arial, sans-serif; color: #333; }
-        .hero { background: linear-gradient(135deg, var(--primary) 0%, #1a1a6e 55%, var(--accent) 100%); padding: 60px 0 40px; color: #fff; }
-        .hero h1 { font-size: 2.4rem; font-weight: 800; }
+        /* --primary / --accent vêm de design-tokens.css (compartilhado) */
+        :root { --light-bg: #f8f9fb; }
+        body { background: var(--light-bg); font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif; color: #333; }
+        .hero { position: relative; background: linear-gradient(135deg, var(--primary) 0%, #1a1a6e 55%, var(--accent) 100%); padding: 60px 0 40px; color: #fff; overflow: hidden; }
+        .hero::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5; mix-blend-mode: overlay;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+        }
+        .hero > .container { position: relative; z-index: 1; }
+        .hero h1 { font-size: 2.4rem; font-weight: 800; letter-spacing: -0.01em; }
         .search-bar { max-width: 600px; }
         .search-bar .form-control { border-radius: 30px 0 0 30px; border: none; font-size: 1rem; }
         .search-bar .btn { border-radius: 0 30px 30px 0; background: var(--accent); border: none; }
+        .search-chip { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.35); color: #fff; border-radius: 20px; padding: 5px 8px 5px 14px; font-size: .85rem; display: inline-flex; align-items: center; gap: 6px; }
+        .search-chip button { background: none; border: none; color: rgba(255,255,255,.8); line-height: 1; padding: 2px; }
+        .search-chip button:hover { color: #fff; }
         .filter-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.06); padding: 20px; }
         .filter-card h6 { font-weight: 700; color: var(--primary); }
         .filter-divider { border-top: 1px solid #eee; margin: 16px 0; }
-        .talent-card { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); transition: transform .18s, box-shadow .18s; overflow: hidden; cursor: pointer; }
+        .talent-card { position: relative; background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); border: 1px solid transparent; transition: transform .3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow .25s ease, border-color .25s ease; overflow: hidden; cursor: pointer; --mx: 50%; --my: 50%; }
+        .talent-card::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; background: radial-gradient(220px circle at var(--mx) var(--my), rgba(244,68,46,.14), transparent 70%); opacity: 0; transition: opacity .3s ease; pointer-events: none; }
+        .talent-card:hover::after { opacity: 1; }
+        .talent-card:hover { border-color: rgba(244,68,46,.2); }
+        .talent-actions-top { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; gap: 6px; }
+        .talent-fav-btn, .talent-compare-btn { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.9); border: 1px solid #eee; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 1.05rem; transition: transform .15s, color .15s, background .15s; flex-shrink: 0; }
+        .talent-fav-btn:hover, .talent-compare-btn:hover { transform: scale(1.1); }
+        .talent-fav-btn:hover { color: #F59E0B; }
+        .talent-fav-btn.is-fav { color: #F59E0B; }
+        .talent-compare-btn:hover { color: var(--primary); }
+        .talent-compare-btn.is-compare { color: #fff; background: var(--primary); border-color: var(--primary); }
         .talent-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(0,0,0,.12); }
+        .talent-new-badge { background: #e6f9ee; color: #178a4c; font-weight: 600; }
+        /* Barra flutuante de comparação */
+        .compare-bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--primary); color: #fff; padding: 12px 0; z-index: 1050; box-shadow: 0 -4px 20px rgba(0,0,0,.2); transform: translateY(100%); transition: transform .25s ease; }
+        .compare-bar.show { transform: translateY(0); }
+        .compare-bar .chip { background: rgba(255,255,255,.12); border-radius: 20px; padding: 4px 12px 4px 6px; display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; }
+        .compare-bar .chip .avatar-mini { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700; }
+        .compare-bar .chip button { background: none; border: none; color: rgba(255,255,255,.7); padding: 0; line-height: 1; }
+        .compare-col { border: 1px solid #eee; border-radius: 12px; padding: 16px; height: 100%; }
         .talent-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 800; color: #fff; flex-shrink: 0; }
+        .talent-avatar-wrap { position: relative; flex-shrink: 0; }
+        .talent-medal { position: absolute; top: -4px; right: -6px; font-size: 1rem; background: #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 5px rgba(0,0,0,.3); }
         .skill-pill { display: inline-block; background: #e8f4ff; color: #1565c0; border-radius: 20px; padding: 2px 10px; font-size: 0.75rem; margin: 2px 2px 2px 0; font-weight: 500; }
         .stats-bar { background: #fff; border-bottom: 1px solid #eee; padding: 14px 0; }
-        .stats-bar .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
+        .stats-bar .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
         .stats-bar .stat-label { font-size: 0.8rem; color: #888; }
         .lgpd-badge { background: #e8f5e9; color: #2e7d32; border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; font-weight: 600; }
-        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.75); z-index: 9999; align-items: center; justify-content: center; }
-        .loading-overlay.show { display: flex; }
+        /* Motion (Camada 1) — entrada escalonada dos cards de candidatos */
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in-item { animation: fadeInUp .45s ease both; }
+        @media (prefers-reduced-motion: reduce) { .fade-in-item { animation: none; opacity: 1; transform: none; } }
+        /* Skeleton loader — mesmo formato do talent-card, sem bloquear a página inteira */
+        .skeleton-card { background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); overflow: hidden; }
+        .skeleton-line, .skeleton-avatar, .skeleton-pill, .skeleton-btn {
+            background: linear-gradient(90deg, #eef0f4 25%, #f7f8fa 37%, #eef0f4 63%);
+            background-size: 400% 100%;
+            animation: skeleton-shimmer 1.4s ease infinite;
+            border-radius: 6px;
+        }
+        .skeleton-avatar { width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0; }
+        .skeleton-line { height: 12px; }
+        .skeleton-pill { height: 22px; width: 70px; border-radius: 20px; display: inline-block; margin: 2px 4px 2px 0; }
+        .skeleton-btn { height: 32px; border-radius: 8px; }
+        @keyframes skeleton-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
         /* Navbar empresa logada */
         .empresa-badge { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); border-radius: 20px; padding: 5px 14px; color: #fff; font-size: .85rem; }
         /* Drawer de perfil */
@@ -41,15 +90,228 @@
         .metric-box .lbl { font-size: .72rem; color: #888; }
         /* interesses banner */
         .interesses-banner { background: linear-gradient(90deg,#e8f4ff,#f0e8ff); border-left: 4px solid #1565c0; border-radius: 8px; padding: 12px 16px; }
+
+        /* Checklist de primeiros passos (onboarding da empresa) */
+        .onboarding-checklist { background: #fff; border: 1px solid #eee; border-left: 4px solid var(--accent); border-radius: 8px; padding: 14px 16px; }
+        .onboarding-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+        .onboarding-item .oi-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #d5d5d5; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: .7rem; color: #fff; }
+        .onboarding-item.feito .oi-check { background: #28a745; border-color: #28a745; }
+        .onboarding-item.feito .oi-texto { text-decoration: line-through; color: #999; }
+        .onboarding-item .oi-texto { font-size: .85rem; flex: 1; }
+        .onboarding-item .oi-cta { font-size: .78rem; }
+        /* Estados vazios com ícone (Minhas Vagas, Favoritos, Já Visualizados) */
+        .empty-state-nice { text-align: center; padding: 40px 20px; }
+        .empty-state-nice i { font-size: 2.4rem; opacity: .3; }
+        .empty-state-nice .est-titulo { font-weight: 600; margin: 12px 0 4px; }
+        .empty-state-nice .est-texto { color: #888; font-size: .85rem; max-width: 320px; margin: 0 auto 14px; }
+
+        /* Kanban de favoritos — mesmo padrão estrutural do quadro de chamados do
+           Painel Admin (css/admin.css), adaptado pro tema claro do talentos.html */
+        .kanban-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; align-items: start; }
+        .kanban-col { background: #f4f6fb; border: 1px solid #eee; border-radius: 12px; padding: 10px; min-height: 160px; }
+        .kanban-col-header { display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: .8rem; padding: 4px 6px 10px; color: #333; }
+        .kanban-col-header.novo i               { color: #6c757d; }
+        .kanban-col-header.contatado i          { color: #1565c0; }
+        .kanban-col-header.entrevista_marcada i { color: #f59e0b; }
+        .kanban-col-header.em_processo i        { color: #7b1fa2; }
+        .kanban-col-header.descartado i         { color: #ef4444; }
+        .kanban-count { background: #fff; border: 1px solid #e2e2e2; border-radius: 20px; padding: 1px 9px; font-size: .72rem; color: #666; }
+        .kanban-col-body { display: flex; flex-direction: column; gap: 8px; }
+        .kanban-empty { text-align: center; color: #aaa; font-size: .76rem; padding: 20px 8px; }
+        .kanban-card { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: border-color .15s, transform .1s; }
+        .kanban-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+        .kanban-card strong { color: #222; font-size: .84rem; }
+        .kanban-card .curso-sem { font-size: .74rem; color: #888; margin-top: 2px; }
+        .kanban-card-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
+        .kanban-card-actions button { border: 1px solid #e2e2e2; background: #fff; border-radius: 6px; width: 26px; height: 26px; font-size: .74rem; color: #555; }
+        .kanban-card-actions button:hover { background: #f0f0f0; }
+        @media (max-width: 1200px) { .kanban-board { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 576px)  { .kanban-board { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-<!-- Loading overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-    <div class="text-center">
-        <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
-        <p class="text-muted fw-semibold" id="loadingMsg">Buscando talentos...</p>
+<!-- Barra flutuante de comparação -->
+<div class="compare-bar" id="compareBar">
+    <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap" id="compareChips"></div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-light" onclick="limparComparacao()">Limpar</button>
+            <button class="btn btn-sm text-white" style="background:var(--accent);" onclick="abrirComparacao()">
+                <i class="bi bi-columns-gap me-1"></i>Comparar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Comparação de Candidatos -->
+<div class="modal fade" id="modalComparacao" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--primary);">
+                <h5 class="modal-title text-white"><i class="bi bi-columns-gap me-2"></i>Comparar Candidatos</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="comparacaoBody">
+                <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="exportarComparacaoBtn" onclick="exportarComparacaoPDF(this)">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i>Exportar Comparativo (PDF)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Mensagens (chat por match mútuo — só conversas já destravadas aparecem) -->
+<div class="modal fade" id="modalMensagensEmpresa" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered" style="height:80vh;">
+        <div class="modal-content" style="height:100%;">
+            <div class="modal-header" style="background:var(--primary);">
+                <h6 class="modal-title text-white mb-0"><i class="bi bi-chat-dots-fill me-2"></i>Mensagens</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" style="flex:1; min-height:0;">
+                <div class="chat-shell" style="height:100%;">
+                    <div class="chat-sidebar-list">
+                        <div class="chat-list-header">
+                            <h6 class="mb-0 fw-bold">Conversas</h6>
+                        </div>
+                        <div class="chat-conversas" id="chatConversasList"></div>
+                    </div>
+                    <div class="chat-thread-panel">
+                        <div class="chat-thread-empty" id="chatEmptyState">
+                            <i class="bi bi-chat-dots display-4 text-muted"></i>
+                            <p class="text-muted mb-0 text-center px-3">Selecione uma conversa. Novas conversas abrem sozinhas quando há interesse mútuo com um candidato numa vaga.</p>
+                        </div>
+                        <div class="chat-thread d-none" id="chatThread">
+                            <div class="chat-thread-header">
+                                <div class="chat-avatar-mini" id="chatThreadAvatar">?</div>
+                                <strong id="chatThreadNome">—</strong>
+                            </div>
+                            <div class="chat-messages" id="chatMessages"></div>
+                            <div class="chat-composer">
+                                <button type="button" class="chat-icon-btn" id="chatAttachBtn" title="Anexar PDF"><i class="bi bi-paperclip"></i></button>
+                                <input type="file" id="chatFileInput" accept="application/pdf" class="d-none">
+                                <div class="chat-emoji-wrap">
+                                    <button type="button" class="chat-icon-btn" id="chatEmojiBtn" title="Emoji">🙂</button>
+                                    <div class="chat-emoji-picker d-none" id="chatEmojiPicker"></div>
+                                </div>
+                                <input type="text" class="chat-input" id="chatMsgInput" placeholder="Escreva uma mensagem..." maxlength="1000">
+                                <button type="button" class="chat-send-btn" id="chatSendBtn"><i class="bi bi-send-fill"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Kanban de Favoritos -->
+<div class="modal fade" id="modalKanbanFavoritos" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--primary);">
+                <h5 class="modal-title text-white"><i class="bi bi-kanban me-2"></i>Meus Favoritos — Funil de Acompanhamento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3" id="kanbanFavoritosBody" style="overflow-x:auto;">
+                <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Minhas Vagas -->
+<div class="modal fade" id="modalVagas" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--primary);">
+                <h5 class="modal-title text-white"><i class="bi bi-briefcase me-2"></i>Minhas Vagas</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="vagasAlerta" class="alert d-none py-2 small"></div>
+
+                <div id="vagasListaWrap">
+                    <div id="vagasLista"><div class="text-center py-4"><div class="spinner-border text-primary"></div></div></div>
+                    <button type="button" class="btn btn-sm btn-primary mt-3" onclick="_abrirFormNovaVaga()">
+                        <i class="bi bi-plus-lg me-1"></i>Nova Vaga
+                    </button>
+                </div>
+
+                <!-- Formulário criar/editar vaga (oculto até "Nova Vaga" ou "Editar") -->
+                <form id="vagaForm" class="d-none border-top pt-3 mt-3" onsubmit="return false;">
+                    <input type="hidden" id="vagaFormId" value="">
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Título da vaga *</label>
+                        <input type="text" class="form-control form-control-sm" id="vagaTitulo" maxlength="150" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Descrição</label>
+                        <textarea class="form-control form-control-sm" id="vagaDescricao" rows="2"></textarea>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Área de foco</label>
+                            <select class="form-select form-select-sm" id="vagaAreaFoco"><option value="">—</option></select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Tipo de vaga</label>
+                            <select class="form-select form-select-sm" id="vagaTipoVaga"><option value="">—</option></select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Curso preferido</label>
+                            <input type="text" class="form-control form-control-sm" id="vagaCurso" placeholder="Ex: Ciência da Computação">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Semestre mínimo</label>
+                            <input type="number" class="form-control form-control-sm" id="vagaSemestreMin" min="1" max="12">
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-primary" id="vagaFormSalvarBtn" onclick="salvarVaga()">
+                            <i class="bi bi-check-lg me-1"></i>Salvar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="_fecharFormVaga()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Funil de Recrutamento -->
+<div class="modal fade" id="modalFunilFavoritos" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--primary);">
+                <h5 class="modal-title text-white"><i class="bi bi-bar-chart-steps me-2"></i>Análise de Recrutamento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="funilFavoritosBody">
+                <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Contratações — check-in trimestral de retenção -->
+<div class="modal fade" id="modalContratacoes" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--primary);">
+                <h5 class="modal-title text-white"><i class="bi bi-trophy-fill me-2"></i>Contratações</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3" id="contratacoesBody">
+                <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -66,6 +328,7 @@
                     <h5 class="mb-0 fw-bold" id="drawerNome">—</h5>
                     <small class="opacity-75" id="drawerCurso">—</small><br>
                     <span class="badge bg-light text-dark mt-1" id="drawerSemestre">—</span>
+                    <span class="badge mt-1 d-none" style="background:var(--accent);" id="drawerAreaInteresse"></span>
                 </div>
             </div>
             <button class="btn btn-sm btn-outline-light" onclick="fecharDrawer()"><i class="bi bi-x-lg"></i></button>
@@ -96,6 +359,41 @@
             <!-- Estado: empresa logada -->
             <div id="navLogado" class="d-none d-flex align-items-center gap-2">
                 <span class="empresa-badge"><i class="bi bi-building-check me-1"></i><span id="navEmpresaNome">Empresa</span></span>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-light position-relative" type="button" data-bs-toggle="dropdown" id="notifEmpresaBtn">
+                        <i class="bi bi-bell"></i>
+                        <span class="badge rounded-pill bg-danger d-none" id="notifEmpresaBadge"
+                              style="position:absolute; top:-4px; right:-4px; font-size:.6rem;">0</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-0" style="width:340px; max-height:420px; overflow-y:auto;">
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                            <strong class="small text-dark">Notificações</strong>
+                            <button class="btn btn-link btn-sm p-0 small" id="notifEmpresaMarcarTodasLidas">Marcar todas como lidas</button>
+                        </div>
+                        <div id="notifEmpresaLista" class="text-dark">
+                            <div class="text-center text-muted small py-4">Carregando...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-tools me-1"></i>Ferramentas
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" onclick="abrirModalMensagens(); return false;">
+                            <i class="bi bi-chat-dots me-2"></i>Mensagens
+                            <span class="badge rounded-pill bg-danger d-none ms-1" id="chatNavBadge" style="font-size:.65rem;">0</span>
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="abrirKanbanFavoritos(); return false;"><i class="bi bi-kanban me-2"></i>Meus Favoritos</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="abrirModalVagas(); return false;"><i class="bi bi-briefcase me-2"></i>Minhas Vagas</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="abrirModalFunil(); return false;"><i class="bi bi-bar-chart-steps me-2"></i>Análise de Recrutamento</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="abrirHistoricoVisualizacoes(); return false;"><i class="bi bi-clock-history me-2"></i>Já Visualizados</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="abrirModalContratacoes(); return false;">
+                            <i class="bi bi-trophy-fill me-2"></i>Contratações
+                            <span class="badge bg-danger ms-1 d-none" id="contratacoesPendentesBadge">0</span>
+                        </a></li>
+                    </ul>
+                </div>
                 <button class="btn btn-sm btn-outline-warning" onclick="abrirModalInteresses()">
                     <i class="bi bi-sliders me-1"></i>Interesses de Perfil
                 </button>
@@ -107,6 +405,9 @@
             <div id="navLogadoUser" class="d-none d-flex align-items-center gap-2">
                 <span class="empresa-badge"><i class="bi bi-person-fill me-1"></i><span id="navUserNome">Usuário</span></span>
                 <span class="badge bg-secondary" id="navUserTipo"></span>
+                <button type="button" class="btn btn-sm btn-outline-light" onclick="logoutUsuario()">
+                    <i class="bi bi-box-arrow-right me-1"></i>Sair
+                </button>
             </div>
             <a href="index.html" class="btn btn-outline-light btn-sm"><i class="bi bi-house me-1"></i>Início</a>
         </div>
@@ -119,10 +420,11 @@
         <h1><i class="bi bi-people-fill me-2"></i>Portal de Talentos</h1>
         <p class="mb-4">Encontre os melhores alunos para oportunidades de estágio, emprego e pesquisa.</p>
         <div class="input-group search-bar mx-auto">
-            <input type="text" class="form-control py-3 px-4" id="searchHabilidade" placeholder="Buscar por habilidade, disciplina ou área...">
+            <input type="text" class="form-control py-3 px-4" id="searchHabilidade" placeholder="Buscar por habilidade, disciplina ou área... (Enter adiciona)">
             <button class="btn px-4" id="searchBtn" type="button"><i class="bi bi-search text-white"></i></button>
         </div>
-        <small class="text-white-50 mt-2 d-block">Ex: "Algoritmos", "Banco de Dados", "Inteligência Artificial"</small>
+        <div id="searchChips" class="d-flex flex-wrap justify-content-center gap-2 mt-3"></div>
+        <small class="text-white-50 mt-2 d-block">Ex: "Algoritmos", "Banco de Dados", "Inteligência Artificial" — pode combinar várias</small>
     </div>
 </div>
 
@@ -150,7 +452,32 @@
                 <label class="form-label small fw-semibold mb-1">Curso</label>
                 <select class="form-select form-select-sm mb-3" id="filtCurso"><option value="">Todos os cursos</option></select>
                 <label class="form-label small fw-semibold mb-1">Semestre mínimo</label>
-                <select class="form-select form-select-sm mb-3" id="filtSemestre"><option value="">Qualquer semestre</option></select>
+                <select class="form-select form-select-sm mb-3" id="filtSemestre">
+                    <option value="">Qualquer semestre</option>
+                    <option value="1">1º Semestre</option>
+                    <option value="2">2º Semestre</option>
+                    <option value="3">3º Semestre</option>
+                    <option value="4">4º Semestre</option>
+                    <option value="5">5º Semestre</option>
+                    <option value="6">6º Semestre</option>
+                    <option value="7">7º Semestre</option>
+                    <option value="8">8º Semestre</option>
+                </select>
+                <label class="form-label small fw-semibold mb-1">CRA mínimo</label>
+                <select class="form-select form-select-sm mb-3" id="filtCraMin">
+                    <option value="">Qualquer CRA</option>
+                    <option value="7">7.0+</option>
+                    <option value="8">8.0+</option>
+                    <option value="8.5">8.5+</option>
+                    <option value="9">9.0+</option>
+                </select>
+                <label class="form-label small fw-semibold mb-1">Menção na disciplina buscada</label>
+                <select class="form-select form-select-sm mb-1" id="filtMencao" disabled>
+                    <option value="">Qualquer</option>
+                    <option value="SS">SS</option>
+                    <option value="SS,MS">SS ou MS</option>
+                </select>
+                <small class="text-muted d-block mb-3" id="filtMencaoAjuda" style="font-size:.72rem;">Só funciona com uma habilidade buscada acima</small>
                 <div class="filter-divider"></div>
                 <div class="form-check form-switch mb-2">
                     <input class="form-check-input" type="checkbox" id="filtSoGithub">
@@ -160,9 +487,17 @@
                     <input class="form-check-input" type="checkbox" id="filtSoLinkedin">
                     <label class="form-check-label small" for="filtSoLinkedin"><i class="bi bi-linkedin me-1"></i>Somente com LinkedIn</label>
                 </div>
+                <div class="mb-3 d-none" id="filtSoFavoritosWrap">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="filtSoFavoritos">
+                        <label class="form-check-label small" for="filtSoFavoritos"><i class="bi bi-star-fill me-1 text-warning"></i>Somente favoritos</label>
+                    </div>
+                    <button class="btn btn-outline-dark w-100 btn-sm mt-2" id="exportarFavoritosCsv"><i class="bi bi-filetype-csv me-1"></i>Exportar Favoritos (CSV)</button>
+                </div>
                 <div class="filter-divider"></div>
                 <button class="btn btn-primary w-100 btn-sm" id="aplicarFiltros"><i class="bi bi-search me-1"></i>Buscar Talentos</button>
                 <button class="btn btn-outline-secondary w-100 btn-sm mt-2" id="limparFiltros"><i class="bi bi-x-circle me-1"></i>Limpar Filtros</button>
+                <button class="btn btn-outline-dark w-100 btn-sm mt-2" id="exportarCsv"><i class="bi bi-filetype-csv me-1"></i>Exportar CSV</button>
                 <div class="filter-divider"></div>
                 <div class="small text-muted text-center">
                     <i class="bi bi-shield-check text-success me-1"></i>Apenas alunos que consentiram com a exibição pública aparecem aqui (LGPD Art. 7º).
@@ -172,6 +507,21 @@
 
         <!-- Grid de Talentos -->
         <div class="col-lg-9">
+            <!-- Checklist de primeiros passos (empresa logada, some quando completo ou dispensado) -->
+            <div id="onboardingChecklist" class="onboarding-checklist mb-3 d-none">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <strong><i class="bi bi-flag-fill me-1"></i>Primeiros passos</strong>
+                        <span class="text-muted small ms-2" id="onboardingProgresso"></span>
+                    </div>
+                    <button type="button" class="btn-close" style="font-size:.7rem;" onclick="_dispensarOnboarding()" title="Dispensar"></button>
+                </div>
+                <div class="progress mb-3" style="height:6px;">
+                    <div class="progress-bar bg-success" id="onboardingBarra" style="width:0%;"></div>
+                </div>
+                <div id="onboardingItens"></div>
+            </div>
+
             <!-- Banner interesses (empresa logada) -->
             <div id="interessesBanner" class="interesses-banner mb-3 d-none">
                 <div class="d-flex justify-content-between align-items-center">
@@ -188,7 +538,14 @@
                     <h5 class="mb-0">Candidatos</h5>
                     <small class="text-muted" id="resultadoDesc">Carregando...</small>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 align-items-center">
+                    <select class="form-select form-select-sm" id="ordenarPor" style="width:auto;" title="Ordenar por">
+                        <option value="cra_desc">CRA (maior primeiro)</option>
+                        <option value="cra_asc">CRA (menor primeiro)</option>
+                        <option value="nome_asc">Nome (A–Z)</option>
+                        <option value="semestre_desc">Semestre (mais avançado)</option>
+                        <option value="match_desc" id="ordenarMatchOption" hidden>Melhor match</option>
+                    </select>
                     <button class="btn btn-outline-secondary btn-sm" id="viewGrid"><i class="bi bi-grid"></i></button>
                     <button class="btn btn-outline-secondary btn-sm" id="viewList"><i class="bi bi-list-ul"></i></button>
                 </div>
@@ -198,6 +555,9 @@
                     <div class="spinner-border text-primary mb-3"></div><p>Carregando talentos...</p>
                 </div>
             </div>
+            <nav aria-label="Paginação de candidatos" class="mt-4">
+                <ul class="pagination justify-content-center" id="talentosPaginacao"></ul>
+            </nav>
         </div>
     </div>
 </div>
@@ -209,9 +569,7 @@
     </div>
 </footer>
 
-<!-- ═══════════════════════════════════════════════════
-     MODAL LOGIN EMPRESA
-══════════════════════════════════════════════════ -->
+<!-- Modal Login Empresa -->
 <div class="modal fade" id="modalLoginEmpresa" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -239,9 +597,7 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     MODAL CADASTRO EMPRESA
-══════════════════════════════════════════════════ -->
+<!-- Modal Cadastro Empresa -->
 <div class="modal fade" id="modalCadastroEmpresa" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -304,9 +660,7 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     MODAL INTERESSES DE PERFIL
-══════════════════════════════════════════════════ -->
+<!-- Modal Interesses de Perfil -->
 <div class="modal fade" id="modalInteresses" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -342,6 +696,31 @@
                         <option value="8">8º semestre ou mais</option>
                     </select>
                 </div>
+                <hr>
+                <div class="mb-2">
+                    <label class="form-label fw-semibold">Perfis Comportamentais procurados <span class="text-muted fw-normal">(até 2)</span></label>
+                    <p class="text-muted small mb-2">Usado no match do Portal de Talentos.</p>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <select class="form-select" id="intPerfil1">
+                            <option value="">1º perfil (opcional)</option>
+                            <option value="executor">Executor</option>
+                            <option value="comunicador">Comunicador</option>
+                            <option value="planejador">Planejador</option>
+                            <option value="analista">Analista</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <select class="form-select" id="intPerfil2">
+                            <option value="">2º perfil (opcional)</option>
+                            <option value="executor">Executor</option>
+                            <option value="comunicador">Comunicador</option>
+                            <option value="planejador">Planejador</option>
+                            <option value="analista">Analista</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -353,8 +732,27 @@
     </div>
 </div>
 
+<!-- Modal Histórico de Visualizações ("Quem eu já vi") -->
+<div class="modal fade" id="modalHistoricoVisualizacoes" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--primary);">
+                <h5 class="modal-title text-white"><i class="bi bi-clock-history me-2"></i>Candidatos já visualizados</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="historicoVisualizacoesBody">
+                <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="../javascript/auth-token.js"></script>
+<script src="../javascript/esc.js"></script>
 <script src="../javascript/talentos.js"></script>
+<script src="../javascript/chat.js"></script>
 
     <!-- VLibras — Acessibilidade em Libras (Gov.br) -->
     <div vw class="enabled">
