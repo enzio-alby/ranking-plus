@@ -71,6 +71,8 @@ O Ranking+ implementa um **parser heurístico de PDF** que extrai automaticament
 | Banco | `universidade_ranking` |
 | Pool de conexões | `connectionLimit: 10`, `queueLimit: 0` |
 
+> Tabela acima descreve o **ambiente de desenvolvimento local**. Em produção (GCP), o banco é um Cloud SQL gerenciado — ver [Infraestrutura em Produção](#infraestrutura-em-producao-gcp).
+
 ### Segurança
 | Mecanismo | Implementação |
 |---|---|
@@ -121,6 +123,52 @@ O Ranking+ implementa um **parser heurístico de PDF** que extrai automaticament
 **Comunicação sem CORS problemático:** O Express seta manualmente `Access-Control-Allow-Origin: *` em um middleware global antes de todas as rotas, suportando `Origin: null` de `file://` e `Origin: http://localhost:4000` de HTTP simultâneo. Sem configuração adicional de proxy.
 
 **VLibras e contexto HTTP:** `app.use(express.static(path.join(__dirname, '..')))` serve o projeto inteiro via `http://localhost:4000/html/...`, resolvendo o VLibras (que exige `Origin` HTTP válido) com uma única linha, sem Nginx ou servidor adicional.
+
+---
+
+## Infraestrutura em Produção (GCP)
+
+O ambiente descrito em "Como Executar" abaixo é o de **desenvolvimento local**. Em produção, o Ranking+ roda inteiramente na Google Cloud Platform, no domínio **[rankingplus.site](https://rankingplus.site)**.
+
+### Domínio e acesso
+
+| Item | Detalhe |
+|---|---|
+| Domínio | `rankingplus.site` e `www.rankingplus.site` |
+| Certificado | Let's Encrypt (certbot), renovação automática |
+| HTTP → HTTPS | Redirecionamento automático (301) |
+| Acesso administrativo (SSH) | Identity-Aware Proxy do GCP — sem porta 22 exposta publicamente e sem depender de IP fixo |
+
+### Arquitetura
+
+```
+Internet
+   │
+   ▼
+nginx  (porta 80/443, TLS)
+   ├── serve o frontend estático (html/ css/ javascript/ images/)
+   └── /api/*  →  proxy reverso  →  processo Node.js (porta interna 4000)
+                                       │
+                                       ▼
+                              Cloud SQL — MySQL 8.0
+                              (IP privado, sem exposição pública)
+```
+
+### Camadas e funções
+
+| Camada | Tecnologia / versão | Função |
+|---|---|---|
+| Servidor web | nginx (Ubuntu 24.04) | Único ponto de entrada público; serve os arquivos estáticos e encaminha `/api/*` pro backend |
+| Sistema operacional | Ubuntu 24.04 LTS | Compute Engine, máquina `e2-small` |
+| Runtime backend | Node.js 24 (LTS) | Executa `Backend/api.js` — cópia funcional do `api2.js` de desenvolvimento, mesma lógica e rotas; a única diferença é a configuração de conexão (variáveis de ambiente apontando pro Cloud SQL em vez de `localhost`) |
+| Gerenciamento do processo | systemd | Reinício automático em caso de falha, inicialização automática no boot da VM, log dedicado em `Backend/logs/` |
+| Banco de dados | Cloud SQL — MySQL 8.0 | Banco `universidade_ranking`; usuário de aplicação dedicado, sem privilégios administrativos do servidor de banco |
+| Rede | VPC dedicada | Firewall libera só as portas 80/443; o banco de dados não tem IP público, só é alcançável pela VM via peering privado |
+| TLS | certbot (Let's Encrypt) | Emissão e renovação automática do certificado |
+
+### Ciclo de vida do ambiente
+
+O projeto nasceu hospedado em nuvem, passou por um período de desenvolvimento em ambiente local (Laragon) durante boa parte do 7º e 8º semestre, e retornou definitivamente pra nuvem em setembro/2026 — agora com domínio próprio, TLS válido e processo de deploy documentado.
 
 ---
 
