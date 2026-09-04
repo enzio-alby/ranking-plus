@@ -1,0 +1,18 @@
+# Copie para terraform.tfvars (que fica FORA do git - ver .gitignore) e
+# ajuste os valores. Nunca comite terraform.tfvars nem terraform.tfstate.
+
+project_id = "seu-projeto-gcp-aqui"
+
+# Opcionais - os valores abaixo sao os defaults usados em produção (Ranking+):
+# region           = "us-central1"
+# zone             = "us-central1-a"
+# name_prefix      = "rankingplus"
+# vm_machine_type  = "e2-small"
+# db_tier          = "db-custom-1-3840"
+# db_name          = "universidade_ranking"
+# db_app_user      = "rankingplus_app"
+
+# Deixe db_app_password de fora (ou "") pra o Terraform gerar uma senha
+# aleatoria forte sozinho. So defina aqui se precisar reaproveitar uma
+# senha existente:
+# db_app_password = "sua-senha-aqui"
