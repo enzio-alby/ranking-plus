@@ -138,6 +138,7 @@ O ambiente descrito em "Como Executar" abaixo é o de **desenvolvimento local**.
 | Certificado | Let's Encrypt (certbot), renovação automática |
 | HTTP → HTTPS | Redirecionamento automático (301) |
 | Acesso administrativo (SSH) | Identity-Aware Proxy do GCP — sem porta 22 exposta publicamente e sem depender de IP fixo |
+| URLs internas | Requisições a `/html/pagina.html` redirecionam (301) pra `/pagina.html` — as pastas internas do projeto não aparecem na URL |
 
 ### Arquitetura
 
@@ -169,6 +170,10 @@ nginx  (porta 80/443, TLS)
 ### Ciclo de vida do ambiente
 
 O projeto nasceu hospedado em nuvem, passou por um período de desenvolvimento em ambiente local (Laragon) durante boa parte do 7º e 8º semestre, e retornou definitivamente pra nuvem em setembro/2026 — agora com domínio próprio, TLS válido e processo de deploy documentado.
+
+### Infraestrutura como código (Terraform)
+
+A arquitetura acima está descrita como código em [`infra/terraform/`](infra/terraform/) — módulo reutilizável (VPC, Cloud SQL, VM, firewall) validado com `terraform validate`, pronto pra recriar um ambiente equivalente (ex.: homologação) do zero. Não gerencia os recursos de produção atuais (provisionados via `gcloud` CLI direto) nem o deploy do código/segredos — ver o README daquela pasta.
 
 ---
 
