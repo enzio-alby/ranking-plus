@@ -13,6 +13,7 @@ let _favoritosIds = new Set(); // IDs de alunos favoritados pela empresa logada
 let _favoritosStatusMap = new Map(); // aluno_id -> status de acompanhamento ('novo'|'contatado'|'entrevista_marcada'|'em_processo'|'descartado')
 let _favoritosNotasMap = new Map(); // aluno_id -> notas privadas da empresa sobre o candidato
 let _favoritosEntrevistaMap = new Map(); // aluno_id -> { data_hora, observacao } — só relevante quando status = 'entrevista_marcada'
+let _notifEmpresaPollTimer = null; // sino de notificações: atualiza sozinho, não só ao clicar (item 4)
 const STATUS_FAVORITO_LABELS = {
     novo: 'Novo',
     contatado: 'Contatado',
@@ -157,6 +158,7 @@ function _atualizarNavEmpresa() {
         _carregarFavoritos();
         _carregarHistoricoVisualizados();
         _carregarNotificacoesEmpresa();
+        if (!_notifEmpresaPollTimer) _notifEmpresaPollTimer = setInterval(_carregarNotificacoesEmpresa, 15000);
         _carregarOnboarding();
     } else {
         navNao?.classList.remove('d-none');
@@ -482,8 +484,14 @@ function abrirModalVagas() {
     if (!_empresaLogada) { abrirModalLogin(); return; }
     _fecharFormVaga();
     document.getElementById('vagasAlerta').classList.add('d-none');
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalVagas')).show();
-    _carregarVagas();
+    const modalEl = document.getElementById('modalVagas');
+    // Preencher a lista só depois que a animação de abertura termina (item 15/
+    // feedback Caio): fazendo isso antes, o texto da vaga é injetado com o
+    // modal ainda em transição de largura e renderiza numa linha só, estourando
+    // o container — corrige sozinho num reflow, mas o usuário vê a tela quebrada
+    // por um instante.
+    modalEl.addEventListener('shown.bs.modal', _carregarVagas, { once: true });
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
 async function _carregarVagas() {
@@ -512,13 +520,13 @@ function _renderVagasLista(vagas) {
             .filter(Boolean).join(' · ');
         return `
         <div class="d-flex justify-content-between align-items-start border rounded p-2 mb-2">
-            <div>
+            <div class="text-break" style="min-width:0;">
                 <div class="fw-semibold small">
-                    ${_escTextarea(v.titulo)}
+                    ${_escTextarea(v.titulo)} <span class="text-muted fw-normal">#${v.id}</span>
                     <span class="badge ${aberta ? 'bg-success' : 'bg-secondary'} ms-1">${aberta ? 'Aberta' : 'Fechada'}</span>
                 </div>
                 ${detalhes ? `<div class="text-muted" style="font-size:.75rem;">${_escTextarea(detalhes)}</div>` : ''}
-                ${v.descricao ? `<div class="text-muted small mt-1">${_escTextarea(v.descricao)}</div>` : ''}
+                ${v.descricao ? `<div class="text-muted small mt-1" style="overflow-wrap:anywhere;">${_escTextarea(v.descricao)}</div>` : ''}
                 <button type="button" class="btn btn-sm btn-link p-0 mt-1" onclick="_toggleInteressadosVaga(${v.id}, this)">
                     <i class="bi bi-people me-1"></i>${v.interessados_count || 0} interessado${v.interessados_count == 1 ? '' : 's'}
                 </button>
@@ -545,13 +553,34 @@ async function _toggleInteressadosVaga(vagaId, btnEl) {
         const alunos = res.ok ? await res.json() : [];
         wrap.innerHTML = alunos.length
             ? `<ul class="list-unstyled small mb-0 border-top pt-1">${alunos.map(a =>
-                `<li class="py-1"><i class="bi bi-person-fill text-muted me-1"></i>
+                `<li class="py-1 d-flex align-items-center justify-content-between">
+                   <span><i class="bi bi-person-fill text-muted me-1"></i>
                    <a href="#" class="link-primary text-decoration-none" onclick="abrirPerfilAluno(${a.id}, ${vagaId}); return false;">${_escTextarea(a.nome)}</a>
-                   — ${_escTextarea(a.curso || '')}${a.semestre ? ` (${a.semestre}º sem.)` : ''}</li>`
+                   — ${_escTextarea(a.curso || '')}${a.semestre ? ` (${a.semestre}º sem.)` : ''}</span>
+                   <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 ms-2" title="Abrir chat" onclick="_abrirChatInteressado(${vagaId}, ${a.id}, this)"><i class="bi bi-chat-dots"></i></button>
+                 </li>`
               ).join('')}</ul>`
             : '<p class="text-muted small mb-0">Ninguém demonstrou interesse ainda.</p>';
     } catch (e) {
         wrap.innerHTML = '<p class="text-danger small mb-0">Erro ao carregar interessados.</p>';
+    }
+}
+
+// Atalho "abrir chat" na lista de interessados de uma vaga (item 8/feedback Caio).
+async function _abrirChatInteressado(vagaId, alunoId, btnEl) {
+    if (!_empresaLogada) return;
+    btnEl.disabled = true;
+    try {
+        const res = await fetch(`${TALENTOS_API}/empresas/${_empresaLogada.id}/vagas/${vagaId}/interessados/${alunoId}/abrir-chat`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Não foi possível abrir o chat.'); return; }
+        bootstrap.Modal.getInstance(document.getElementById('modalVagas'))?.hide();
+        window.abrirModalMensagens();
+        if (typeof window.abrirConversaPorId === 'function') window.abrirConversaPorId(data.conversa_id);
+    } catch (_) {
+        alert('Erro de conexão ao abrir o chat.');
+    } finally {
+        btnEl.disabled = false;
     }
 }
 
@@ -1790,14 +1819,19 @@ function _kanbanCardHtml(f) {
             ? `<div class="curso-sem">📅 ${new Date(f.entrevista_data_hora).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${new Date(f.entrevista_data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>`
             : `<div class="curso-sem text-muted fst-italic">sem data marcada</div>`;
     }
+    const vagaLinha = f.vagas_interesse
+        ? `<div class="curso-sem"><i class="bi bi-briefcase"></i> ${_escTextarea(f.vagas_interesse)}</div>`
+        : '';
     return `
     <div class="kanban-card" onclick="bootstrap.Modal.getInstance(document.getElementById('modalKanbanFavoritos')).hide(); abrirPerfilAluno(${f.id});">
         <strong>${_escTextarea(f.nome)}</strong>
         <div class="curso-sem">${_escTextarea(f.curso || '—')} · ${f.semestre ? f.semestre + 'º sem.' : '—'}</div>
+        ${vagaLinha}
         ${entrevistaLinha}
         <div class="kanban-card-actions">
             ${anterior ? `<button type="button" title="Voltar" onclick="event.stopPropagation(); moverFavoritoKanban(${f.id}, '${anterior}')"><i class="bi bi-arrow-left"></i></button>` : ''}
             ${proximo ? `<button type="button" title="Avançar" onclick="event.stopPropagation(); moverFavoritoKanban(${f.id}, '${proximo}')"><i class="bi bi-arrow-right"></i></button>` : ''}
+            ${f.status !== 'descartado' ? `<button type="button" title="Descartar" onclick="event.stopPropagation(); moverFavoritoKanban(${f.id}, 'descartado')"><i class="bi bi-x-lg"></i></button>` : ''}
         </div>
     </div>`;
 }

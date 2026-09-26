@@ -32,9 +32,26 @@
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="p-4">
-                <div class="text-center mb-4">
-                    <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                        <i class="fas fa-graduation-cap text-primary" style="font-size: 24px;"></i>
+                <div class="text-center mb-4 position-relative">
+                    <div class="dropdown position-absolute top-0 end-0">
+                        <button class="btn btn-link text-white position-relative p-1" type="button"
+                            data-bs-toggle="dropdown" aria-label="Notificações">
+                            <i class="fas fa-bell fs-5"></i>
+                            <span class="badge rounded-pill bg-danger d-none" id="notifProfBadge"
+                                  style="position:absolute; top:0; right:0; font-size:.6rem;">0</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end p-0" style="width:320px; max-height:400px; overflow-y:auto;">
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                <strong class="small">Notificações</strong>
+                                <button class="btn btn-link btn-sm p-0 small" id="notifProfMarcarTodasLidas">Marcar todas como lidas</button>
+                            </div>
+                            <div id="notifProfLista">
+                                <div class="text-center text-muted small py-4">Carregando...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sidebar-profile-avatar" id="sidebarProfAvatar">
+                        <i class="fas fa-graduation-cap"></i>
                     </div>
                     <h5 class="text-white mt-2 mb-0" id="sidebarProfName">Professor</h5>
                     <small class="text-white-50">Área do Professor</small>
@@ -57,6 +74,10 @@
                         <i class="fas fa-comment-dots"></i>
                         Mensagens
                         <span class="badge rounded-pill bg-danger d-none ms-1" id="chatNavBadge" style="font-size:.65rem;">0</span>
+                    </a>
+                    <a class="nav-link" href="#" onclick="showTab('vagas')">
+                        <i class="fas fa-briefcase"></i>
+                        Vagas
                     </a>
                     <a class="nav-link" href="#" onclick="showTab('schedule')">
                         <i class="fas fa-calendar-alt"></i>
@@ -622,6 +643,42 @@
                             <div class="modal-body">
                                 <input type="text" class="form-control mb-2" id="chatBuscaContato" placeholder="Buscar por nome...">
                                 <div id="chatContatosList" style="max-height:340px; overflow-y:auto;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vagas Tab (item 10/feedback Caio) — professor ve vagas abertas e pode
+                     indicar pra um aluno da turma direto pelo chat -->
+                <div id="vagas-tab" class="tab-content fade-in">
+                    <h3 class="mb-4"><i class="fas fa-briefcase me-2 text-primary"></i>Vagas</h3>
+                    <p class="text-muted">Vagas abertas cadastradas por empresas no Portal de Talentos — indique pra um aluno da sua turma direto pelo chat.</p>
+                    <div class="mb-3" style="max-width:400px;">
+                        <input type="text" class="form-control form-control-sm" id="profVagasBusca" placeholder="Buscar por ID ou título..." oninput="_filtrarVagasProfessor(this.value)">
+                    </div>
+                    <div id="profVagasLista" class="row g-3">
+                        <div class="col-12 text-center py-4"><div class="spinner-border text-primary"></div></div>
+                    </div>
+                </div>
+
+                <!-- Modal Indicar Vaga -->
+                <div class="modal fade" id="modalIndicarVaga" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h6 class="modal-title fw-bold">Indicar vaga pra aluno</h6>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="indicarVagaId">
+                                <p class="small text-muted mb-2" id="indicarVagaTitulo"></p>
+                                <label for="indicarVagaAluno" class="form-label">Aluno</label>
+                                <select class="form-select" id="indicarVagaAluno"></select>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" onclick="confirmarIndicarVaga()">
+                                    <i class="fas fa-paper-plane me-1"></i>Indicar via chat
+                                </button>
                             </div>
                         </div>
                     </div>

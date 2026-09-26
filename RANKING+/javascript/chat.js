@@ -17,6 +17,7 @@
     let _pollTimer = null;
     let _contatos = null;
     let _anexoPendente = null; // { anexo_id, nome } — selecionado mas ainda não enviado
+    let _enviandoMensagem = false; // trava contra duplo envio (clique + Enter em sequência rápida)
 
     const EMOJIS = ['😀','😂','😊','😍','🥰','😉','😎','🤔','😅','😢','😭','😡','👍','👎','👏','🙏','💪','🔥','🎉','✅',
                      '❌','❤️','💯','⭐','📚','📎','⏰','📌','🤝','🙌'];
@@ -39,6 +40,10 @@
         _renderEmojiPicker();
         _wireEventos();
         _carregarConversas();
+        // Antes o polling só começava ao abrir a aba Mensagens (initChat) ou
+        // clicar numa notificação — badge de não lidas e conversa aberta ficavam
+        // parados em segundo plano. Agora começa junto com a página (item 4).
+        _iniciarPolling();
     }
 
     // Chamado sempre que a aba/página de Mensagens é aberta (dashboards fazem
@@ -108,7 +113,8 @@
             <div class="chat-conversa-item ${c.outro_tipo} ${c.id === _conversaAtivaId ? 'active' : ''}" data-conversa-id="${c.id}">
                 <div class="chat-avatar-mini">${_esc((c.outro_nome || '?')[0].toUpperCase())}</div>
                 <div class="chat-conversa-texto">
-                    <div class="chat-conversa-nome">${_esc(c.outro_nome)} ${c.outro_tipo === 'professor' ? '<span class="chat-tipo-badge">Professor</span>' : c.outro_tipo === 'empresa' ? '<span class="chat-tipo-badge">Empresa</span>' : ''}</div>
+                    <div class="chat-conversa-nome"><span class="chat-conversa-nome-txt">${_esc(c.outro_nome)}</span>${c.outro_tipo === 'professor' ? '<span class="chat-tipo-badge">Professor</span>' : c.outro_tipo === 'empresa' ? '<span class="chat-tipo-badge">Empresa</span>' : ''}</div>
+                    ${c.vaga_titulo ? `<div class="chat-conversa-vaga"><i class="bi bi-briefcase"></i> ${_esc(c.vaga_titulo)}</div>` : ''}
                     <div class="chat-conversa-previa">${_esc(c.previa || '')}</div>
                 </div>
                 <div class="chat-conversa-meta">
@@ -119,6 +125,32 @@
         `).join('');
         lista.querySelectorAll('.chat-conversa-item').forEach(el => {
             el.addEventListener('click', () => _abrirConversa(parseInt(el.dataset.conversaId, 10)));
+        });
+        lista.querySelectorAll('.chat-conversa-excluir').forEach(btn => {
+            btn.addEventListener('click', async e => {
+                e.stopPropagation(); // não abre a conversa ao clicar na lixeira
+                const conversaId = btn.dataset.conversaId;
+                const nome = btn.dataset.conversaNome;
+                if (!confirm(`Excluir esta conversa da sua lista? Ela some só pra você — ${nome} continua vendo o histórico normalmente, e a conversa volta a aparecer pra você se chegar mensagem nova.`)) return;
+                try {
+                    const res = await fetch(`${CHAT_API}/chat/conversas/${conversaId}`, { method: 'DELETE' });
+                    if (!res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        alert(data.error || 'Erro ao excluir conversa.');
+                        return;
+                    }
+                    _conversas = _conversas.filter(c => String(c.id) !== String(conversaId));
+                    if (String(_conversaAtivaId) === String(conversaId)) {
+                        _conversaAtivaId = null;
+                        document.getElementById('chatThread')?.classList.add('d-none');
+                        document.getElementById('chatEmptyState')?.classList.remove('d-none');
+                    }
+                    _renderListaConversas();
+                    _atualizarBadgeNav();
+                } catch (err) {
+                    alert('Erro ao excluir conversa: ' + err.message);
+                }
+            });
         });
     }
 
@@ -145,6 +177,7 @@
             document.getElementById('chatThreadAvatar').textContent = (conversa.outro_nome || '?')[0].toUpperCase();
             _conversaAtivaOutroTipo = conversa.outro_tipo;
             _conversaAtivaOutroNome = conversa.outro_nome;
+            _renderVagaSubtitulo(conversa.vaga_titulo);
         }
         _renderAgendarCallBtn();
         _renderChipsRapidos();
@@ -184,6 +217,23 @@
                 ? `<div class="chat-bubble-anexo expirado"><i class="bi bi-file-earmark-pdf"></i> ${_esc(m.anexo.nome)} (expirado)</div>`
                 : `<a class="chat-bubble-anexo" href="${CHAT_API}/chat/anexos/${m.anexo.id}/download" target="_blank"><i class="bi bi-file-earmark-pdf-fill"></i> ${_esc(m.anexo.nome)}</a>`;
         }
+        // Sem quebra de linha/indentação entre o corpo e a hora aqui dentro: a bolha
+        // usa white-space:pre-wrap (pra preservar quebras de linha que o próprio
+        // usuário digitou), então qualquer espaço/newline "de formatação" do template
+        // literal seria renderizado como linha em branco de verdade na bolha.
+        let botaoExcluir = '';
+        if (minha) {
+            botaoExcluir = `<button type="button" class="chat-bubble-excluir" title="Excluir mensagem"><i class="bi bi-trash3"></i></button>`;
+        }
+        // Check simples = chegou ao servidor; check duplo = o outro lado já
+        // abriu a conversa e leu (campo `lida`, já existia pra contagem de não
+        // lidas — só faltava aparecer na própria bolha). Item 7/feedback Caio.
+        const checkEnviada = minha
+            ? (m.lida
+                ? '<i class="bi bi-check2-all chat-bubble-check lida" title="Visualizada"></i>'
+                : '<i class="bi bi-check2 chat-bubble-check" title="Enviada"></i>')
+            : '';
+        const conteudoBolha = `${corpo}${anexoHtml}<span class="chat-bubble-time">${hora}${checkEnviada}</span>`;
         return `
             <div class="chat-bubble-row ${minha ? 'mine' : ''}">
                 <div class="chat-bubble">
@@ -191,6 +241,33 @@
                     <span class="chat-bubble-time">${hora}</span>
                 </div>
             </div>`;
+    }
+
+    // Subtítulo "Vaga: X" no cabeçalho da conversa (item 6/feedback Caio) — a
+    // empresa recebia "tenho interesse" sem saber em qual vaga era. O elemento
+    // não existe no HTML estático das 3 páginas (o nome fica solto dentro de um
+    // header flex-row), então na primeira vez ele é envolvido num wrapper em
+    // coluna pra caber o subtítulo embaixo, sem editar as 3 páginas na mão.
+    function _renderVagaSubtitulo(vagaTitulo) {
+        const nomeEl = document.getElementById('chatThreadNome');
+        if (!nomeEl) return;
+        let wrap = document.getElementById('chatThreadTextos');
+        if (!wrap) {
+            wrap = document.createElement('div');
+            wrap.id = 'chatThreadTextos';
+            wrap.className = 'chat-thread-textos';
+            nomeEl.replaceWith(wrap);
+            wrap.appendChild(nomeEl);
+        }
+        let subEl = document.getElementById('chatThreadVaga');
+        if (!vagaTitulo) { subEl?.remove(); return; }
+        if (!subEl) {
+            subEl = document.createElement('div');
+            subEl.id = 'chatThreadVaga';
+            subEl.className = 'chat-thread-vaga';
+            wrap.appendChild(subEl);
+        }
+        subEl.innerHTML = `<i class="bi bi-briefcase"></i> ${_esc(vagaTitulo)}`;
     }
 
     // Botão "Agendar call" — só aparece em conversa aluno<->empresa. Opção A
@@ -263,11 +340,13 @@
 
     // ENVIAR
     async function _enviarMensagem() {
+        if (_enviandoMensagem) return; // Enter dispara direto e ignora o disabled do botão — a trava real é esta flag
         const input = document.getElementById('chatMsgInput');
         const texto = input.value.trim();
         if (!texto && !_anexoPendente) return;
         if (!_conversaAtivaId) return;
 
+        _enviandoMensagem = true;
         const btn = document.getElementById('chatSendBtn');
         btn.disabled = true;
         try {
@@ -285,6 +364,7 @@
         } catch (_) {
             alert('Erro de conexão ao enviar a mensagem.');
         } finally {
+            _enviandoMensagem = false;
             btn.disabled = false;
             input.focus();
         }

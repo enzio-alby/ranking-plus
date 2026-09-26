@@ -154,7 +154,11 @@ function renderRankingPagination() {
         if (!disabled && !active) {
             a.addEventListener('click', (e) => {
                 e.preventDefault();
-                if (page !== 1) {
+                // O gate de "crie uma conta" é só pra visitante anônimo — quem já
+                // está logado (sessão real em unirank_token) não deveria travar
+                // aqui (achado do feedback do Caio: acontecia mesmo logado).
+                const jaLogado = !!localStorage.getItem('unirank_token');
+                if (page !== 1 && !jaLogado) {
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRankingCompleto')).show();
                     return;
                 }

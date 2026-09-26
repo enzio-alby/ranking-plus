@@ -1040,9 +1040,17 @@ app.get('/ranking', async (req, res) => {
 // Ranking detalhado com filtros opcionais (?curso=&semestre=&disciplina_id=)
 app.get('/ranking/detalhado', async (req, res) => {
   try {
+    // Item 13/feedback Caio: antes o nome real de TODO MUNDO saía do backend
+    // sempre, e a mascara de anonimato acontecia só no front (JS) — dava pra
+    // ver o nome de quem pediu anonimato so abrindo o DevTools (aba Network).
+    // Agora a mascara é no SQL, igual a rota /ranking (Home publica) ja fazia
+    // — só abre excecao pro proprio dono ver o proprio nome (via token opcional).
+    const meu = _identidadeOpcional(req);
+    const meuAlunoId = meu && meu.tipo === 'aluno' ? meu.id : null;
+
     const { curso, semestre, disciplina_id } = req.query;
     const conditions = [];
-    const params = [];
+    const params = [meuAlunoId, meuAlunoId];
 
     if (curso)        { conditions.push('a.curso = ?');           params.push(curso); }
     if (semestre)     { conditions.push('a.semestre_atual = ?');  params.push(semestre); }
@@ -1053,10 +1061,11 @@ app.get('/ranking/detalhado', async (req, res) => {
     const [rows] = await db.execute(`
       SELECT
         a.id,
-        a.nome,
+        CASE WHEN COALESCE(a.permitir_exibicao_ranking, 1) = 1 OR a.id = ? THEN a.nome ELSE 'Aluno Anônimo' END AS nome,
         a.curso,
         a.semestre_atual,
         COALESCE(a.permitir_exibicao_ranking, 1) AS permitir_exibicao_ranking,
+        CASE WHEN COALESCE(a.permitir_exibicao_ranking, 1) = 1 OR a.id = ? THEN a.avatar_base64 ELSE NULL END AS avatar_base64,
         ROUND(AVG(
           ${mencaoParaNotaSQL("b.mencao")}
         ), 2) AS pontuacao,
@@ -1065,8 +1074,8 @@ app.get('/ranking/detalhado', async (req, res) => {
       FROM alunos a
       JOIN boletim b ON a.id = b.aluno_id
       ${where}
-      GROUP BY a.id, a.nome, a.curso, a.semestre_atual, a.permitir_exibicao_ranking
-      ORDER BY 
+      GROUP BY a.id, a.nome, a.curso, a.semestre_atual, a.permitir_exibicao_ranking, a.avatar_base64
+      ORDER BY
         pontuacao DESC,
         frequencia DESC,
         total_atividades DESC,
@@ -2081,6 +2090,42 @@ app.get('/empresas/:id/vagas/:vagaId/interessados', exigirDono('empresa'), async
   }
 });
 
+// POST /empresas/:id/vagas/:vagaId/interessados/:alunoId/abrir-chat — atalho
+// pra empresa começar a conversa direto da lista de interessados (item 8/
+// feedback Caio), sem quebrar a regra "chat aluno<->empresa nunca é livre":
+// só funciona se o aluno já demonstrou interesse nessa vaga (linha em
+// vaga_interesses já existe), e reaproveita o mesmo caminho de match mútuo
+// que /empresas/:id/favoritos/:alunoId/status usa.
+app.post('/empresas/:id/vagas/:vagaId/interessados/:alunoId/abrir-chat', exigirDono('empresa'), async (req, res) => {
+  try {
+    const { id: empresaId, vagaId, alunoId } = req.params;
+    const [[interesse]] = await db.execute(
+      `SELECT vi.id FROM vaga_interesses vi JOIN empresa_vagas v ON v.id = vi.vaga_id
+       WHERE vi.vaga_id = ? AND vi.aluno_id = ? AND v.empresa_id = ?`,
+      [vagaId, alunoId, empresaId]
+    );
+    if (!interesse) return res.status(403).json({ error: 'Este aluno não demonstrou interesse nesta vaga.' });
+
+    await db.execute('INSERT IGNORE INTO empresa_favoritos (empresa_id, aluno_id) VALUES (?, ?)', [empresaId, alunoId]);
+    await db.execute(
+      `UPDATE empresa_favoritos SET status = 'contatado' WHERE empresa_id = ? AND aluno_id = ? AND status IN ('novo', 'descartado')`,
+      [empresaId, alunoId]
+    );
+    await _processarMatchVagas(alunoId, empresaId);
+
+    const [[conversa]] = await db.execute(
+      `SELECT id FROM conversas WHERE vaga_id = ?
+       AND ((participante1_tipo='aluno' AND participante1_id=?) OR (participante2_tipo='aluno' AND participante2_id=?))
+       AND ((participante1_tipo='empresa' AND participante1_id=?) OR (participante2_tipo='empresa' AND participante2_id=?))`,
+      [vagaId, alunoId, alunoId, empresaId, empresaId]
+    );
+    if (!conversa) return res.status(500).json({ error: 'Não foi possível abrir a conversa.' });
+    res.json({ conversa_id: conversa.id });
+  } catch (error) {
+    _falha(res, error);
+  }
+});
+
 // ─── INTERAÇÕES — REGISTRAR VISUALIZAÇÃO ─────────────────────────────────────
 app.post('/interacoes', async (req, res) => {
   try {
@@ -2194,6 +2239,66 @@ app.put('/alunos/:id/notificacoes/marcar-todas-lidas', exigirDono('aluno'), asyn
   }
 });
 
+// Professor: vagas abertas de qualquer empresa (item 10/feedback Caio) — só
+// leitura, pra ele poder indicar oportunidades pra alunos da turma via chat.
+app.get('/professores/:id/vagas-disponiveis', exigirDono('professor'), async (req, res) => {
+  try {
+    const [rows] = await db.execute(`
+      SELECT v.id, v.titulo, v.descricao, v.curso_preferido, v.semestre_minimo,
+             e.nome_fantasia AS empresa_nome
+      FROM empresa_vagas v
+      JOIN empresas e ON e.id = v.empresa_id
+      WHERE v.status = 'aberta'
+      ORDER BY v.criado_em DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    _falha(res, error);
+  }
+});
+
+// Professor: sino de notificações (mensagens do chat, por enquanto — mesmo
+// padrão do aluno, sem a lógica extra de sincronização que a empresa tem).
+app.get('/professores/:id/notificacoes', exigirDono('professor'), async (req, res) => {
+  try {
+    const professorId = req.params.id;
+    const [rows] = await db.execute(
+      `SELECT id, tipo, titulo, mensagem, referencia_id, lida, criado_em
+       FROM notificacoes WHERE destinatario_tipo='professor' AND destinatario_id=?
+       ORDER BY criado_em DESC LIMIT 30`,
+      [professorId]
+    );
+    const naoLidas = rows.filter(n => !n.lida).length;
+    res.json({ notificacoes: rows, nao_lidas: naoLidas });
+  } catch (error) {
+    _falha(res, error);
+  }
+});
+
+app.put('/professores/:id/notificacoes/:notifId/lida', exigirDono('professor'), async (req, res) => {
+  try {
+    await db.execute(
+      `UPDATE notificacoes SET lida=1 WHERE id=? AND destinatario_tipo='professor' AND destinatario_id=?`,
+      [req.params.notifId, req.params.id]
+    );
+    res.json({ mensagem: 'Notificação marcada como lida.' });
+  } catch (error) {
+    _falha(res, error);
+  }
+});
+
+app.put('/professores/:id/notificacoes/marcar-todas-lidas', exigirDono('professor'), async (req, res) => {
+  try {
+    await db.execute(
+      `UPDATE notificacoes SET lida=1 WHERE destinatario_tipo='professor' AND destinatario_id=? AND lida=0`,
+      [req.params.id]
+    );
+    res.json({ mensagem: 'Notificações marcadas como lidas.' });
+  } catch (error) {
+    _falha(res, error);
+  }
+});
+
 // Empresa: antes de listar, sincroniza notificações de "novo candidato" —
 // alunos que batem com os Interesses de Perfil salvos, ainda não vistos e
 // ainda não notificados (mesma regra de "Novo pra você" do talentos.js,
@@ -2286,12 +2391,19 @@ app.get('/empresas/:id/historico-visualizacoes', exigirDono('empresa'), async (r
 // ─── EMPRESA — FAVORITOS / SHORTLIST ──────────────────────────────────────────
 app.get('/empresas/:id/favoritos', exigirDono('empresa'), async (req, res) => {
   try {
+    // vagas_interesse (item 17/feedback Caio) — o Kanban é um funil geral de
+    // candidatos, não por vaga ("Esse Kanban seria para qual vaga?"); mostra
+    // em cada card em qual(is) vaga(s) o aluno demonstrou interesse, se houver.
     const [rows] = await db.execute(`
       SELECT a.id, a.nome, a.curso, a.semestre_atual AS semestre, f.status, f.notas,
-             f.entrevista_data_hora, f.entrevista_observacao, f.criado_em
+             f.entrevista_data_hora, f.entrevista_observacao, f.criado_em,
+             GROUP_CONCAT(DISTINCT v.titulo ORDER BY v.titulo SEPARATOR ', ') AS vagas_interesse
       FROM empresa_favoritos f
       JOIN alunos a ON a.id = f.aluno_id
+      LEFT JOIN vaga_interesses vi ON vi.aluno_id = a.id
+      LEFT JOIN empresa_vagas v ON v.id = vi.vaga_id AND v.empresa_id = f.empresa_id
       WHERE f.empresa_id = ?
+      GROUP BY a.id, f.status, f.notas, f.entrevista_data_hora, f.entrevista_observacao, f.criado_em
       ORDER BY f.criado_em DESC
     `, [req.params.id]);
     res.json(rows);
@@ -2703,6 +2815,20 @@ app.get('/professores/:profId/lancamentos', exigirDono('professor', 'profId'), a
 
 app.put('/professores/:profId/disciplinas/:discId/alunos/:alunoId/boletim', exigirDono('professor', 'profId'), async (req, res) => {
   try {
+    // Nota Avaliada é 0-10 (mesma escala do campo no front) — sem essa checagem
+    // o valor ia direto pro banco, e como a coluna é DECIMAL(4,2), 99 salvava
+    // sem erro mas 100 estourava a precisão e quebrava com um erro confuso.
+    // Item 2 (padronizacao) — a mesma checagem que ja existia so pra
+    // nota_avaliacao agora vale tambem pra participacao_nota (mesma escala
+    // 0-10 no campo do front, mas sem validacao nenhuma no backend antes).
+    for (const [campo, rotulo] of [['nota_avaliacao', 'Nota Avaliada'], ['participacao_nota', 'Nota de Participação']]) {
+      if (campo in req.body && req.body[campo] !== '') {
+        const valor = Number(req.body[campo]);
+        if (Number.isNaN(valor) || valor < 0 || valor > 10) {
+          return res.status(400).json({ error: `${rotulo} deve ser um número entre 0 e 10.` });
+        }
+      }
+    }
     const allowed = ['mencao', 'faltas', 'nota_avaliacao', 'atividades_entregues', 'participacao_nota'];
     const sets = [], vals = [];
     for (const f of allowed) {
@@ -3413,7 +3539,15 @@ app.get('/chat/conversas/participante/:tipo/:id', exigirAutenticacao(['aluno', '
       ORDER BY COALESCE(ultima_mensagem_em, criado_em) DESC
     `, [tipo, id, tipo, id]);
 
-    const conversas = await Promise.all(rows.map(async c => {
+    const conversas = await Promise.all(rows.filter(c => {
+      const souP1 = c.participante1_tipo === tipo && c.participante1_id == id;
+      const ocultaDesde = souP1 ? c.oculta_p1_desde : c.oculta_p2_desde;
+      if (!ocultaDesde) return true;
+      // Continua oculta pra mim só enquanto não houver mensagem mais nova que
+      // o momento em que eu "excluí" — chegando mensagem nova, reaparece.
+      const ultimaAtividade = c.ultima_mensagem_em || c.criado_em;
+      return new Date(ultimaAtividade) > new Date(ocultaDesde);
+    }).map(async c => {
       const souP1 = c.participante1_tipo === tipo && c.participante1_id == id;
       const outroTipo = souP1 ? c.participante2_tipo : c.participante1_tipo;
       const outroId   = souP1 ? c.participante2_id   : c.participante1_id;
@@ -3427,6 +3561,13 @@ app.get('/chat/conversas/participante/:tipo/:id', exigirAutenticacao(['aluno', '
         'SELECT COUNT(*) AS n FROM mensagens WHERE conversa_id = ? AND remetente_tipo != ? AND lida = 0',
         [c.id, tipo]
       );
+      // Conversa nascida de interesse mútuo numa vaga (item 6/feedback Caio) —
+      // sem isso a empresa recebe "tenho interesse" sem saber em qual vaga.
+      let vagaTitulo = null;
+      if (c.vaga_id) {
+        const [[vaga]] = await db.execute('SELECT titulo FROM empresa_vagas WHERE id = ?', [c.vaga_id]);
+        vagaTitulo = vaga?.titulo || null;
+      }
 
       let previa = ultima?.anexo_id ? '📎 Anexo' : '';
       if (ultima?.texto_cifrado) {
@@ -3435,6 +3576,7 @@ app.get('/chat/conversas/participante/:tipo/:id', exigirAutenticacao(['aluno', '
 
       return {
         id: c.id, outro_tipo: outroTipo, outro_id: outroId, outro_nome: outroNome,
+        outro_avatar: outroAvatar, vaga_id: c.vaga_id, vaga_titulo: vagaTitulo,
         previa: previa.slice(0, 80), ultima_em: ultima?.criado_em || c.criado_em,
         nao_lidas: naoLidas.n
       };
@@ -3459,15 +3601,23 @@ app.post('/chat/conversas', exigirAutenticacao(['aluno', 'professor']), async (r
     }
     const { p1t, p1i, p2t, p2i } = _ordenarPar(meu_tipo, meu_id, outro_tipo, outro_id);
 
+    // vaga_id opcional — só professor pode setar (indicação de vaga pro aluno,
+    // item 10/feedback Caio). Sem isso, a conversa criada pela aba Vagas do
+    // professor não tinha como mostrar o subtítulo "Vaga: X" no chat (item 6),
+    // já que esse dado nunca chegava a ser gravado.
+    const vagaId = (meu_tipo === 'professor' && req.body.vaga_id) ? req.body.vaga_id : null;
+
+    // <=> é o operador "null-safe equal" do MySQL — necessário porque `= NULL`
+    // nunca casa com NULL em SQL padrão, e a maioria das conversas não tem vaga.
     const [existente] = await db.execute(
-      'SELECT id FROM conversas WHERE participante1_tipo=? AND participante1_id=? AND participante2_tipo=? AND participante2_id=?',
-      [p1t, p1i, p2t, p2i]
+      'SELECT id FROM conversas WHERE participante1_tipo=? AND participante1_id=? AND participante2_tipo=? AND participante2_id=? AND vaga_id <=> ?',
+      [p1t, p1i, p2t, p2i, vagaId]
     );
     if (existente.length) return res.json({ conversa_id: existente[0].id });
 
     const [result] = await db.execute(
-      'INSERT INTO conversas (participante1_tipo, participante1_id, participante2_tipo, participante2_id) VALUES (?, ?, ?, ?)',
-      [p1t, p1i, p2t, p2i]
+      'INSERT INTO conversas (participante1_tipo, participante1_id, participante2_tipo, participante2_id, vaga_id) VALUES (?, ?, ?, ?, ?)',
+      [p1t, p1i, p2t, p2i, vagaId]
     );
     res.status(201).json({ conversa_id: result.insertId });
   } catch (error) {
@@ -3559,10 +3709,11 @@ app.post('/chat/conversas/:conversaId/mensagens', exigirAutenticacao(['aluno', '
     );
     await db.execute('UPDATE conversas SET ultima_mensagem_em = NOW() WHERE id = ?', [conversaId]);
 
-    // Notificação real só existe (sino) do lado do aluno por enquanto.
-    if (destinatarioTipo === 'aluno') {
+    // Notificação real (sino) — aluno e professor por enquanto (item 1 do
+    // lote de correções). Empresa entra no item 4 (polling em tempo real).
+    if (destinatarioTipo === 'aluno' || destinatarioTipo === 'professor') {
       const remetenteNome = await _nomeParticipante(remetente_tipo, remetente_id);
-      await _criarNotificacao('aluno', destinatarioId, 'nova_mensagem',
+      await _criarNotificacao(destinatarioTipo, destinatarioId, 'nova_mensagem',
         `Nova mensagem de ${remetenteNome}`,
         (texto?.trim() ? texto.trim() : '📎 Enviou um anexo').slice(0, 200),
         conversaId);
@@ -3587,6 +3738,102 @@ app.put('/chat/conversas/:conversaId/marcar-lida', exigirAutenticacao(['aluno', 
       [conversaId, meu_tipo]
     );
     res.json({ sucesso: true });
+  } catch (error) {
+    _falha(res, error);
+  }
+});
+
+// DELETE /chat/mensagens/:mensagemId — exclui uma mensagem (apenas o remetente pode)
+app.delete('/chat/mensagens/:mensagemId', exigirAutenticacao(['aluno', 'professor', 'empresa']), async (req, res) => {
+  try {
+    const { mensagemId } = req.params;
+    const { tipo: meuTipo, id: meuId } = req.usuarioAutenticado; // identidade vem do token (S1)
+
+    // Buscar a mensagem
+    const [[mensagem]] = await db.execute(
+      'SELECT id, remetente_tipo, remetente_id, anexo_id, conversa_id FROM mensagens WHERE id = ?',
+      [mensagemId]
+    );
+    if (!mensagem) return res.status(404).json({ error: 'Mensagem não encontrada.' });
+
+    // Validar que quem está excluindo é o remetente (segurança — evita que alguém delete mensagem da outra pessoa)
+    if (mensagem.remetente_tipo !== meuTipo || String(mensagem.remetente_id) !== String(meuId)) {
+      return res.status(403).json({ error: 'Você só pode excluir suas próprias mensagens.' });
+    }
+
+    // Se a mensagem tiver anexo, também apagar de mensagem_anexos
+    if (mensagem.anexo_id) {
+      // Buscar o anexo pra remover o arquivo físico se existir
+      const [[anexo]] = await db.execute(
+        'SELECT caminho_arquivo FROM mensagem_anexos WHERE id = ?',
+        [mensagem.anexo_id]
+      );
+      if (anexo && anexo.caminho_arquivo) {
+        const caminho = path.join(CHAT_UPLOADS_DIR, anexo.caminho_arquivo);
+        if (fs.existsSync(caminho)) fs.unlinkSync(caminho);
+      }
+      // Remover a linha de mensagem_anexos
+      await db.execute('DELETE FROM mensagem_anexos WHERE id = ?', [mensagem.anexo_id]);
+    }
+
+    // Remover a mensagem
+    await db.execute('DELETE FROM mensagens WHERE id = ?', [mensagemId]);
+
+    // Atualizar o timestamp da conversa — se essa era a última mensagem,
+    // agora a "última mensagem" da conversa é a anterior (o banco cuidará disso
+    // quando a próxima query de conversa for feita). Aqui basta atualizar
+    // ultima_mensagem_em para a data/hora da mensagem anterior, ou deixar
+    // como está se não houver outras mensagens.
+    const [[ultimaMensagem]] = await db.execute(
+      'SELECT MAX(criado_em) AS ultima_data FROM mensagens WHERE conversa_id = ?',
+      [mensagem.conversa_id]
+    );
+    if (ultimaMensagem && ultimaMensagem.ultima_data) {
+      await db.execute(
+        'UPDATE conversas SET ultima_mensagem_em = ? WHERE id = ?',
+        [ultimaMensagem.ultima_data, mensagem.conversa_id]
+      );
+    } else {
+      // Se não há mais mensagens, deixar a conversa com ultima_mensagem_em NULL
+      // (ou você pode decidir manter o timestamp anterior dependendo do padrão do projeto)
+      await db.execute(
+        'UPDATE conversas SET ultima_mensagem_em = NULL WHERE id = ?',
+        [mensagem.conversa_id]
+      );
+    }
+
+    res.json({ sucesso: true, mensagemId });
+  } catch (error) {
+    _falha(res, error);
+  }
+});
+
+// DELETE /chat/conversas/:conversaId — exclui a conversa inteira (só quem participa dela)
+app.delete('/chat/conversas/:conversaId', exigirAutenticacao(['aluno', 'professor', 'empresa']), async (req, res) => {
+  try {
+    const { conversaId } = req.params;
+    const { tipo: meuTipo, id: meuId } = req.usuarioAutenticado;
+
+    const [[conversa]] = await db.execute(
+      'SELECT id, participante1_tipo, participante1_id, participante2_tipo, participante2_id FROM conversas WHERE id = ?',
+      [conversaId]
+    );
+    if (!conversa) return res.status(404).json({ error: 'Conversa não encontrada.' });
+
+    const souP1 = conversa.participante1_tipo === meuTipo && String(conversa.participante1_id) === String(meuId);
+    const souP2 = conversa.participante2_tipo === meuTipo && String(conversa.participante2_id) === String(meuId);
+    if (!souP1 && !souP2) {
+      return res.status(403).json({ error: 'Você não faz parte desta conversa.' });
+    }
+
+    // "Excluir conversa" é oculta-pra-mim (item 3/feedback Caio) — mensagens e
+    // anexos continuam intactos no banco e visíveis pro outro participante. Se
+    // ele mandar mensagem nova depois, a conversa volta a aparecer pra mim
+    // (ver filtro por ultima_mensagem_em/oculta_*_desde na listagem).
+    const coluna = souP1 ? 'oculta_p1_desde' : 'oculta_p2_desde';
+    await db.execute(`UPDATE conversas SET ${coluna} = NOW() WHERE id = ?`, [conversaId]);
+
+    res.json({ sucesso: true, conversaId });
   } catch (error) {
     _falha(res, error);
   }

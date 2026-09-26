@@ -950,6 +950,8 @@ window.showTab = function(tabName) {
         loadReportsTab();
     } else if (tabName === 'mensagens') {
         if (typeof window.initChat === 'function') window.initChat();
+    } else if (tabName === 'vagas') {
+        _carregarVagasProfessor();
     }
 };
 
@@ -1273,6 +1275,8 @@ async function initializePage() {
 
     if (!profId) return;
 
+    setupNotificacoesProfessor(profId);
+
     // Dados completos do professor
     try {
         const res  = await fetch(`${PROF_API}/professores/${profId}`);
@@ -1327,6 +1331,187 @@ async function initializePage() {
         ];
         pairs.forEach(([id, val, opts]) => animateCounter(document.getElementById(id), val, opts));
     } catch(_) {}
+}
+
+// Notificações (sino) — mesmo padrão do aluno (areaaluno.js), adaptado
+// pro layout de sidebar do professor. Item 1 do lote de correções (feedback Caio).
+let _notifProfPollTimer = null; // sino de notificações: atualiza sozinho, não só ao clicar (item 4)
+
+function setupNotificacoesProfessor(profId) {
+    const carregar = () => carregarNotificacoesProfessor(profId);
+    carregar();
+    document.querySelector('[data-bs-toggle="dropdown"][aria-label="Notificações"]')
+        ?.addEventListener('click', carregar);
+    document.getElementById('notifProfMarcarTodasLidas')?.addEventListener('click', async () => {
+        await fetch(`${PROF_API}/professores/${profId}/notificacoes/marcar-todas-lidas`, { method: 'PUT' });
+        carregar();
+    });
+    if (!_notifProfPollTimer) _notifProfPollTimer = setInterval(carregar, 15000);
+}
+
+// Vagas (item 10/feedback Caio) — professor ve vagas abertas de qualquer
+// empresa e indica pra um aluno via chat (reaproveita POST /chat/conversas,
+// que ja permite professor falar livremente com qualquer aluno).
+let _vagasProfessorCache = [];
+
+async function _carregarVagasProfessor() {
+    const profId = localStorage.getItem('professorId');
+    const lista = document.getElementById('profVagasLista');
+    if (!profId || !lista) return;
+    lista.innerHTML = '<div class="col-12 text-center py-4"><div class="spinner-border text-primary"></div></div>';
+    const buscaEl = document.getElementById('profVagasBusca');
+    if (buscaEl) buscaEl.value = '';
+    try {
+        const res = await fetch(`${PROF_API}/professores/${profId}/vagas-disponiveis`);
+        _vagasProfessorCache = res.ok ? await res.json() : [];
+        _renderVagasProfessor(_vagasProfessorCache);
+    } catch (e) {
+        lista.innerHTML = '<div class="col-12"><p class="text-danger text-center py-3 mb-0">Erro ao carregar vagas.</p></div>';
+    }
+}
+
+function _renderVagasProfessor(vagas) {
+    const lista = document.getElementById('profVagasLista');
+    if (!lista) return;
+    if (!vagas.length) {
+        lista.innerHTML = '<div class="col-12"><p class="text-muted text-center py-4 mb-0">Nenhuma vaga encontrada.</p></div>';
+        return;
+    }
+    lista.innerHTML = vagas.map(v => `
+            <div class="col-md-6 col-lg-4">
+                <div class="custom-card p-3 h-100 d-flex flex-column">
+                    <h6 class="fw-bold mb-1">${_esc(v.titulo)} <span class="text-muted small fw-normal">#${v.id}</span></h6>
+                    <div class="small text-muted mb-2">${_esc(v.empresa_nome)}</div>
+                    ${v.descricao ? `<p class="small mb-2" style="overflow-wrap:anywhere;">${_esc(v.descricao)}</p>` : ''}
+                    <div class="small text-muted mb-3">
+                        ${v.curso_preferido ? `${_esc(v.curso_preferido)} · ` : ''}${v.semestre_minimo ? `${v.semestre_minimo}º sem+` : ''}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-auto" onclick="_abrirIndicarVaga(${v.id})">
+                        <i class="fas fa-paper-plane me-1"></i>Indicar pra aluno
+                    </button>
+                </div>
+            </div>
+        `).join('');
+}
+
+// Mesma ideia da busca do aluno — filtro client-side por ID exato ou trecho
+// do titulo, so que aplicado ao cache de vagas do professor.
+function _filtrarVagasProfessor(termo) {
+    const t = termo.trim().toLowerCase();
+    if (!t) { _renderVagasProfessor(_vagasProfessorCache); return; }
+    const porId = /^\d+$/.test(t);
+    const filtradas = _vagasProfessorCache.filter(v =>
+        (porId && String(v.id) === t) || v.titulo.toLowerCase().includes(t)
+    );
+    _renderVagasProfessor(filtradas);
+}
+
+window._abrirIndicarVaga = async function(vagaId) {
+    const vaga = _vagasProfessorCache.find(v => v.id === vagaId);
+    if (!vaga) return;
+    document.getElementById('indicarVagaId').value = vagaId;
+    document.getElementById('indicarVagaTitulo').textContent = `${vaga.titulo} — ${vaga.empresa_nome}`;
+    const select = document.getElementById('indicarVagaAluno');
+    select.innerHTML = '<option>Carregando...</option>';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalIndicarVaga')).show();
+    try {
+        const profId = localStorage.getItem('professorId');
+        const res = await fetch(`${PROF_API}/chat/contatos/professor/${profId}`);
+        const data = await res.json();
+        select.innerHTML = (data.alunos || []).map(a => `<option value="${a.id}">${_esc(a.nome)}</option>`).join('');
+    } catch (e) {
+        select.innerHTML = '<option>Erro ao carregar alunos</option>';
+    }
+};
+
+window.confirmarIndicarVaga = async function() {
+    const vagaId = document.getElementById('indicarVagaId').value;
+    const alunoId = document.getElementById('indicarVagaAluno').value;
+    const vaga = _vagasProfessorCache.find(v => v.id === parseInt(vagaId, 10));
+    if (!vaga || !alunoId) return;
+    try {
+        const convRes = await fetch(`${PROF_API}/chat/conversas`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ outro_tipo: 'aluno', outro_id: parseInt(alunoId, 10), vaga_id: vaga.id })
+        });
+        const convData = await convRes.json();
+        if (!convRes.ok) { alert(convData.error || 'Não foi possível abrir a conversa.'); return; }
+        const texto = `Olá! Vi a vaga #${vaga.id} - "${vaga.titulo}" na empresa ${vaga.empresa_nome} e acho que pode ser uma boa oportunidade pra você. Dá uma olhada no Portal de Talentos.`;
+        await fetch(`${PROF_API}/chat/conversas/${convData.conversa_id}/mensagens`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ texto })
+        });
+        bootstrap.Modal.getInstance(document.getElementById('modalIndicarVaga'))?.hide();
+        showTab('mensagens');
+        if (typeof window.abrirConversaPorId === 'function') window.abrirConversaPorId(convData.conversa_id);
+    } catch (e) {
+        alert('Erro de conexão ao indicar a vaga.');
+    }
+};
+
+function _formatarDataRelativaProf(iso) {
+    const diffMin = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (diffMin < 1) return 'agora';
+    if (diffMin < 60) return `há ${diffMin} min`;
+    const diffH = Math.round(diffMin / 60);
+    if (diffH < 24) return `há ${diffH}h`;
+    return `há ${Math.round(diffH / 24)}d`;
+}
+
+async function carregarNotificacoesProfessor(profId) {
+    const lista = document.getElementById('notifProfLista');
+    const badge = document.getElementById('notifProfBadge');
+    try {
+        const res  = await fetch(`${PROF_API}/professores/${profId}/notificacoes`);
+        const data = await res.json();
+
+        if (badge) {
+            if (data.nao_lidas > 0) {
+                badge.textContent = data.nao_lidas > 9 ? '9+' : data.nao_lidas;
+                badge.classList.remove('d-none');
+            } else {
+                badge.classList.add('d-none');
+            }
+        }
+
+        if (!lista) return;
+        if (!data.notificacoes.length) {
+            lista.innerHTML = '<div class="text-center text-muted small py-4">Nenhuma notificação por aqui.</div>';
+            return;
+        }
+
+        lista.innerHTML = data.notificacoes.map(n => `
+            <a href="#" class="dropdown-item py-2 px-3 border-bottom notif-item ${n.lida ? '' : 'bg-light'}" data-notif-id="${n.id}" data-tipo="${_esc(n.tipo)}" data-referencia-id="${n.referencia_id ?? ''}">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="fas ${n.tipo === 'nova_mensagem' ? 'fa-comment-dots' : 'fa-bell'} text-primary mt-1"></i>
+                    <div>
+                        <div class="small fw-semibold">${_esc(n.titulo)}</div>
+                        <div class="small text-muted">${_esc(n.mensagem)}</div>
+                        <div class="small text-muted" style="font-size:.7rem;">${_formatarDataRelativaProf(n.criado_em)}</div>
+                    </div>
+                </div>
+            </a>
+        `).join('');
+
+        lista.querySelectorAll('.notif-item').forEach(item => {
+            item.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const id = item.dataset.notifId;
+                await fetch(`${PROF_API}/professores/${profId}/notificacoes/${id}/lida`, { method: 'PUT' });
+                carregarNotificacoesProfessor(profId);
+
+                // Notificação de mensagem — leva direto pra aba Mensagens na conversa.
+                if (item.dataset.tipo === 'nova_mensagem' && item.dataset.referenciaId) {
+                    showTab('mensagens');
+                    if (typeof window.abrirConversaPorId === 'function') {
+                        window.abrirConversaPorId(parseInt(item.dataset.referenciaId, 10));
+                    }
+                }
+            });
+        });
+    } catch (_) {
+        if (lista) lista.innerHTML = '<div class="text-center text-muted small py-4">Erro ao carregar notificações.</div>';
+    }
 }
 
 function setupEventListeners() {
@@ -2360,9 +2545,9 @@ window.carregarLancamentos = async function() {
                     </select>
                 </td>
                 <td><input type="number" class="form-control form-control-sm" id="lancFaltas_${r.boletim_id}" value="${r.faltas ?? ''}" min="0" step="1"></td>
-                <td><input type="number" class="form-control form-control-sm" id="lancNota_${r.boletim_id}" value="${r.nota_avaliacao ?? ''}" min="0" max="10" step="0.1"></td>
+                <td><input type="number" class="form-control form-control-sm" id="lancNota_${r.boletim_id}" value="${r.nota_avaliacao ?? ''}" min="0" max="10" step="0.1" title="Escala 0 a 10" oninput="_validarNotaInline(this)"></td>
                 <td><input type="number" class="form-control form-control-sm" id="lancAtiv_${r.boletim_id}" value="${r.atividades_entregues ?? ''}" min="0" step="1"></td>
-                <td><input type="number" class="form-control form-control-sm" id="lancPart_${r.boletim_id}" value="${r.participacao_nota ?? ''}" min="0" max="10" step="0.1"></td>
+                <td><input type="number" class="form-control form-control-sm" id="lancPart_${r.boletim_id}" value="${r.participacao_nota ?? ''}" min="0" max="10" step="0.1" title="Escala 0 a 10" oninput="_validarNotaInline(this)"></td>
                 <td>
                     <button class="btn btn-success btn-sm px-2" title="Salvar" onclick="salvarLancamento(${r.boletim_id}, ${r.aluno_id}, ${r.disciplina_id})">
                         <i class="fas fa-save"></i>
@@ -2376,9 +2561,28 @@ window.carregarLancamentos = async function() {
     }
 };
 
-window.salvarLancamento = async function(boletimId, alunoId, discId) {
+// Item 2 (padronização de notas) — feedback visual imediato, sem esperar o
+// Salvar pra descobrir que passou de 10 (mesma escala em todo o sistema).
+window._validarNotaInline = function(input) {
+    const valor = parseFloat(input.value);
+    const foraDaEscala = input.value !== '' && (Number.isNaN(valor) || valor < 0 || valor > 10);
+    input.classList.toggle('is-invalid', foraDaEscala);
+};
+
+window.salvarLancamento = async function(boletimId, alunoId, discId, semestreCursado) {
     const profId = localStorage.getItem('professorId');
     if (!profId) return;
+
+    const camposNota = [`lancNota_${boletimId}`, `lancPart_${boletimId}`];
+    for (const id of camposNota) {
+        const el = document.getElementById(id);
+        if (el) _validarNotaInline(el);
+    }
+    if (camposNota.some(id => document.getElementById(id)?.classList.contains('is-invalid'))) {
+        const alerta = document.getElementById('lancAlerta');
+        if (alerta) { alerta.className = 'alert alert-danger m-3'; alerta.textContent = '❌ Nota fora da escala (0 a 10) — corrija antes de salvar.'; alerta.classList.remove('d-none'); }
+        return;
+    }
 
     const btn = document.querySelector(`#lanc-row-${boletimId} button`);
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; }

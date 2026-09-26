@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 const ALUNO_API = 'http://localhost:4000';
+let _notifPollTimer = null; // sino de notificações: atualiza sozinho, não só quando a aba Mensagens é aberta (item 4)
 
 function initializeApp() {
     console.log('Student Academic System initialized');
@@ -176,6 +177,7 @@ function setupNotificacoes(alunoId) {
         await fetch(`${ALUNO_API}/alunos/${alunoId}/notificacoes/marcar-todas-lidas`, { method: 'PUT' });
         carregar();
     });
+    if (!_notifPollTimer) _notifPollTimer = setInterval(carregar, 15000);
 }
 
 async function carregarNotificacoes(alunoId) {
@@ -724,6 +726,8 @@ async function initializeDisciplinasPage() {
 }
 
 // ─── Vagas — listagem + "Tenho interesse" (base do chat por match mútuo) ─────
+let _vagasAlunoCache = []; // item 3 (busca de vagas) — evita rebuscar no servidor a cada letra digitada
+
 async function initializeVagasPage() {
     const grid = document.getElementById('vagasGrid');
     const alunoId = localStorage.getItem('alunoId');
@@ -735,17 +739,38 @@ async function initializeVagasPage() {
         const res = await fetch(`${ALUNO_API}/alunos/${alunoId}/vagas`);
         const vagas = await res.json();
 
-        if (!Array.isArray(vagas) || vagas.length === 0) {
-            grid.innerHTML = '<div class="col-12 text-center py-4 text-muted">Nenhuma vaga aberta no momento.</div>';
-            return;
-        }
-
-        grid.innerHTML = '';
-        vagas.forEach(v => grid.appendChild(_vagaCardEl(v)));
+        _vagasAlunoCache = Array.isArray(vagas) ? vagas : [];
+        const buscaEl = document.getElementById('vagasBusca');
+        if (buscaEl) buscaEl.value = '';
+        _renderVagasAluno(_vagasAlunoCache);
     } catch (err) {
         console.error('Erro ao carregar vagas:', err);
         grid.innerHTML = '<div class="col-12 text-center py-4 text-danger">Erro ao carregar vagas.</div>';
     }
+}
+
+function _renderVagasAluno(vagas) {
+    const grid = document.getElementById('vagasGrid');
+    if (!grid) return;
+    if (!vagas.length) {
+        grid.innerHTML = '<div class="col-12 text-center py-4 text-muted">Nenhuma vaga encontrada.</div>';
+        return;
+    }
+    grid.innerHTML = '';
+    vagas.forEach(v => grid.appendChild(_vagaCardEl(v)));
+}
+
+// Item 3 (feedback Enzio) — busca simples por ID exato ou trecho do título,
+// pensada pra quando houver muitas vagas publicadas e rolar a lista toda até
+// achar uma específica deixar de ser viável.
+function _filtrarVagasAluno(termo) {
+    const t = termo.trim().toLowerCase();
+    if (!t) { _renderVagasAluno(_vagasAlunoCache); return; }
+    const porId = /^\d+$/.test(t);
+    const filtradas = _vagasAlunoCache.filter(v =>
+        (porId && String(v.id) === t) || v.titulo.toLowerCase().includes(t)
+    );
+    _renderVagasAluno(filtradas);
 }
 
 function _vagaCardEl(v) {
@@ -768,7 +793,7 @@ function _vagaCardEl(v) {
         <div class="card h-100">
             <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="card-title mb-0">${_esc(v.titulo)}</h6>
+                    <h6 class="card-title mb-0">${_esc(v.titulo)} <span class="text-muted small fw-normal">#${v.id}</span></h6>
                     ${v.tipo_vaga_nome ? `<span class="badge bg-secondary">${_esc(v.tipo_vaga_nome)}</span>` : ''}
                 </div>
                 ${compatHtml}

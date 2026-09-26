@@ -47,8 +47,23 @@
 }
 .chat-conversa-item.professor .chat-avatar-mini { background: #1565c0; }
 .chat-conversa-texto { flex: 1; min-width: 0; }
-.chat-conversa-nome { font-weight: 600; font-size: .88rem; display: flex; align-items: center; gap: 6px; }
-.chat-conversa-previa { font-size: .78rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-conversa-nome { font-weight: 600; font-size: .88rem; display: flex; align-items: center; gap: 6px; color: var(--wa-text); min-width: 0; }
+/* O nome é um flex item próprio pra poder truncar com "…": nome comprido
+   (ex: "Enzio Albefaro da Silva (Demo Professor - uso interno p/ video)")
+   quebrava em 4 linhas e deixava o item da lista com 135px, o dobro dos
+   outros (67px). No WhatsApp toda linha da lista tem a mesma altura. */
+.chat-conversa-nome-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-conversa-previa { font-size: .78rem; color: var(--wa-text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-conversa-vaga {
+    font-size: .72rem;
+    color: var(--wa-text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
 .chat-conversa-meta { text-align: right; flex-shrink: 0; }
 .chat-conversa-hora { font-size: .7rem; color: #aaa; }
 .chat-badge-naolidas {
@@ -73,6 +88,18 @@
     background: #fff;
     border-bottom: 1px solid #eee;
 }
+.chat-thread-header strong { color: var(--wa-text); }
+.chat-thread-textos { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.chat-thread-vaga {
+    font-size: .72rem;
+    opacity: .75;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 .chat-messages {
     flex: 1;
@@ -93,10 +120,12 @@
     word-wrap: break-word;
     white-space: pre-wrap;
 }
-.chat-bubble-row:not(.mine) .chat-bubble { background: #fff; border: 1px solid #eee; border-bottom-left-radius: 3px; }
-.chat-bubble-row.mine .chat-bubble { background: var(--primary-blue, #020122); color: #fff; border-bottom-right-radius: 3px; }
-.chat-bubble a { color: inherit; text-decoration: underline; }
-.chat-bubble-time { font-size: .66rem; opacity: .65; margin-top: 3px; display: block; text-align: right; }
+.chat-bubble-check {
+    margin-left: 3px;
+    font-size: .72rem;
+    vertical-align: -1px;
+}
+.chat-bubble-check.lida { color: #53bdeb; opacity: 1; }
 .chat-bubble-anexo {
     display: flex; align-items: center; gap: 8px;
     background: rgba(0,0,0,.04); border-radius: 8px; padding: 8px 10px; margin-top: 4px;
