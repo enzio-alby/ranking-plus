@@ -3277,15 +3277,21 @@ function _pdfParsearExperiencias(slice) {
   let empresaCtx = '';
   let ei = 0;
 
-  const addExp = (emp, cargo, periodoLinha, startDesc) => {
+  const addExp = (emp, cargo, periodoLinha, startDesc, multiCargo) => {
     const desc = [];
     while (startDesc < expLinhas.length) {
       const dl = expLinhas[startDesc];
       if (_pdfEhDuracao(dl)) break;                                    // cabeçalho de nova empresa
       if (_pdfEhDuracao(expLinhas[startDesc + 1] || '')) break;       // próxima linha é nova empresa
       if (_pdfEhData(expLinhas[startDesc + 1] || '')) break;      // próxima linha é data → novo cargo
-      // padrão empresa→cargo→data: dl é empresa, dl+1 é cargo, dl+2 é data
-      if (_pdfEhData(expLinhas[startDesc + 2] || '') &&
+      // padrão empresa→cargo→data: dl é empresa, dl+1 é cargo, dl+2 é data.
+      // Só aplica fora de um bloco de empresa com múltiplos cargos — dentro
+      // dele (multiCargo=true), uma linha de descrição seguida do próximo
+      // cargo+data batia nesse mesmo padrão por coincidência e virava
+      // "empresa nova" por engano (bug real, achado testando com currículo
+      // do LinkedIn com cargos empilhados na mesma empresa).
+      if (!multiCargo &&
+          _pdfEhData(expLinhas[startDesc + 2] || '') &&
           !_pdfEhData(expLinhas[startDesc + 1] || '') &&
           !_pdfEhDuracao(expLinhas[startDesc + 1] || '')) break;
       desc.push(dl);
@@ -3317,10 +3323,12 @@ function _pdfParsearExperiencias(slice) {
       continue;
     }
 
-    // Cargo com data logo em seguida: l=cargo, p1=data
+    // Cargo com data logo em seguida: l=cargo, p1=data. Estamos dentro de um
+    // bloco de empresa com múltiplos cargos (empresaCtx já setado pela
+    // duração total) — por isso passa multiCargo=true pro addExp.
     if (_pdfEhData(p1)) {
       const cursor = _pdfEhLocal(p2) ? ei + 3 : ei + 2;
-      ei = addExp(empresaCtx, l, p1, cursor);
+      ei = addExp(empresaCtx, l, p1, cursor, true);
       continue;
     }
 
@@ -3350,8 +3358,14 @@ function _pdfParsearFormacoes(slice) {
     const inst = formLinhas[fi];
     const prox = formLinhas[fi + 1] || '';
     if (!inst) { fi++; continue; }
-    if (grauRx.test(prox)) {
-      const pts  = prox.split('·');
+    const pts = prox.split('·');
+    // Aceita também quando a parte depois do "·" tem um ano, mesmo sem
+    // palavra de grau reconhecida — o LinkedIn deixa o campo "Grau" opcional,
+    // e quem preenche só o nome do curso (ex: "Ciência da Computação", sem
+    // "Bacharelado"/"Tecnólogo"/etc na frente) caía aqui. Bug real: currículo
+    // com essa formatação saía com a seção de formação inteira vazia.
+    const temPeriodo = pts.length > 1 && /\d{4}/.test(pts[1]);
+    if (grauRx.test(prox) || temPeriodo) {
       const curso = pts[0].trim();
       const anos  = (pts[1] || '').match(/\d{4}/g) || [];
       formacoes.push({ instituicao: inst, curso, periodo_inicio: anos[0] || '', periodo_fim: anos[1] || '' });
