@@ -74,6 +74,10 @@
             <a class="nav-item" data-secao="secContratacoes">
                 <i class="bi bi-trophy-fill"></i> Contratações
             </a>
+            <a class="nav-item" data-secao="secAuditoria" tabindex="0" role="link" aria-label="Ir para Auditoria">
+                <i class="bi bi-shield-check"></i> Auditoria
+                <span class="nav-item-badge d-none" id="navAlertasBadge" title="Alertas de segurança abertos">0</span>
+            </a>
         </nav>
         <div class="sidebar-footer">
             <div class="text-white-50 small mb-2">
@@ -347,6 +351,149 @@
                 </div>
             </section>
 
+            <!-- Auditoria (trilha de eventos, alertas e integridade) -->
+            <section id="secAuditoria" class="admin-section">
+                <div class="section-heading">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-shield-check me-2"></i>Auditoria</h6>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnVerificarIntegridade" aria-label="Verificar integridade da cadeia de hashes">
+                            <i class="bi bi-patch-check me-1"></i>Verificar integridade
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnAtualizarAuditoria" aria-label="Atualizar dados de auditoria">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resultado da verificação de integridade -->
+                <div id="audIntegridade" class="aud-integridade d-none" role="status" aria-live="polite"></div>
+
+                <!-- Cards-resumo -->
+                <div class="row g-3 mb-2">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="stat-card accent">
+                            <div class="stat-value" id="audTotal">—</div>
+                            <div class="stat-label"><i class="bi bi-journal-text me-1"></i>Total de eventos</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="stat-card blue">
+                            <div class="stat-value" id="aud24h">—</div>
+                            <div class="stat-label"><i class="bi bi-clock-history me-1"></i>Últimas 24h</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="stat-card green">
+                            <div class="stat-value" id="audNotas">—</div>
+                            <div class="stat-label"><i class="bi bi-pencil-square me-1"></i>Notas alteradas</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="stat-card primary" id="audCardAlertas">
+                            <div class="stat-value" id="audAlertasAbertos">—</div>
+                            <div class="stat-label"><i class="bi bi-exclamation-triangle me-1"></i>Alertas abertos</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="small text-muted mb-3" id="audRetencao"></p>
+
+                <div class="alert alert-danger d-none align-items-center justify-content-between mb-3" id="audErro" role="alert">
+                    <span><i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar dados de auditoria.</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger ms-2" id="btnAudTentarDeNovo">Tentar de novo</button>
+                </div>
+
+                <!-- Alertas de segurança -->
+                <div class="table-card mb-3">
+                    <div class="table-header">
+                        <div>
+                            <h6 class="fw-bold mb-0"><i class="bi bi-bell-fill me-2"></i>Alertas de segurança</h6>
+                            <small class="text-muted" id="audAlertasCount">Carregando...</small>
+                        </div>
+                        <div class="aud-campo">
+                            <label for="audAlertaStatus" class="form-label small mb-0">Status</label>
+                            <select id="audAlertaStatus" class="form-select form-select-sm aud-input">
+                                <option value="aberto">Abertos</option>
+                                <option value="resolvido">Resolvidos</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="aud-alertas" id="audAlertasLista"></div>
+                </div>
+
+                <!-- Trilha de eventos -->
+                <div class="table-card">
+                    <div class="table-header">
+                        <div>
+                            <h6 class="fw-bold mb-0"><i class="bi bi-list-check me-2"></i>Trilha de eventos</h6>
+                            <small class="text-muted" id="audEventosCount">Carregando...</small>
+                        </div>
+                    </div>
+                    <form class="aud-filtros" id="audFiltros" autocomplete="off">
+                        <div class="aud-campo">
+                            <label for="audFiltroTipo" class="form-label small mb-0">Tipo</label>
+                            <select id="audFiltroTipo" class="form-select form-select-sm aud-input">
+                                <option value="">Todos</option>
+                                <option value="nota_alterada">Nota alterada</option>
+                                <option value="matricula_criada">Matrícula criada</option>
+                                <option value="login">Login</option>
+                                <option value="impersonacao">Impersonação</option>
+                            </select>
+                        </div>
+                        <div class="aud-campo">
+                            <label for="audFiltroAtor" class="form-label small mb-0">Tipo de ator</label>
+                            <select id="audFiltroAtor" class="form-select form-select-sm aud-input">
+                                <option value="">Todos</option>
+                                <option value="professor">Professor</option>
+                                <option value="admin">Admin</option>
+                                <option value="aluno">Aluno</option>
+                                <option value="empresa">Empresa</option>
+                            </select>
+                        </div>
+                        <div class="aud-campo">
+                            <label for="audFiltroAluno" class="form-label small mb-0">ID do aluno</label>
+                            <input type="number" min="1" inputmode="numeric" id="audFiltroAluno" class="form-control form-control-sm aud-input" placeholder="ex.: 1">
+                        </div>
+                        <div class="aud-campo">
+                            <label for="audFiltroDe" class="form-label small mb-0">De</label>
+                            <input type="date" id="audFiltroDe" class="form-control form-control-sm aud-input">
+                        </div>
+                        <div class="aud-campo">
+                            <label for="audFiltroAte" class="form-label small mb-0">Até</label>
+                            <input type="date" id="audFiltroAte" class="form-control form-control-sm aud-input">
+                        </div>
+                        <div class="aud-campo aud-campo-botoes">
+                            <button type="submit" class="btn btn-sm btn-primary aud-btn-aplicar" aria-label="Aplicar filtros da trilha de eventos">
+                                <i class="bi bi-funnel me-1"></i>Filtrar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnAudLimparFiltros" aria-label="Limpar filtros da trilha de eventos">
+                                <i class="bi bi-x-circle me-1"></i>Limpar filtros
+                            </button>
+                        </div>
+                    </form>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Data/hora</th>
+                                    <th scope="col">Tipo</th>
+                                    <th scope="col">Ator</th>
+                                    <th scope="col">Aluno / disciplina</th>
+                                    <th scope="col">Alteração</th>
+                                    <th scope="col">IP</th>
+                                    <th scope="col"><span class="visually-hidden">Detalhes</span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="audEventosCorpo">
+                                <tr><td colspan="7" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>Carregando...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="aud-paginacao" id="audPaginacao"></div>
+                </div>
+            </section>
+
         </div><!-- /admin-content -->
     </div><!-- /admin-main -->
 </div><!-- /painelScreen -->
@@ -394,6 +541,19 @@
             <div class="modal-body" id="pcRespostasBody" style="max-height:70vh; overflow-y:auto;">
                 <div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de detalhes de um evento de auditoria -->
+<div class="modal fade" id="modalAuditoria" tabindex="-1" aria-labelledby="modalAuditoriaTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--primary);">
+                <h6 class="modal-title text-white mb-0" id="modalAuditoriaTitulo"><i class="bi bi-shield-check me-2"></i>Evento de auditoria <span id="audDetalheId"></span></h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar detalhes"></button>
+            </div>
+            <div class="modal-body" id="audDetalheCorpo"></div>
         </div>
     </div>
 </div>

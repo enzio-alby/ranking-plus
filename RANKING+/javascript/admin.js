@@ -155,6 +155,7 @@ function _entrarNoPainel() {
     carregarEmpresas();
     carregarChamados();
     carregarContratacoes();
+    carregarAuditoria();
 }
 
 // LOGOUT
@@ -179,16 +180,27 @@ function irParaSecao(id) {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// Seção ativa = a última cujo topo já passou da linha de leitura (20% da tela + margem entre seções);
+// no fim da página, a última seção (que pode nunca chegar ao topo) fica ativa.
+function _secaoAtivaPorPosicao(secoes) {
+    const lista = Array.from(secoes);
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) return lista[lista.length - 1].id;
+    let ativa = lista[0].id;
+    lista.forEach(sec => { if (sec.getBoundingClientRect().top <= window.innerHeight * 0.2 + 32) ativa = sec.id; });
+    return ativa;
+}
+
 // Marca o item ativo da sidebar conforme a seção visível na tela
 function _initScrollSpy() {
     const secoes = document.querySelectorAll('.admin-section');
     if (!secoes.length) return;
     const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (!entry.isIntersecting) return;
-            document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => {
-                el.classList.toggle('active', el.dataset.secao === entry.target.id);
-            });
+        // Com seções curtas, duas podem estar na faixa observada ao mesmo tempo;
+        // por isso o item ativo é recalculado pela posição (ver _secaoAtivaPorPosicao).
+        if (!entries.some(e => e.isIntersecting)) return;
+        const ativa = _secaoAtivaPorPosicao(secoes);
+        document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => {
+            el.classList.toggle('active', el.dataset.secao === ativa);
         });
     }, { rootMargin: '-20% 0px -70% 0px' });
     secoes.forEach(s => observer.observe(s));
@@ -805,3 +817,358 @@ function _atualizarRelogio() {
     const el = document.getElementById('statHora');
     if (el) el.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// AUDITORIA — resumo, integridade da cadeia, alertas e trilha de eventos
+// (RF018, RF019, RNF009). Endpoints: /admin/auditoria*, /admin/alertas*
+// Todo texto vindo da API passa por _esc() antes de entrar no HTML.
+// ═══════════════════════════════════════════════════════════════════
+const AUD_LIMITE = 20;
+let _audPagina  = 1;
+let _audEventos = [];      // eventos da página atual (usados pelo modal de detalhes)
+let _audAlertas = [];
+let _audSeqEventos = 0;    // descarta respostas antigas se o usuário filtrar rápido
+let _audSeqAlertas = 0;
+
+const AUD_TIPOS = {
+    nota_alterada:    'Nota alterada',
+    matricula_criada: 'Matrícula criada',
+    login:            'Login',
+    impersonacao:     'Impersonação'
+};
+const AUD_ATORES = { professor: 'Professor', admin: 'Admin', aluno: 'Aluno', empresa: 'Empresa' };
+const AUD_CAMPOS = {
+    mencao: 'Menção',
+    faltas: 'Faltas',
+    nota_avaliacao: 'Nota da avaliação',
+    atividades_entregues: 'Atividades entregues',
+    participacao_nota: 'Participação'
+};
+const AUD_REGRAS = {
+    ALT_RAPIDAS_PROFESSOR: 'Alterações rápidas por professor',
+    ALT_MESMO_ALUNO:       'Muitas alterações no mesmo aluno',
+    IPS_DISTINTOS:         'IPs distintos em curto intervalo'
+};
+
+// "2026-10-07 20:51:12" -> "07/10/2026 20:51:12" (sem passar por Date, para não deslocar fuso)
+function _audFormatarData(s) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)/.exec(String(s || ''));
+    return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}` : (s ? String(s) : '—');
+}
+
+function _audValor(v) {
+    if (v === null || v === undefined || v === '') return '—';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+}
+
+function _audBadgeTipo(tipo) {
+    const rotulo = AUD_TIPOS[tipo] || tipo || '—';
+    return `<span class="aud-badge aud-tipo-${_esc(tipo)}">${_esc(rotulo)}</span>`;
+}
+
+// Resumo curto da alteração para a tabela (campo: antes → depois)
+function _audResumoAlteracao(e) {
+    const antes  = (e.dados_antes  && typeof e.dados_antes  === 'object') ? e.dados_antes  : {};
+    const depois = (e.dados_depois && typeof e.dados_depois === 'object') ? e.dados_depois : {};
+    if (e.tipo === 'nota_alterada') {
+        const linhas = Object.keys(AUD_CAMPOS)
+            .filter(c => (c in antes || c in depois) && _audValor(antes[c]) !== _audValor(depois[c]))
+            .map(c => `<div class="aud-diff"><span class="aud-diff-campo">${_esc(AUD_CAMPOS[c])}:</span> `
+                    + `<span class="aud-diff-antes">${_esc(_audValor(antes[c]))}</span> `
+                    + `<i class="bi bi-arrow-right" aria-label="para"></i> `
+                    + `<span class="aud-diff-depois">${_esc(_audValor(depois[c]))}</span></div>`);
+        return linhas.length ? linhas.join('') : '<span class="text-muted">—</span>';
+    }
+    // Outros tipos: mostra até 3 pares chave: valor de dados_depois, se existirem
+    const pares = Object.entries(depois).slice(0, 3)
+        .map(([k, v]) => `<div class="aud-diff"><span class="aud-diff-campo">${_esc(k)}:</span> ${_esc(_audValor(v))}</div>`);
+    return pares.length ? pares.join('') : '<span class="text-muted">—</span>';
+}
+
+// ── Carregamento ────────────────────────────────────────────────────
+async function carregarAuditoria() {
+    document.getElementById('audErro').classList.add('d-none');
+    document.getElementById('audErro').classList.remove('d-flex');
+    await Promise.all([carregarAuditoriaResumo(), carregarAlertas(), carregarEventosAuditoria()]);
+}
+
+function _audMostrarErro() {
+    const el = document.getElementById('audErro');
+    el.classList.remove('d-none');
+    el.classList.add('d-flex');
+}
+
+async function carregarAuditoriaResumo() {
+    try {
+        const r = await _apiGet('/admin/auditoria/resumo');
+        document.getElementById('audTotal').textContent         = r.total_eventos ?? 0;
+        document.getElementById('aud24h').textContent           = r.eventos_24h ?? 0;
+        document.getElementById('audNotas').textContent         = r.notas_alteradas ?? 0;
+        document.getElementById('audAlertasAbertos').textContent = r.alertas_abertos ?? 0;
+        document.getElementById('audCardAlertas').classList.toggle('aud-card-alerta', (r.alertas_abertos || 0) > 0);
+        document.getElementById('audRetencao').innerHTML =
+            `<i class="bi bi-hourglass-split me-1"></i>Retenção de IP e user-agent: <strong>${_esc(r.retencao_ip_dias ?? '—')} dias</strong> `
+            + '(após o prazo são anonimizados, conforme a LGPD).';
+        const badge = document.getElementById('navAlertasBadge');
+        badge.textContent = r.alertas_abertos || 0;
+        badge.classList.toggle('d-none', !(r.alertas_abertos > 0));
+    } catch (_) { _audMostrarErro(); }
+}
+
+// ── Verificação de integridade ──────────────────────────────────────
+async function verificarIntegridadeAuditoria() {
+    const btn = document.getElementById('btnVerificarIntegridade');
+    const box = document.getElementById('audIntegridade');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Verificando...';
+    try {
+        const r = await _apiGet('/admin/auditoria/verificar');
+        box.classList.remove('d-none', 'aud-ok', 'aud-falha');
+        if (r.ok) {
+            box.classList.add('aud-ok');
+            box.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i><span>Cadeia íntegra: ${_esc(r.total_verificados)} eventos verificados</span>`;
+        } else {
+            box.classList.add('aud-falha');
+            box.innerHTML = `<i class="bi bi-x-octagon-fill me-2"></i><span>Cadeia adulterada a partir do evento #${_esc(r.primeiro_invalido)}: ${_esc(r.motivo || 'motivo não informado')}</span>`;
+        }
+    } catch (_) {
+        box.classList.remove('d-none', 'aud-ok');
+        box.classList.add('aud-falha');
+        box.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i><span>Não foi possível verificar a integridade. Tente novamente.</span>';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-patch-check me-1"></i>Verificar integridade';
+    }
+}
+
+// ── Alertas de segurança ────────────────────────────────────────────
+async function carregarAlertas() {
+    const lista = document.getElementById('audAlertasLista');
+    const status = document.getElementById('audAlertaStatus').value;
+    const seq = ++_audSeqAlertas;
+    lista.innerHTML = '<div class="text-center text-muted small py-4"><div class="spinner-border spinner-border-sm me-2"></div>Carregando...</div>';
+    try {
+        const dados = await _apiGet(`/admin/alertas?status=${encodeURIComponent(status)}`);
+        if (seq !== _audSeqAlertas) return;
+        _audAlertas = Array.isArray(dados) ? dados : [];
+        document.getElementById('audAlertasCount').textContent =
+            `${_audAlertas.length} alerta(s) ${status === 'aberto' ? 'aberto(s)' : 'resolvido(s)'}`;
+        renderAlertas();
+    } catch (_) {
+        if (seq !== _audSeqAlertas) return;
+        lista.innerHTML = '<div class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar alertas.</div>';
+        document.getElementById('audAlertasCount').textContent = 'Erro ao carregar';
+        _audMostrarErro();
+    }
+}
+
+function renderAlertas() {
+    const lista = document.getElementById('audAlertasLista');
+    const status = document.getElementById('audAlertaStatus').value;
+    if (!_audAlertas.length) {
+        lista.innerHTML = status === 'aberto'
+            ? '<div class="aud-vazio"><i class="bi bi-shield-check"></i><div class="fw-semibold">Nenhum alerta aberto</div><div class="small">Tudo tranquilo por aqui. Nenhuma regra de segurança foi disparada.</div></div>'
+            : '<div class="aud-vazio"><i class="bi bi-inbox"></i><div class="fw-semibold">Nenhum alerta resolvido</div><div class="small">Os alertas marcados como resolvidos aparecerão aqui.</div></div>';
+        return;
+    }
+    lista.innerHTML = _audAlertas.map(_audAlertaHtml).join('');
+}
+
+function _audAlertaHtml(a) {
+    const alta = a.severidade === 'alta';
+    const resolvido = a.status === 'resolvido';
+    const ator = a.ator_tipo ? `${AUD_ATORES[a.ator_tipo] || a.ator_tipo}${a.ator_id ? ' #' + a.ator_id : ''}` : '—';
+    const aluno = a.aluno_nome ? a.aluno_nome : (a.aluno_id ? 'Aluno #' + a.aluno_id : '—');
+    const evid = (a.evidencia && typeof a.evidencia === 'object')
+        ? `<details class="aud-evidencia"><summary>Ver evidência</summary><pre>${_esc(JSON.stringify(a.evidencia, null, 2))}</pre></details>` : '';
+    const rotuloBtn = resolvido ? 'Reabrir' : 'Marcar como resolvido';
+    return `
+    <div class="aud-alerta ${alta ? 'aud-sev-alta' : 'aud-sev-media'}${resolvido ? ' aud-alerta-resolvido' : ''}">
+        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-1">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="aud-badge ${alta ? 'aud-sev-badge-alta' : 'aud-sev-badge-media'}"><i class="bi bi-exclamation-triangle-fill me-1"></i>${alta ? 'Alta' : 'Média'}</span>
+                <strong class="aud-alerta-regra">${_esc(AUD_REGRAS[a.regra] || a.regra)}</strong>
+                <span class="text-muted small">#${_esc(a.id)}</span>
+            </div>
+            <button type="button" class="btn btn-sm ${resolvido ? 'btn-outline-secondary' : 'btn-outline-success'}"
+                    data-aud-alerta="${_esc(a.id)}" data-aud-novo="${resolvido ? 'aberto' : 'resolvido'}"
+                    aria-label="${rotuloBtn} o alerta ${_esc(a.id)}">
+                <i class="bi ${resolvido ? 'bi-arrow-counterclockwise' : 'bi-check2-circle'} me-1"></i>${rotuloBtn}
+            </button>
+        </div>
+        <p class="aud-alerta-desc mb-2">${_esc(a.descricao)}</p>
+        <div class="aud-alerta-meta">
+            <span><i class="bi bi-person-badge me-1"></i>Ator: ${_esc(ator)}</span>
+            <span><i class="bi bi-mortarboard me-1"></i>Aluno: ${_esc(aluno)}</span>
+            <span><i class="bi bi-clock me-1"></i>${_esc(_audFormatarData(a.criado_em))}</span>
+            ${resolvido ? `<span><i class="bi bi-check2-circle me-1"></i>Resolvido em ${_esc(_audFormatarData(a.resolvido_em))}${a.resolvido_por ? ' por ' + _esc(a.resolvido_por) : ''}</span>` : ''}
+        </div>
+        ${evid}
+    </div>`;
+}
+
+async function _audAlterarStatusAlerta(id, novoStatus, btn) {
+    btn.disabled = true;
+    try {
+        await _apiPut(`/admin/alertas/${encodeURIComponent(id)}/status`, { status: novoStatus });
+        _mostrarToast(novoStatus === 'resolvido' ? '✅' : '↩️',
+            novoStatus === 'resolvido' ? 'Alerta resolvido' : 'Alerta reaberto', `Alerta #${id} atualizado.`);
+        await Promise.all([carregarAlertas(), carregarAuditoriaResumo()]);
+    } catch (_) {
+        btn.disabled = false;
+        if (_adminToken) _mostrarToast('⚠️', 'Não foi possível atualizar', 'Tente novamente em instantes.');
+    }
+}
+
+// ── Trilha de eventos ───────────────────────────────────────────────
+function _audParametrosFiltro() {
+    const p = new URLSearchParams();
+    const add = (k, id) => { const v = document.getElementById(id).value.trim(); if (v) p.set(k, v); };
+    add('tipo', 'audFiltroTipo');
+    add('ator_tipo', 'audFiltroAtor');
+    add('aluno_id', 'audFiltroAluno');
+    add('de', 'audFiltroDe');
+    add('ate', 'audFiltroAte');
+    return p;
+}
+
+async function carregarEventosAuditoria(pagina) {
+    if (pagina) _audPagina = pagina;
+    const corpo = document.getElementById('audEventosCorpo');
+    const seq = ++_audSeqEventos;
+    corpo.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Carregando...</td></tr>';
+    const p = _audParametrosFiltro();
+    p.set('pagina', _audPagina);
+    p.set('limite', AUD_LIMITE);
+    try {
+        const r = await _apiGet(`/admin/auditoria?${p.toString()}`);
+        if (seq !== _audSeqEventos) return;
+        _audEventos = r.eventos || [];
+        const total = r.total || 0;
+        const totalPaginas = Math.max(1, Math.ceil(total / (r.limite || AUD_LIMITE)));
+        // Página fora do intervalo (ex.: dados mudaram): volta para a última existente
+        if (_audPagina > totalPaginas) { _audPagina = totalPaginas; return carregarEventosAuditoria(); }
+        document.getElementById('audEventosCount').textContent = `${total} evento(s) encontrado(s)`;
+        renderEventosAuditoria();
+        renderPaginacaoAuditoria(total, totalPaginas);
+    } catch (_) {
+        if (seq !== _audSeqEventos) return;
+        corpo.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar eventos.</td></tr>';
+        document.getElementById('audEventosCount').textContent = 'Erro ao carregar';
+        document.getElementById('audPaginacao').innerHTML = '';
+        _audMostrarErro();
+    }
+}
+
+function renderEventosAuditoria() {
+    const corpo = document.getElementById('audEventosCorpo');
+    if (!_audEventos.length) {
+        const filtrado = _audParametrosFiltro().toString() !== '';
+        corpo.innerHTML = `<tr><td colspan="7"><div class="aud-vazio"><i class="bi bi-journal-x"></i>
+            <div class="fw-semibold">Nenhum evento encontrado</div>
+            <div class="small">${filtrado ? 'Nenhum evento corresponde aos filtros. Tente limpar os filtros.' : 'Ainda não há eventos registrados.'}</div></div></td></tr>`;
+        return;
+    }
+    corpo.innerHTML = _audEventos.map(e => {
+        const alvo = [e.aluno_nome || (e.aluno_id ? 'Aluno #' + e.aluno_id : ''), e.disciplina_nome].filter(Boolean);
+        return `<tr>
+            <td class="text-nowrap">${_esc(_audFormatarData(e.criado_em))}</td>
+            <td>${_audBadgeTipo(e.tipo)}</td>
+            <td><div>${_esc(e.ator_nome || '—')}</div><div class="text-muted small">${_esc(AUD_ATORES[e.ator_tipo] || e.ator_tipo || '')}</div></td>
+            <td>${alvo.length ? alvo.map((t, i) => i === 0 ? `<div>${_esc(t)}</div>` : `<div class="text-muted small">${_esc(t)}</div>`).join('') : '<span class="text-muted">—</span>'}</td>
+            <td>${_audResumoAlteracao(e)}</td>
+            <td class="aud-ip">${_esc(e.ip || '—')}</td>
+            <td><button type="button" class="btn btn-xs btn-outline-secondary" data-aud-evento="${_esc(e.id)}" aria-label="Ver detalhes do evento ${_esc(e.id)}"><i class="bi bi-eye me-1"></i>Detalhes</button></td>
+        </tr>`;
+    }).join('');
+}
+
+function renderPaginacaoAuditoria(total, totalPaginas) {
+    const el = document.getElementById('audPaginacao');
+    if (total <= AUD_LIMITE) { el.innerHTML = total ? `<span class="small text-muted">Exibindo todos os ${total} evento(s)</span>` : ''; return; }
+    const ini = (_audPagina - 1) * AUD_LIMITE + 1;
+    const fim = Math.min(_audPagina * AUD_LIMITE, total);
+    el.innerHTML = `
+        <span class="small text-muted">Exibindo ${ini}–${fim} de ${total}</span>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-aud-pagina="${_audPagina - 1}" ${_audPagina <= 1 ? 'disabled' : ''} aria-label="Página anterior"><i class="bi bi-chevron-left"></i> Anterior</button>
+            <span class="small">Página ${_audPagina} de ${totalPaginas}</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-aud-pagina="${_audPagina + 1}" ${_audPagina >= totalPaginas ? 'disabled' : ''} aria-label="Próxima página">Próxima <i class="bi bi-chevron-right"></i></button>
+        </div>`;
+}
+
+function _audLimparFiltros() {
+    ['audFiltroTipo', 'audFiltroAtor', 'audFiltroAluno', 'audFiltroDe', 'audFiltroAte']
+        .forEach(id => { document.getElementById(id).value = ''; });
+    _audPagina = 1;
+    carregarEventosAuditoria();
+}
+
+// ── Modal de detalhes ───────────────────────────────────────────────
+function abrirDetalheEvento(id) {
+    const e = _audEventos.find(x => String(x.id) === String(id));
+    if (!e) return;
+    const linha = (rotulo, valor, mono) =>
+        `<dt class="col-sm-3">${_esc(rotulo)}</dt><dd class="col-sm-9${mono ? ' aud-mono' : ''}">${valor}</dd>`;
+    const json = v => (v === null || v === undefined)
+        ? '<span class="text-muted">—</span>'
+        : `<pre class="aud-json">${_esc(JSON.stringify(v, null, 2))}</pre>`;
+    document.getElementById('audDetalheId').textContent = '#' + e.id;
+    document.getElementById('audDetalheCorpo').innerHTML = `
+        <dl class="row aud-detalhes mb-0">
+            ${linha('Data/hora', _esc(_audFormatarData(e.criado_em)))}
+            ${linha('Tipo', _audBadgeTipo(e.tipo))}
+            ${linha('Ator', `${_esc(e.ator_nome || '—')} <span class="text-muted">(${_esc(AUD_ATORES[e.ator_tipo] || e.ator_tipo || '—')}${e.ator_id ? ' #' + _esc(e.ator_id) : ''})</span>`)}
+            ${linha('Entidade', `${_esc(e.entidade || '—')}${e.entidade_id ? ' #' + _esc(e.entidade_id) : ''}`)}
+            ${linha('Aluno', _esc(e.aluno_nome || (e.aluno_id ? '#' + e.aluno_id : '—')))}
+            ${linha('Disciplina', _esc(e.disciplina_nome || (e.disciplina_id ? '#' + e.disciplina_id : '—')))}
+            ${linha('IP', _esc(e.ip || '—'), true)}
+            ${linha('User-agent', _esc(e.user_agent || '—'), true)}
+            ${linha('Hash do evento', _esc(e.hash || '—'), true)}
+            ${linha('Dados antes', json(e.dados_antes))}
+            ${linha('Dados depois', json(e.dados_depois))}
+        </dl>`;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAuditoria')).show();
+}
+
+// ── Eventos da interface (delegação; não mexe nos handlers existentes) ──
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btnVerificarIntegridade')?.addEventListener('click', verificarIntegridadeAuditoria);
+    document.getElementById('btnAtualizarAuditoria')?.addEventListener('click', carregarAuditoria);
+    document.getElementById('btnAudTentarDeNovo')?.addEventListener('click', carregarAuditoria);
+    document.getElementById('audAlertaStatus')?.addEventListener('change', carregarAlertas);
+    document.getElementById('btnAudLimparFiltros')?.addEventListener('click', _audLimparFiltros);
+
+    document.getElementById('audFiltros')?.addEventListener('submit', ev => {
+        ev.preventDefault();
+        const de = document.getElementById('audFiltroDe').value;
+        const ate = document.getElementById('audFiltroAte').value;
+        if (de && ate && de > ate) {
+            _mostrarToast('⚠️', 'Período inválido', 'A data "De" deve ser anterior ou igual a "Até".');
+            return;
+        }
+        _audPagina = 1;
+        carregarEventosAuditoria();
+    });
+
+    document.getElementById('audAlertasLista')?.addEventListener('click', ev => {
+        const btn = ev.target.closest('[data-aud-alerta]');
+        if (btn) _audAlterarStatusAlerta(btn.dataset.audAlerta, btn.dataset.audNovo, btn);
+    });
+    document.getElementById('audEventosCorpo')?.addEventListener('click', ev => {
+        const btn = ev.target.closest('[data-aud-evento]');
+        if (btn) abrirDetalheEvento(btn.dataset.audEvento);
+    });
+    document.getElementById('audPaginacao')?.addEventListener('click', ev => {
+        const btn = ev.target.closest('[data-aud-pagina]');
+        if (btn && !btn.disabled) carregarEventosAuditoria(Number(btn.dataset.audPagina));
+    });
+
+    // Itens da sidebar não são <button>: Enter/Espaço também navegam (teclado)
+    document.querySelectorAll('.sidebar-nav .nav-item[tabindex]').forEach(el => {
+        el.addEventListener('keydown', ev => {
+            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); irParaSecao(el.dataset.secao); }
+        });
+    });
+});

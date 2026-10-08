@@ -32,6 +32,10 @@ const bcrypt     = require('bcryptjs'); // puro JS — sem compilação nativa (
 
 const app  = express();
 
+// Atrás do nginx (1 salto) o IP real do cliente vem em X-Forwarded-For. Sem isto, req.ip
+// é sempre 127.0.0.1 e o rate limit (RNF010) vira um contador único para todos os usuários.
+app.set('trust proxy', 1);
+
 // Multer armazena o PDF do LinkedIn em memória (sem gravar em disco)
 const _pdfUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 // Anexos do chat — também em memória; são criptografados antes de gravar em disco (ver rota de upload)
@@ -489,6 +493,145 @@ console.log(`[DB] Conectando em ${dbConfig.user}@${dbConfig.host} (banco: ${dbCo
 
 const db = mysql.createPool(dbConfig);
 
+// ─── AUDITORIA IMUTÁVEL + ANOMALIAS (RF018 / RF019 / RNF009) ──────────────────
+// Eventos ficam em auditoria_eventos: append-only, com hash encadeado (cada linha guarda o
+// hash da anterior) e triggers no banco que bloqueiam UPDATE/DELETE. A única alteração
+// permitida é anonimizar ip/user_agent após AUDITORIA_RETENCAO_DIAS (LGPD). Alterações de
+// nota gravam o evento NA MESMA TRANSAÇÃO: se o evento falhar, a nota também não grava.
+const AUD_RETENCAO_DIAS = Number(process.env.AUDITORIA_RETENCAO_DIAS) || 90;
+const AUD_R1_MAX        = Number(process.env.AUD_R1_MAX) || 10;        // alterações de nota por professor
+const AUD_R1_JANELA_MIN = Number(process.env.AUD_R1_JANELA_MIN) || 5;
+const AUD_R2_MAX        = Number(process.env.AUD_R2_MAX) || 5;         // alterações no mesmo aluno
+const AUD_R2_JANELA_MIN = Number(process.env.AUD_R2_JANELA_MIN) || 10;
+const AUD_R3_JANELA_MIN = Number(process.env.AUD_R3_JANELA_MIN) || 10; // IPs distintos da mesma conta
+const _AUD_GENESE = '0'.repeat(64);
+
+function _audHash(anterior, c) {
+  const corpo = JSON.stringify([c.criado_em, c.tipo, c.ator_tipo, c.ator_id, c.ator_nome, c.entidade,
+    c.entidade_id, c.aluno_id, c.disciplina_id, c.dados_antes, c.dados_depois]);
+  return crypto.createHash('sha256').update(anterior + '|' + corpo).digest('hex');
+}
+
+// DECIMAL volta do MySQL como string ("8.50"): normaliza para comparar antes/depois.
+function _audValor(v) {
+  if (v == null) return null;
+  if (typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v))) return Number(v);
+  return v;
+}
+
+// Grava um evento usando uma conexão JÁ dentro de transação (o chamador faz commit/rollback).
+async function registrarAuditoria(conn, evt, req) {
+  const [[t]] = await conn.query("SELECT DATE_FORMAT(NOW(3), '%Y-%m-%d %H:%i:%s.%f') AS t"); // relógio único: o do banco
+  const [ult] = await conn.query('SELECT hash FROM auditoria_eventos ORDER BY id DESC LIMIT 1 FOR UPDATE');
+  const anterior = ult.length ? ult[0].hash : _AUD_GENESE;
+  const c = {
+    criado_em:     t.t.slice(0, 23),
+    tipo:          evt.tipo,
+    ator_tipo:     evt.ator_tipo,
+    ator_id:       evt.ator_id == null ? null : String(evt.ator_id),
+    ator_nome:     evt.ator_nome == null ? null : String(evt.ator_nome),
+    entidade:      evt.entidade,
+    entidade_id:   evt.entidade_id == null ? null : String(evt.entidade_id),
+    aluno_id:      evt.aluno_id == null ? null : Number(evt.aluno_id),
+    disciplina_id: evt.disciplina_id == null ? null : Number(evt.disciplina_id),
+    dados_antes:   evt.antes  == null ? null : JSON.stringify(evt.antes),
+    dados_depois:  evt.depois == null ? null : JSON.stringify(evt.depois)
+  };
+  const hash = _audHash(anterior, c);
+  const ip = req && req.ip ? String(req.ip).slice(0, 64) : null;
+  const ua = req && req.get ? ((req.get('user-agent') || '').slice(0, 255) || null) : null;
+  await conn.query(
+    `INSERT INTO auditoria_eventos (criado_em, tipo, ator_tipo, ator_id, ator_nome, entidade, entidade_id,
+       aluno_id, disciplina_id, dados_antes, dados_depois, ip, user_agent, hash_anterior, hash)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [c.criado_em, c.tipo, c.ator_tipo, c.ator_id, c.ator_nome, c.entidade, c.entidade_id, c.aluno_id,
+     c.disciplina_id, c.dados_antes, c.dados_depois, ip, ua, anterior, hash]
+  );
+  return { ...c, ip };
+}
+
+// Eventos que não alteram dados (login, impersonação): melhor esforço — falha não derruba a ação.
+async function auditarSolto(evt, req) {
+  let conn;
+  try {
+    conn = await db.getConnection();
+    await conn.beginTransaction();
+    const c = await registrarAuditoria(conn, evt, req);
+    await conn.commit();
+    _avaliarAnomalias(c).catch(e => console.warn('[AUDITORIA] anomalias:', e.message));
+  } catch (e) {
+    if (conn) { try { await conn.rollback(); } catch (_) {} }
+    console.warn('[AUDITORIA] falha ao registrar', evt.tipo, '-', e.message);
+  } finally {
+    if (conn) conn.release();
+  }
+}
+
+async function _alertar(regra, severidade, c, aluno_id, descricao, evidencia, janelaMin) {
+  const [dup] = await db.query(
+    `SELECT id FROM alertas_seguranca
+      WHERE regra = ? AND status = 'aberto' AND ator_tipo <=> ? AND ator_id <=> ? AND aluno_id <=> ?
+        AND criado_em > NOW(3) - INTERVAL ? MINUTE LIMIT 1`,
+    [regra, c.ator_tipo, c.ator_id, aluno_id, janelaMin]
+  );
+  if (dup.length) return; // já existe alerta aberto desta regra na janela
+  await db.query(
+    `INSERT INTO alertas_seguranca (regra, severidade, ator_tipo, ator_id, aluno_id, descricao, evidencia)
+     VALUES (?,?,?,?,?,?,?)`,
+    [regra, severidade, c.ator_tipo, c.ator_id, aluno_id, descricao.slice(0, 400), JSON.stringify(evidencia)]
+  );
+  console.warn(`[ALERTA ${regra}] ${descricao}`);
+}
+
+// RF019 — regras simples, sem IA, limites configuráveis por variável de ambiente.
+async function _avaliarAnomalias(c) {
+  if (c.tipo === 'nota_alterada') {
+    const [[r1]] = await db.query(
+      `SELECT COUNT(*) AS n FROM auditoria_eventos
+        WHERE tipo = 'nota_alterada' AND ator_tipo = ? AND ator_id = ? AND criado_em > NOW(3) - INTERVAL ? MINUTE`,
+      [c.ator_tipo, c.ator_id, AUD_R1_JANELA_MIN]);
+    if (r1.n > AUD_R1_MAX) {
+      await _alertar('ALT_RAPIDAS_PROFESSOR', 'alta', c, null,
+        `${r1.n} alterações de nota em ${AUD_R1_JANELA_MIN} min pelo mesmo ${c.ator_tipo} (limite ${AUD_R1_MAX}).`,
+        { quantidade: r1.n, janela_min: AUD_R1_JANELA_MIN, limite: AUD_R1_MAX }, AUD_R1_JANELA_MIN);
+    }
+    if (c.aluno_id != null) {
+      const [[r2]] = await db.query(
+        `SELECT COUNT(*) AS n FROM auditoria_eventos
+          WHERE tipo = 'nota_alterada' AND aluno_id = ? AND criado_em > NOW(3) - INTERVAL ? MINUTE`,
+        [c.aluno_id, AUD_R2_JANELA_MIN]);
+      if (r2.n > AUD_R2_MAX) {
+        await _alertar('ALT_MESMO_ALUNO', 'alta', c, c.aluno_id,
+          `${r2.n} alterações de nota no mesmo aluno em ${AUD_R2_JANELA_MIN} min (limite ${AUD_R2_MAX}).`,
+          { quantidade: r2.n, janela_min: AUD_R2_JANELA_MIN, limite: AUD_R2_MAX }, AUD_R2_JANELA_MIN);
+      }
+    }
+  }
+  if (c.ator_id != null && c.ator_tipo !== 'sistema' && c.ip) {
+    const [ips] = await db.query(
+      `SELECT DISTINCT ip FROM auditoria_eventos
+        WHERE ator_tipo = ? AND ator_id = ? AND ip IS NOT NULL AND criado_em > NOW(3) - INTERVAL ? MINUTE LIMIT 10`,
+      [c.ator_tipo, c.ator_id, AUD_R3_JANELA_MIN]);
+    if (ips.length > 1) {
+      await _alertar('IPS_DISTINTOS', 'media', c, null,
+        `Mesma conta (${c.ator_tipo} #${c.ator_id}) com ${ips.length} IPs diferentes em ${AUD_R3_JANELA_MIN} min.`,
+        { ips: ips.map(r => r.ip), janela_min: AUD_R3_JANELA_MIN }, AUD_R3_JANELA_MIN);
+    }
+  }
+}
+
+// LGPD: IP e user-agent só ficam AUDITORIA_RETENCAO_DIAS dias; depois são anonimizados (o resto do
+// evento e o hash permanecem intactos — o trigger só aceita essa alteração).
+async function _purgarIpAuditoria() {
+  try {
+    const [r] = await db.query(
+      `UPDATE auditoria_eventos SET ip = NULL, user_agent = NULL
+        WHERE criado_em < NOW(3) - INTERVAL ? DAY AND (ip IS NOT NULL OR user_agent IS NOT NULL)`,
+      [AUD_RETENCAO_DIAS]);
+    if (r.affectedRows) console.log(`[AUDITORIA] ${r.affectedRows} evento(s) com IP/user-agent anonimizados (> ${AUD_RETENCAO_DIAS} dias).`);
+  } catch (e) { console.warn('[AUDITORIA] anonimização de IP:', e.message); }
+}
+
 // ─── RATE LIMITER (em memória, sem dependências) ─────────────────────────────
 // Limita tentativas por IP numa janela de tempo. Usado nas rotas de autenticação
 // para conter brute-force de senha/OTP. (Correção do achado S7)
@@ -599,6 +742,7 @@ app.post('/verificar-otp', limiteOtp, async (req, res) => {
   _otpSessions.delete(tempToken);
   console.log(`[2FA OK] ${sessao.tipo} #${sessao.usuarioId} (${sessao.nome})`);
   const token = _criarSessao(sessao.tipo, sessao.usuarioId);
+  await auditarSolto({ tipo: 'login', ator_tipo: sessao.tipo, ator_id: sessao.usuarioId, ator_nome: sessao.nome, entidade: 'sessao' }, req);
 
   // Só aluno tem a cláusula de Perfil Comportamental no termo — professor não precisa reaceitar.
   let precisaReaceitarTermos = false;
@@ -833,21 +977,34 @@ app.post('/disciplinas', async (req, res) => {
 // administrativa) — protegida com o mesmo token de admin das outras rotas
 // de gestão (/admin/alunos, /admin/professores etc.).
 app.post('/boletim', adminAuth, async (req, res) => {
+  let conn = null;
   try {
     const { aluno_id, disciplina_id } = req.body;
     // Inicia com 0 faltas e sem menção
-    const [result] = await db.execute(
+    conn = await db.getConnection();
+    await conn.beginTransaction();
+    const [result] = await conn.execute(
       `INSERT INTO boletim (aluno_id, disciplina_id, faltas, atividades_entregues) VALUES (?, ?, 0, 0)`,
       [aluno_id, disciplina_id]
     );
+    // RF018: matrícula manual feita pelo admin também entra na trilha (mesma transação).
+    await registrarAuditoria(conn, {
+      tipo: 'matricula_criada', ator_tipo: 'admin', ator_id: req.adminSession.adminId, ator_nome: req.adminSession.nome,
+      entidade: 'boletim', entidade_id: result.insertId, aluno_id, disciplina_id,
+      antes: null, depois: { faltas: 0, atividades_entregues: 0 }
+    }, req);
+    await conn.commit();
     res.status(201).json({ id: result.insertId, mensagem: 'Matrícula realizada!' });
   } catch (error) {
     // Achado D4: chave única (aluno_id, disciplina_id, semestre_cursado) agora
     // impede matrícula duplicada — devolve mensagem clara em vez de erro genérico.
+    if (conn) { try { await conn.rollback(); } catch (_) {} }
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Este aluno já está matriculado nesta disciplina neste semestre.' });
     }
     _falha(res, error);
+  } finally {
+    if (conn) conn.release();
   }
 });
 
@@ -1928,6 +2085,7 @@ app.post('/empresas/login', limiteLogin, async (req, res) => {
     pub.interesses = intRows;
     // Empresa não passa por OTP (login direto) — emite sessão aqui mesmo. (S1)
     const token = _criarSessao('empresa', empresa.id);
+    await auditarSolto({ tipo: 'login', ator_tipo: 'empresa', ator_id: empresa.id, ator_nome: empresa.razao_social, entidade: 'sessao' }, req);
     res.json({ sucesso: true, token, empresa: pub });
   } catch (error) {
     _falha(res, error, { sucesso: false });
@@ -2814,6 +2972,7 @@ app.get('/professores/:profId/lancamentos', exigirDono('professor', 'profId'), a
 });
 
 app.put('/professores/:profId/disciplinas/:discId/alunos/:alunoId/boletim', exigirDono('professor', 'profId'), async (req, res) => {
+  let conn = null;
   try {
     // Nota Avaliada é 0-10 (mesma escala do campo no front) — sem essa checagem
     // o valor ia direto pro banco, e como a coluna é DECIMAL(4,2), 99 salvava
@@ -2830,19 +2989,47 @@ app.put('/professores/:profId/disciplinas/:discId/alunos/:alunoId/boletim', exig
       }
     }
     const allowed = ['mencao', 'faltas', 'nota_avaliacao', 'atividades_entregues', 'participacao_nota'];
-    const sets = [], vals = [];
-    for (const f of allowed) {
-      if (f in req.body) { sets.push(`b.${f} = ?`); vals.push(req.body[f] === '' ? null : req.body[f]); }
-    }
-    if (!sets.length) return res.status(400).json({ error: 'Nenhum campo para atualizar.' });
-    vals.push(req.params.alunoId, req.params.discId, req.params.profId);
-    const [result] = await db.execute(
-      `UPDATE boletim b JOIN disciplinas d ON b.disciplina_id = d.id
-       SET ${sets.join(', ')}
-       WHERE b.aluno_id = ? AND b.disciplina_id = ? AND d.professor_id = ?`,
-      vals
+    const campos = allowed.filter(f => f in req.body);
+    if (!campos.length) return res.status(400).json({ error: 'Nenhum campo para atualizar.' });
+
+    // RF018/RNF009: alteração + evento de auditoria na MESMA transação.
+    conn = await db.getConnection();
+    await conn.beginTransaction();
+    const [antesRows] = await conn.execute(
+      `SELECT b.id, b.aluno_id, b.disciplina_id, ${allowed.map(f => 'b.' + f).join(', ')}
+         FROM boletim b JOIN disciplinas d ON b.disciplina_id = d.id
+        WHERE b.aluno_id = ? AND b.disciplina_id = ? AND d.professor_id = ?
+          FOR UPDATE`,
+      [req.params.alunoId, req.params.discId, req.params.profId]
     );
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Lançamento não encontrado ou sem permissão.' });
+    if (!antesRows.length) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Lançamento não encontrado ou sem permissão.' });
+    }
+    const antes = antesRows[0];
+    await conn.execute(
+      `UPDATE boletim SET ${campos.map(f => f + ' = ?').join(', ')} WHERE id = ?`,
+      [...campos.map(f => (req.body[f] === '' ? null : req.body[f])), antes.id]
+    );
+    const [depoisRows] = await conn.execute(`SELECT ${campos.join(', ')} FROM boletim WHERE id = ?`, [antes.id]);
+    const dAntes = {}, dDepois = {};
+    let mudou = false;
+    for (const f of campos) {
+      dAntes[f] = _audValor(antes[f]);
+      dDepois[f] = _audValor(depoisRows[0][f]);
+      if (String(dAntes[f]) !== String(dDepois[f])) mudou = true;
+    }
+    let eventoAud = null;
+    if (mudou) { // sem mudança real de valor não há o que auditar
+      const [[prof]] = await conn.execute('SELECT nome FROM professores WHERE id = ?', [req.params.profId]);
+      eventoAud = await registrarAuditoria(conn, {
+        tipo: 'nota_alterada', ator_tipo: 'professor', ator_id: req.params.profId, ator_nome: prof ? prof.nome : null,
+        entidade: 'boletim', entidade_id: antes.id, aluno_id: antes.aluno_id, disciplina_id: antes.disciplina_id,
+        antes: dAntes, depois: dDepois
+      }, req);
+    }
+    await conn.commit();
+    if (eventoAud) _avaliarAnomalias(eventoAud).catch(e => console.warn('[AUDITORIA] anomalias:', e.message));
 
     // Achados P1/P3: a nota só afeta o ranking quando a menção muda — recalcula
     // a posição deste aluno e invalida o cache do /ranking aqui (não mais a
@@ -2854,7 +3041,10 @@ app.put('/professores/:profId/disciplinas/:discId/alunos/:alunoId/boletim', exig
 
     res.json({ mensagem: 'Lançamento atualizado com sucesso.' });
   } catch (error) {
+    if (conn) { try { await conn.rollback(); } catch (_) {} }
     _falha(res, error);
+  } finally {
+    if (conn) conn.release();
   }
 });
 
@@ -2923,6 +3113,7 @@ app.post('/admin/login', limiteLogin, async (req, res) => {
     const token = _gerarToken();
     _adminSessions.set(token, { adminId: admin.id, nome: admin.nome });
     console.log(`[ADMIN LOGIN] ${admin.nome} (id=${admin.id})`);
+    await auditarSolto({ tipo: 'login', ator_tipo: 'admin', ator_id: admin.id, ator_nome: admin.nome, entidade: 'sessao' }, req);
     res.json({ sucesso: true, token, admin: { id: admin.id, nome: admin.nome } });
   } catch (error) {
     _falha(res, error, { sucesso: false }); // _falha já loga o erro — evita log duplicado
@@ -2991,10 +3182,114 @@ app.post('/admin/impersonate/empresa/:id', adminAuth, async (req, res) => {
     pub.interesses = intRows;
     console.log(`[ADMIN IMPERSONATE] ${req.adminSession.nome} → Empresa #${empresa.id} (${empresa.razao_social})`);
     const token = _criarSessao('empresa', empresa.id); // sem isto, S1 bloqueia toda rota da empresa impersonada
+    await auditarSolto({ tipo: 'impersonacao', ator_tipo: 'admin', ator_id: req.adminSession.adminId, ator_nome: req.adminSession.nome, entidade: 'empresa', entidade_id: empresa.id }, req);
     res.json({ sucesso: true, token, empresa: pub });
   } catch (error) {
     _falha(res, error, { sucesso: false });
   }
+});
+
+// ─── AUDITORIA / ALERTAS (RF018, RF019, RNF009) — centralizado no painel admin ──
+// GET /admin/auditoria/resumo — números do topo da aba
+app.get('/admin/auditoria/resumo', adminAuth, async (_req, res) => {
+  try {
+    const [[t]]  = await db.query('SELECT COUNT(*) AS n FROM auditoria_eventos');
+    const [[h]]  = await db.query("SELECT COUNT(*) AS n FROM auditoria_eventos WHERE criado_em > NOW(3) - INTERVAL 24 HOUR");
+    const [[n]]  = await db.query("SELECT COUNT(*) AS n FROM auditoria_eventos WHERE tipo = 'nota_alterada'");
+    const [[al]] = await db.query("SELECT COUNT(*) AS n FROM alertas_seguranca WHERE status = 'aberto'");
+    res.json({
+      total_eventos: t.n, eventos_24h: h.n, notas_alteradas: n.n, alertas_abertos: al.n,
+      retencao_ip_dias: AUD_RETENCAO_DIAS,
+      regras: {
+        alteracoes_por_professor: { max: AUD_R1_MAX, janela_min: AUD_R1_JANELA_MIN },
+        alteracoes_no_mesmo_aluno: { max: AUD_R2_MAX, janela_min: AUD_R2_JANELA_MIN },
+        ips_distintos: { janela_min: AUD_R3_JANELA_MIN }
+      }
+    });
+  } catch (error) { _falha(res, error); }
+});
+
+// GET /admin/auditoria — consulta paginada com filtros (tipo, ator, aluno, período)
+app.get('/admin/auditoria', adminAuth, async (req, res) => {
+  try {
+    const { tipo, ator_tipo, ator_id, aluno_id, de, ate } = req.query;
+    const limite = Math.min(Math.max(parseInt(req.query.limite, 10) || 50, 1), 200);
+    const pagina = Math.max(parseInt(req.query.pagina, 10) || 1, 1);
+    const where = [], p = [];
+    if (tipo)      { where.push('e.tipo = ?');      p.push(String(tipo)); }
+    if (ator_tipo) { where.push('e.ator_tipo = ?'); p.push(String(ator_tipo)); }
+    if (ator_id)   { where.push('e.ator_id = ?');   p.push(String(ator_id)); }
+    if (aluno_id)  { where.push('e.aluno_id = ?');  p.push(Number(aluno_id)); }
+    if (de)        { where.push('e.criado_em >= ?'); p.push(String(de)); }
+    if (ate)       { where.push('e.criado_em < DATE_ADD(?, INTERVAL 1 DAY)'); p.push(String(ate)); }
+    const w = where.length ? 'WHERE ' + where.join(' AND ') : '';
+    const [[tot]] = await db.query(`SELECT COUNT(*) AS n FROM auditoria_eventos e ${w}`, p);
+    const [rows] = await db.query(
+      `SELECT e.id, DATE_FORMAT(e.criado_em, '%Y-%m-%d %H:%i:%s') AS criado_em, e.tipo, e.ator_tipo, e.ator_id,
+              e.ator_nome, e.entidade, e.entidade_id, e.aluno_id, a.nome AS aluno_nome, e.disciplina_id,
+              d.nome_materia AS disciplina_nome, e.dados_antes, e.dados_depois, e.ip, e.user_agent, e.hash
+         FROM auditoria_eventos e
+         LEFT JOIN alunos a ON a.id = e.aluno_id
+         LEFT JOIN disciplinas d ON d.id = e.disciplina_id
+         ${w} ORDER BY e.id DESC LIMIT ? OFFSET ?`,
+      [...p, limite, (pagina - 1) * limite]
+    );
+    const lerJson = s => { try { return s == null ? null : JSON.parse(s); } catch (_) { return s; } };
+    res.json({
+      total: tot.n, pagina, limite,
+      eventos: rows.map(r => ({ ...r, dados_antes: lerJson(r.dados_antes), dados_depois: lerJson(r.dados_depois) }))
+    });
+  } catch (error) { _falha(res, error); }
+});
+
+// GET /admin/auditoria/verificar — recalcula a cadeia de hashes e aponta o 1º evento adulterado
+app.get('/admin/auditoria/verificar', adminAuth, async (_req, res) => {
+  try {
+    let anterior = _AUD_GENESE, total = 0, ultimoId = 0, invalido = null, motivo = null;
+    while (invalido === null) {
+      const [rows] = await db.query(
+        `SELECT id, DATE_FORMAT(criado_em, '%Y-%m-%d %H:%i:%s.%f') AS criado_em, tipo, ator_tipo, ator_id, ator_nome,
+                entidade, entidade_id, aluno_id, disciplina_id, dados_antes, dados_depois, hash_anterior, hash
+           FROM auditoria_eventos WHERE id > ? ORDER BY id ASC LIMIT 500`, [ultimoId]);
+      if (!rows.length) break;
+      for (const r of rows) {
+        total++; ultimoId = r.id;
+        if (r.hash_anterior !== anterior) { invalido = r.id; motivo = 'hash_anterior não confere com o evento anterior'; break; }
+        if (_audHash(r.hash_anterior, { ...r, criado_em: r.criado_em.slice(0, 23) }) !== r.hash) { invalido = r.id; motivo = 'conteúdo do evento não confere com o hash'; break; }
+        anterior = r.hash;
+      }
+    }
+    res.json({ ok: invalido === null, total_verificados: total, primeiro_invalido: invalido, motivo });
+  } catch (error) { _falha(res, error); }
+});
+
+// GET /admin/alertas?status=aberto|resolvido
+app.get('/admin/alertas', adminAuth, async (req, res) => {
+  try {
+    const status = ['aberto', 'resolvido'].includes(req.query.status) ? req.query.status : null;
+    const [rows] = await db.query(
+      `SELECT al.id, DATE_FORMAT(al.criado_em, '%Y-%m-%d %H:%i:%s') AS criado_em, al.regra, al.severidade,
+              al.ator_tipo, al.ator_id, al.aluno_id, a.nome AS aluno_nome, al.descricao, al.evidencia, al.status,
+              DATE_FORMAT(al.resolvido_em, '%Y-%m-%d %H:%i:%s') AS resolvido_em, al.resolvido_por
+         FROM alertas_seguranca al LEFT JOIN alunos a ON a.id = al.aluno_id
+         ${status ? 'WHERE al.status = ?' : ''} ORDER BY al.id DESC LIMIT 200`, status ? [status] : []);
+    const lerJson = s => { try { return s == null ? null : JSON.parse(s); } catch (_) { return s; } };
+    res.json(rows.map(r => ({ ...r, evidencia: lerJson(r.evidencia) })));
+  } catch (error) { _falha(res, error); }
+});
+
+// PUT /admin/alertas/:id/status — marcar como resolvido (ou reabrir)
+app.put('/admin/alertas/:id/status', adminAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['aberto', 'resolvido'].includes(status)) return res.status(400).json({ error: 'Status inválido.' });
+    const [r] = await db.query(
+      `UPDATE alertas_seguranca SET status = ?, resolvido_em = ${status === 'resolvido' ? 'NOW(3)' : 'NULL'},
+              resolvido_por = ${status === 'resolvido' ? '?' : 'NULL'} WHERE id = ?`,
+      status === 'resolvido' ? [status, req.adminSession.nome, req.params.id] : [status, req.params.id]);
+    if (!r.affectedRows) return res.status(404).json({ error: 'Alerta não encontrado.' });
+    res.json({ sucesso: true });
+  } catch (error) { _falha(res, error); }
 });
 
 // GET /admin/alunos  — lista todos os alunos para o painel
@@ -3038,6 +3333,7 @@ app.post('/admin/impersonate/aluno/:id', adminAuth, async (req, res) => {
     const aluno = rows[0];
     console.log(`[ADMIN IMPERSONATE] ${req.adminSession.nome} → Aluno #${aluno.id} (${aluno.nome})`);
     const token = _criarSessao('aluno', aluno.id); // sem isto, S1 bloqueia toda rota do aluno impersonado
+    await auditarSolto({ tipo: 'impersonacao', ator_tipo: 'admin', ator_id: req.adminSession.adminId, ator_nome: req.adminSession.nome, entidade: 'aluno', entidade_id: aluno.id, aluno_id: aluno.id }, req);
     res.json({ sucesso: true, token, usuario: { id: aluno.id, nome: aluno.nome, tipo: 'aluno' } });
   } catch (error) {
     _falha(res, error, { sucesso: false });
@@ -3053,6 +3349,7 @@ app.post('/admin/impersonate/professor/:id', adminAuth, async (req, res) => {
     const prof = rows[0];
     console.log(`[ADMIN IMPERSONATE] ${req.adminSession.nome} → Professor #${prof.id} (${prof.nome})`);
     const token = _criarSessao('professor', prof.id); // sem isto, S1 bloqueia toda rota do professor impersonado
+    await auditarSolto({ tipo: 'impersonacao', ator_tipo: 'admin', ator_id: req.adminSession.adminId, ator_nome: req.adminSession.nome, entidade: 'professor', entidade_id: prof.id }, req);
     res.json({ sucesso: true, token, usuario: { id: prof.id, nome: prof.nome, tipo: 'professor' } });
   } catch (error) {
     _falha(res, error, { sucesso: false });
@@ -3952,4 +4249,7 @@ process.on('uncaughtException',  (erro)  => console.error('[uncaughtException]',
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+  // Anonimização de IP/user-agent da auditoria após o prazo de retenção (LGPD): ao subir e 1x por dia.
+  setTimeout(_purgarIpAuditoria, 30 * 1000).unref();
+  setInterval(_purgarIpAuditoria, 24 * 60 * 60 * 1000).unref();
 });
