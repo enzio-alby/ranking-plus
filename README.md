@@ -23,7 +23,8 @@ A plataforma transforma o histórico acadêmico bruto — notas por menção, fr
 | Item | Link |
 |---|---|
 | App web em produção (manipula o banco de dados) | [rankingplus.site](https://rankingplus.site) |
-| Modelagem do banco de dados (DER, 37 tabelas) | [dbdiagram.io — ranking+](https://dbdiagram.io/d/ranking-6a8656416440800f52a743d9) |
+| Modelagem do banco de dados (visualização online, 37 tabelas) | [dbdiagram.io — ranking+](https://dbdiagram.io/d/ranking-6a8656416440800f52a743d9) |
+| Imagem do modelo (PNG, 37 tabelas) | [modelo-ranking-completo.png](https://github.com/enzio-alby/ranking-plus/blob/main/RANKING%2B/docs/modelo-ranking-completo.png) · [trecho ampliado](https://github.com/enzio-alby/ranking-plus/blob/main/RANKING%2B/docs/modelo-ranking-trecho.png) |
 | Modelo em texto (DBML, mesmo conteúdo do diagrama) | [`RANKING+/banco_sql/modelo-ranking.dbml`](https://github.com/enzio-alby/ranking-plus/blob/main/RANKING%2B/banco_sql/modelo-ranking.dbml) |
 | Scripts SQL (migrations) | [`RANKING+/banco_sql`](https://github.com/enzio-alby/ranking-plus/tree/main/RANKING%2B/banco_sql) |
 | Casos de teste (Qase.io, projeto RP) | [app.qase.io/project/RP](https://app.qase.io/project/RP) (acesso por convite) |
