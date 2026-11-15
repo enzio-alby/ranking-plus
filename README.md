@@ -18,6 +18,18 @@ A plataforma transforma o histórico acadêmico bruto — notas por menção, fr
 
 ---
 
+## Links do Projeto
+
+| Item | Link |
+|---|---|
+| App web em produção (manipula o banco de dados) | [rankingplus.site](https://rankingplus.site) |
+| Modelagem do banco de dados (DER, 29 tabelas) | [dbdiagram.io — ranking+](https://dbdiagram.io/d/ranking-6a8656416440800f52a743d9) |
+| Modelo em texto (DBML, mesmo conteúdo do diagrama) | [`RANKING+/banco_sql/modelo-ranking.dbml`](https://github.com/enzio-alby/ranking-plus/blob/main/RANKING%2B/banco_sql/modelo-ranking.dbml) |
+| Scripts SQL (migrations) | [`RANKING+/banco_sql`](https://github.com/enzio-alby/ranking-plus/tree/main/RANKING%2B/banco_sql) |
+| Casos de teste (Qase.io, projeto RP) | [app.qase.io/project/RP](https://app.qase.io/project/RP) (acesso por convite) |
+
+---
+
 ## Destaques do 7º Semestre
 
 Este semestre representou uma virada arquitetural significativa, com três módulos de alto impacto entregues:
@@ -69,6 +81,7 @@ O Ranking+ implementa um **parser heurístico de PDF** que extrai automaticament
 | Ambiente | Laragon local — `localhost:3306` |
 | Porta da API | 4000 |
 | Banco | `universidade_ranking` |
+| Modelagem (DER) | [dbdiagram.io](https://dbdiagram.io/d/ranking-6a8656416440800f52a743d9) · DBML em [`banco_sql/modelo-ranking.dbml`](https://github.com/enzio-alby/ranking-plus/blob/main/RANKING%2B/banco_sql/modelo-ranking.dbml) |
 | Pool de conexões | `connectionLimit: 10`, `queueLimit: 0` |
 
 > Tabela acima descreve o **ambiente de desenvolvimento local**. Em produção (GCP), o banco é um Cloud SQL gerenciado — ver [Infraestrutura em Produção](#infraestrutura-em-producao-gcp).
