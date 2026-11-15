@@ -1,0 +1,23 @@
+/* ============================================================
+ * RANKING+ — Tokens de marca compartilhados
+ * Evita que a paleta principal (azul-marinho + laranja) fique
+ * redeclarada (e sujeita a divergir) em cada página separadamente.
+ * Cada página mantém suas próprias variáveis de tons de cinza,
+ * status (sucesso/aviso/perigo) etc. — só a marca em si é única.
+ *
+ * Alguns nomes existem duas vezes de propósito: cada página já
+ * usava um nome diferente pro mesmo valor (--primary-blue,
+ * --primary, --accent-orange, --primary-orange, --accent) — os
+ * aliases aqui preservam esses nomes sem precisar renomear uso
+ * em cada arquivo.
+ * ============================================================ */
+:root {
+  --primary-blue: #020122;
+  --primary: #020122;
+
+  --accent-orange: #F4442E;
+  --primary-orange: #F4442E;
+  --accent: #F4442E;
+
+  --spring-ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+}

@@ -5,8 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ranking+ Sistema de Ranking e Conexões</title>
     <meta name="description" content="Plataforma de ranking universitário que reconhece e recompensa os melhores alunos">
+
+    <!-- Compartilhamento social (WhatsApp, LinkedIn, etc.) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Ranking+ — Sua Jornada Acadêmica Valorizada">
+    <meta property="og:description" content="Plataforma de ranking universitário que reconhece e recompensa os melhores alunos, com Portal de Talentos para conectar empresas parceiras.">
+    <meta property="og:image" content="../images/logoc.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Ranking+ — Sua Jornada Acadêmica Valorizada">
+    <meta name="twitter:description" content="Plataforma de ranking universitário que reconhece e recompensa os melhores alunos.">
+    <meta name="twitter:image" content="../images/logoc.png">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="../css/design-tokens.css" rel="stylesheet">
     <link href="../css/styleindex.css" rel="stylesheet">
 </head>
 <body>
@@ -25,7 +39,7 @@
                     <li class="nav-item"><a class="nav-link" href="#inicio">Início</a></li>
                     <li class="nav-item"><a class="nav-link" href="#como-funciona">Como Funciona</a></li>
                     <li class="nav-item"><a class="nav-link" href="#ranking">Ranking</a></li>
-                    <!-- <li class="nav-item"><a class="nav-link" href="talentos.html"><i class="bi bi-people-fill me-1"></i>Portal de Talentos</a></li> -->
+                    <li class="nav-item"><a class="nav-link" href="talentos.html"><i class="bi bi-people-fill me-1"></i>Portal de Talentos</a></li>
                 </ul>
                 <div class="d-flex gap-2" id="authButtons">
                     <button class="btn btn-outline-primary btn-sm" onclick="showLogin()">Entrar</button>
@@ -47,7 +61,7 @@
             <div class="row justify-content-center">
                 <div class="col-lg-8">
                     <h1 class="display-1 fw-bold mb-3 animate-fade-up">
-                        <span class="gradient-text">Sua Jornada Acadêmica</span><br>
+                        <span class="text-accent">Sua Jornada Acadêmica</span><br>
                         <span class="text-white">Valorizada</span>
                     </h1>
                     <p class="lead text-white-50 mb-5 animate-fade-up" style="animation-delay:.2s">
@@ -86,43 +100,40 @@
                 </div>
             </div>
         </div>
-        <div class="scroll-indicator">
-            <div class="scroll-dot"></div>
-        </div>
     </section>
 
     <!-- Como Funciona -->
     <section id="como-funciona" class="py-5 section-light">
         <div class="container">
             <div class="section-header text-center mb-5">
-                <h2 class="fw-bold">Como <span class="gradient-text">Funciona</span></h2>
+                <h2 class="fw-bold">Como <span class="text-accent">Funciona</span></h2>
                 <p class="text-muted mt-2">Avaliamos múltiplos aspectos do desempenho acadêmico para criar um ranking motivador e desenvolver talentos.</p>
             </div>
             <div class="row g-4 justify-content-center">
                 <div class="col-lg-3 col-sm-6">
-                    <div class="feature-card text-center">
+                    <div class="feature-card text-center reveal">
                         <div class="feature-icon"><i class="bi bi-graph-up-arrow"></i></div>
                         <h6 class="fw-semibold mt-3 mb-1">Desempenho</h6>
                         <p class="text-muted small mb-0">Notas, avaliações e atividades com pesos por disciplina.</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-sm-6">
-                    <div class="feature-card text-center">
-                        <div class="feature-icon"><i class="bi bi-calendar-check"></i></div>
+                    <div class="feature-card text-center reveal">
+                        <div class="feature-icon navy"><i class="bi bi-calendar-check"></i></div>
                         <h6 class="fw-semibold mt-3 mb-1">Frequência</h6>
                         <p class="text-muted small mb-0">Presença consistente demonstra dedicação e comprometimento.</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-sm-6">
-                    <div class="feature-card text-center">
+                    <div class="feature-card text-center reveal">
                         <div class="feature-icon"><i class="bi bi-people"></i></div>
                         <h6 class="fw-semibold mt-3 mb-1">Networking</h6>
                         <p class="text-muted small mb-0">Visibilidade para empresas parceiras e recrutadores.</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-sm-6">
-                    <div class="feature-card text-center">
-                        <div class="feature-icon"><i class="bi bi-award"></i></div>
+                    <div class="feature-card text-center reveal">
+                        <div class="feature-icon navy"><i class="bi bi-award"></i></div>
                         <h6 class="fw-semibold mt-3 mb-1">Recompensas</h6>
                         <p class="text-muted small mb-0">Benefícios exclusivos para quem se destaca no ranking.</p>
                     </div>
@@ -134,9 +145,16 @@
     <!-- Ranking -->
     <section id="ranking" class="py-5 bg-white">
         <div class="container">
-            <div class="section-header text-center mb-5">
-                <h2 class="fw-bold">Top 5 do <span class="gradient-text">Ranking</span></h2>
-                <p class="text-muted mt-2">Os alunos que mais se destacaram pela excelência acadêmica.</p>
+            <div class="section-header text-center mb-5 reveal">
+                <h2 class="fw-bold">O <span class="text-accent">Ranking</span> Completo</h2>
+                <p class="text-muted mt-2">Confira a classificação de todos os alunos pela excelência acadêmica.</p>
+            </div>
+            <div class="row justify-content-center mb-3">
+                <div class="col-lg-7">
+                    <select class="form-select" id="rankingFiltroCurso" aria-label="Filtrar ranking por curso">
+                        <option value="">Todos os cursos</option>
+                    </select>
+                </div>
             </div>
             <div class="row justify-content-center">
                 <div class="col-lg-7" id="rankingList">
@@ -144,6 +162,13 @@
                         <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                         Carregando ranking...
                     </div>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-7">
+                    <nav aria-label="Paginação do ranking" class="mt-4">
+                        <ul class="pagination justify-content-center" id="rankingPagination"></ul>
+                    </nav>
                 </div>
             </div>
         </div>
@@ -161,7 +186,7 @@
                     <a href="#inicio">Início</a>
                     <a href="#como-funciona">Como Funciona</a>
                     <a href="#ranking">Ranking</a>
-                    <!-- <a href="talentos.html">Portal de Talentos</a> -->
+                    <a href="talentos.html">Portal de Talentos</a>
                     <a href="termodeuso.html">Termos de Uso</a>
                 </div>
                 <div class="footer-social">
@@ -245,11 +270,12 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-semibold">CPF <span class="text-muted">(opcional)</span></label>
-                                <input type="text" class="form-control" id="regCpf" placeholder="000.000.000-00">
+                                <input type="text" class="form-control" id="regCpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00">
+                                <div class="invalid-feedback" id="regCpfFeedback">CPF inválido.</div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-semibold">Telefone <span class="text-muted">(opcional)</span></label>
-                                <input type="text" class="form-control" id="regTelefone" placeholder="(61) 99999-9999">
+                                <input type="text" class="form-control" id="regTelefone" inputmode="numeric" maxlength="15" placeholder="(61) 99999-9999">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-semibold">Nascimento <span class="text-muted">(opcional)</span></label>
@@ -257,7 +283,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-semibold">Matrícula <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="regMatricula" required placeholder="Ex: 20241001">
+                                <input type="text" class="form-control" id="regMatricula" inputmode="numeric" maxlength="20" required placeholder="Ex: 20241001">
                             </div>
                             <div class="col-md-8">
                                 <label class="form-label small fw-semibold">Curso <span class="text-danger">*</span></label>
@@ -273,12 +299,12 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-semibold">Semestre <span class="text-muted">(opcional)</span></label>
-                                <input type="number" class="form-control" id="regSemestre" min="1" max="10" placeholder="1–10">
+                                <label class="form-label small fw-semibold">Semestre <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="regSemestre" min="1" max="10" required placeholder="1–10">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-semibold">Turno <span class="text-muted">(opcional)</span></label>
-                                <select class="form-select" id="regTurno">
+                                <label class="form-label small fw-semibold">Turno <span class="text-danger">*</span></label>
+                                <select class="form-select" id="regTurno" required>
                                     <option value="">Selecione</option>
                                     <option>Matutino</option>
                                     <option>Vespertino</option>
@@ -325,6 +351,26 @@
     </div>
 
     <!-- Modal OTP — 2FA por e-mail -->
+    <!-- Ranking público mostra só a 1ª página — clicar em mais chama este modal -->
+    <div class="modal fade" id="modalRankingCompleto" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body text-center p-4">
+                    <i class="bi bi-trophy-fill text-primary" style="font-size: 2.5rem;"></i>
+                    <h5 class="fw-bold mt-3 mb-2">Ver o ranking completo</h5>
+                    <p class="text-muted mb-4">Essa prévia mostra só os primeiros colocados. Pra ver o ranking inteiro, entre na plataforma — é grátis pra alunos.</p>
+                    <button type="button" class="btn btn-gradient w-100 mb-2" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#registerModal">
+                        <i class="bi bi-person-plus-fill me-1"></i>Criar minha conta
+                    </button>
+                    <button type="button" class="btn btn-outline-primary w-100 mb-2" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#loginModal">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>Já tenho conta — Entrar
+                    </button>
+                    <a href="suporte.html" class="btn btn-link w-100 text-decoration-none">Sou de uma empresa/instituição — Falar com a gente</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="otpModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="otpModalLabel" aria-modal="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
             <div class="modal-content border-0 shadow">
@@ -361,6 +407,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../javascript/auth-token.js"></script>
+    <script src="../javascript/motion.js"></script>
     <script src="../javascript/index.js"></script>
 
     <!-- VLibras — Acessibilidade em Libras (Gov.br) -->

@@ -1,15 +1,23 @@
+/* --primary-blue / --primary-orange / --accent-orange / --spring-ease vêm de design-tokens.css (compartilhado) */
 :root {
-  --primary-orange: #F4442E;
-  --primary-blue: #020122;
   --light-orange: #FF6B52;
   --dark-blue: #010118;
   --background-light: #FAFAFA;
   --text-dark: #2D3748;
   --border-light: #E2E8F0;
-  --success-green: #48BB78;
-  --warning-yellow: #ECC94B;
-  --accent-orange: #F4442E;
+  --success-green: #28a745;
+  --warning-yellow: #ffc107;
   --danger-color: #ef4444;
+  --light-gray: #f8f9fa;
+  --medium-gray: #e9ecef;
+  --dark-gray: #6c757d;
+  --white: #ffffff;
+  --danger-red: #dc3545;
+  --border-radius: 12px;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.15);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 * {
@@ -19,7 +27,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background-color: var(--background-light);
   color: var(--text-dark);
   line-height: 1.6;
@@ -111,9 +119,14 @@ body {
 }
 
 /* Card Styles */
+/* Nenhum .custom-card tem onclick nele mesmo em lugar nenhum da aplicação — só
+   contém botões clicáveis por dentro (Ver Alunos, Aviso, etc.). O "levantar"
+   no hover era uma animação sem função em toda a área do professor, não só no
+   Perfil: parecia interativo mas o card em si nunca leva a nada. Trocado por
+   realce de cor/borda, sem movimento — mesmo espírito do .student-card ao lado. */
 .custom-card {
   background: white;
-  border: none;
+  border: 2px solid transparent;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
@@ -121,7 +134,7 @@ body {
 }
 
 .custom-card:hover {
-  transform: translateY(-5px);
+  border-color: var(--primary-orange);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
@@ -400,7 +413,8 @@ body {
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Stats Cards */
+/* Stats Cards — mesmo caso do .custom-card: nunca são clicáveis, então o hover
+   troca cor/sombra em vez de mover. */
 .stats-card {
   background: white;
   border-radius: 12px;
@@ -411,8 +425,8 @@ body {
 }
 
 .stats-card:hover {
-  transform: translateY(-3px);
   box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+  background: var(--light-orange, #fff3e0);
 }
 
 .stats-number {
@@ -420,6 +434,7 @@ body {
   font-weight: 700;
   color: var(--primary-orange);
   margin-bottom: 5px;
+  font-variant-numeric: tabular-nums;
 }
 
 .stats-label {
@@ -536,14 +551,54 @@ body {
   background-color: #f8f9fa !important;
 }
 
+/* ── Motion (Camada 1) — reveal ao rolar ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity .5s ease, transform .6s var(--spring-ease);
+}
+.reveal.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { transition: none; }
+}
+
 /* Class Cards Specific Styles */
 .class-card {
-  transition: all 0.3s ease;
+  transition: box-shadow 0.3s ease, transform 0.35s var(--spring-ease);
+  border-left: 4px solid var(--primary-orange);
 }
 
 .class-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.class-card .card-body {
+  padding: 1.5rem;
+}
+
+.class-card .card-title {
+  color: var(--primary-blue);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* Badge em azul-marinho (não laranja) para não competir com o título/borda de destaque */
+.class-card-badge {
+  background: var(--primary-blue) !important;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 0.45em 0.8em;
+  border-radius: 20px;
+}
+
+.class-card .btn-outline-primary {
+  margin-top: 1.25rem;
+  font-weight: 600;
 }
 
 .class-stats {
@@ -596,30 +651,7 @@ body {
   color: #E53E3E;
 }
 
-/* Variáveis CSS */
-:root {
-    --primary-orange: #F4442E;
-    --primary-blue: #020122;
-    --light-gray: #f8f9fa;
-    --medium-gray: #e9ecef;
-    --dark-gray: #6c757d;
-    --white: #ffffff;
-    --success-green: #28a745;
-    --warning-yellow: #ffc107;
-    --danger-red: #dc3545;
-    --border-radius: 12px;
-    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.15);
-    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
 /* Reset e Base */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
 
 html {
     font-size: 16px;
@@ -767,6 +799,7 @@ body {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--primary-orange);
+    font-variant-numeric: tabular-nums;
 }
 
 .stat-label {

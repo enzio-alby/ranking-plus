@@ -1,9 +1,7 @@
-// ═══════════════════════════════════════════════════════════════════════════════
 // admin.js — Painel Administrativo Ranking+
-// ═══════════════════════════════════════════════════════════════════════════════
 const ADMIN_API = 'http://localhost:4000';
 
-// ─── Estado em memória da sessão admin ────────────────────────────────────────
+// Estado em memória da sessão admin
 let _adminToken = null;   // token recebido no login
 let _adminInfo  = null;   // { id, nome }
 let _impersonacoes = 0;   // contador da sessão
@@ -12,11 +10,40 @@ let _impersonacoes = 0;   // contador da sessão
 let _alunos      = [];
 let _professores = [];
 let _empresas    = [];
+let _chamados    = [];
 
 // Referência ao item pendente de confirmação
 let _pendingImpersonate = null; // { id, tipo, nome }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
+// TEMA CLARO/ESCURO — só estético, só nesta página
+// Aplica o tema salvo já aqui (não dentro do DOMContentLoaded) pra não piscar o
+// tema errado por uma fração de segundo antes do JS "oficial" rodar.
+(function _aplicarTemaSalvo() {
+    const salvo = localStorage.getItem('admin_tema');
+    if (salvo === 'light') document.documentElement.setAttribute('data-theme', 'light');
+})();
+
+function _alternarTema() {
+    const claro = document.documentElement.getAttribute('data-theme') === 'light';
+    if (claro) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.removeItem('admin_tema');
+    } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('admin_tema', 'light');
+    }
+    _atualizarIconeTema();
+}
+
+function _atualizarIconeTema() {
+    const btn = document.getElementById('btnToggleTema');
+    if (!btn) return;
+    const claro = document.documentElement.getAttribute('data-theme') === 'light';
+    btn.innerHTML = claro ? '<i class="bi bi-moon-stars-fill"></i>' : '<i class="bi bi-sun-fill"></i>';
+    btn.title = claro ? 'Mudar para modo escuro' : 'Mudar para modo claro';
+}
+
+// INIT
 document.addEventListener('DOMContentLoaded', () => {
     // Tenta restaurar sessão anterior (localStorage — sessionStorage é bloqueado pelo Edge em file://)
     const savedToken = localStorage.getItem('admin_token');
@@ -39,15 +66,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // Logout
     document.getElementById('btnLogout').addEventListener('click', handleLogout);
 
-    // Navegação da sidebar
-    document.querySelectorAll('.sidebar-nav .nav-item[data-tab]').forEach(el => {
-        el.addEventListener('click', () => irParaTab(el.dataset.tab));
+    // Alternar tema claro/escuro
+    document.getElementById('btnToggleTema')?.addEventListener('click', _alternarTema);
+    _atualizarIconeTema();
+
+    // Navegação da sidebar (rolagem até a seção)
+    document.querySelectorAll('.sidebar-nav .nav-item[data-secao]').forEach(el => {
+        el.addEventListener('click', () => irParaSecao(el.dataset.secao));
     });
+    _initScrollSpy();
 
     // Busca em tempo real
     document.getElementById('searchAlunos')?.addEventListener('input', filtrarAlunos);
     document.getElementById('searchProfessores')?.addEventListener('input', filtrarProfessores);
     document.getElementById('searchEmpresas')?.addEventListener('input', filtrarEmpresas);
+
+    // Busca global
+    const globalInput = document.getElementById('globalSearch');
+    globalInput?.addEventListener('input', _buscaGlobal);
+    globalInput?.addEventListener('focus', _buscaGlobal);
+    document.addEventListener('click', e => {
+        if (!document.getElementById('globalSearchWrapper').contains(e.target)) {
+            document.getElementById('globalSearchResults').classList.add('d-none');
+        }
+    });
 
     // Confirmação de impersonation
     document.getElementById('btnConfirmImpersonate').addEventListener('click', executarImpersonation);
@@ -57,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(_atualizarRelogio, 1000);
 });
 
-// ─── LOGIN ────────────────────────────────────────────────────────────────────
+// LOGIN
 async function handleLogin() {
     const email = document.getElementById('loginEmail').value.trim();
     const senha = document.getElementById('loginSenha').value;
@@ -97,24 +139,26 @@ async function handleLogin() {
     }
 }
 
-// ─── ENTRAR NO PAINEL ────────────────────────────────────────────────────────
+// ENTRAR NO PAINEL
 function _entrarNoPainel() {
     document.getElementById('loginScreen').classList.add('d-none');
     document.getElementById('painelScreen').classList.remove('d-none');
 
-    // Atualiza nome do admin na UI
-    const nome = _adminInfo?.nome || 'Admin';
-    document.getElementById('sidebarAdminNome').textContent = nome;
-    document.getElementById('topbarAdminNome').textContent  = nome;
+    // Admin é único no sistema — não expõe nome pessoal na UI
+    document.getElementById('sidebarAdminNome').textContent = 'Admin';
+    document.getElementById('topbarAdminNome').textContent  = 'Admin';
 
     // Carrega dados iniciais
     carregarEstatisticas();
     carregarAlunos();
     carregarProfessores();
     carregarEmpresas();
+    carregarChamados();
+    carregarContratacoes();
+    carregarAuditoria();
 }
 
-// ─── LOGOUT ───────────────────────────────────────────────────────────────────
+// LOGOUT
 async function handleLogout() {
     try {
         await _apiPost('/admin/logout');
@@ -131,35 +175,38 @@ async function handleLogout() {
     document.getElementById('loginSenha').value = '';
 }
 
-// ─── NAVEGAÇÃO ────────────────────────────────────────────────────────────────
-const _tabTitles = {
-    dashboard:   ['Dashboard',   'Visão geral do sistema'],
-    alunos:      ['Alunos',      'Lista de alunos cadastrados'],
-    professores: ['Professores', 'Lista de professores cadastrados'],
-    empresas:    ['Empresas',    'Lista de empresas cadastradas'],
-};
-
-function irParaTab(tab) {
-    // Esconde todas as tabs
-    ['dashboard', 'alunos', 'professores', 'empresas'].forEach(t => {
-        document.getElementById('tab' + _capitalize(t))?.classList.add('d-none');
-    });
-
-    // Mostra a selecionada
-    document.getElementById('tab' + _capitalize(tab))?.classList.remove('d-none');
-
-    // Atualiza sidebar
-    document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => {
-        el.classList.toggle('active', el.dataset.tab === tab);
-    });
-
-    // Atualiza topbar
-    const [title, sub] = _tabTitles[tab] || ['', ''];
-    document.getElementById('topbarTitle').textContent = title;
-    document.getElementById('topbarSub').textContent   = sub;
+// NAVEGAÇÃO (página única, rolagem até a seção)
+function irParaSecao(id) {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ─── CARREGAR DADOS ───────────────────────────────────────────────────────────
+// Seção ativa = a última cujo topo já passou da linha de leitura (20% da tela + margem entre seções);
+// no fim da página, a última seção (que pode nunca chegar ao topo) fica ativa.
+function _secaoAtivaPorPosicao(secoes) {
+    const lista = Array.from(secoes);
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) return lista[lista.length - 1].id;
+    let ativa = lista[0].id;
+    lista.forEach(sec => { if (sec.getBoundingClientRect().top <= window.innerHeight * 0.2 + 32) ativa = sec.id; });
+    return ativa;
+}
+
+// Marca o item ativo da sidebar conforme a seção visível na tela
+function _initScrollSpy() {
+    const secoes = document.querySelectorAll('.admin-section');
+    if (!secoes.length) return;
+    const observer = new IntersectionObserver((entries) => {
+        // Com seções curtas, duas podem estar na faixa observada ao mesmo tempo;
+        // por isso o item ativo é recalculado pela posição (ver _secaoAtivaPorPosicao).
+        if (!entries.some(e => e.isIntersecting)) return;
+        const ativa = _secaoAtivaPorPosicao(secoes);
+        document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => {
+            el.classList.toggle('active', el.dataset.secao === ativa);
+        });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    secoes.forEach(s => observer.observe(s));
+}
+
+// CARREGAR DADOS
 async function carregarEstatisticas() {
     try {
         const [alunos, profs, empresas] = await Promise.all([
@@ -199,11 +246,24 @@ async function carregarProfessores() {
     }
 }
 
-// ─── RENDER TABELAS ───────────────────────────────────────────────────────────
+// RENDER TABELAS
+const PC_PERFIL_NOMES = { executor: 'Executor', comunicador: 'Comunicador', planejador: 'Planejador', analista: 'Analista' };
+
+function _pcBadgeHtml(a) {
+    if (!a.perfil_respondido_em) {
+        return '<span class="badge bg-secondary">Pendente</span>';
+    }
+    const vencido = new Date(a.perfil_valido_ate) < new Date();
+    const dataFmt = new Date(a.perfil_respondido_em).toLocaleDateString('pt-BR');
+    const cor = vencido ? 'bg-warning text-dark' : 'bg-success';
+    const rotulo = vencido ? 'Vencido' : (PC_PERFIL_NOMES[a.perfil_dominante] || a.perfil_dominante);
+    return `<span class="badge ${cor}" style="cursor:pointer;" onclick="abrirRespostasComportamentais(${a.id}, '${_esc(a.nome)}')" title="${dataFmt} — clique pra ver as respostas">${rotulo}</span>`;
+}
+
 function renderAlunos(lista) {
     const tbody = document.getElementById('tabelaAlunos');
     if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Nenhum aluno encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Nenhum aluno encontrado.</td></tr>';
         return;
     }
     tbody.innerHTML = lista.map(a => `
@@ -215,6 +275,7 @@ function renderAlunos(lista) {
             <td class="small">${_esc(a.curso || '—')}</td>
             <td class="text-center small">${a.semestre ?? '—'}º</td>
             <td>${_badgeSituacao(a.situacao)}</td>
+            <td>${_pcBadgeHtml(a)}</td>
             <td>
                 <button class="btn-impersonate"
                     onclick="confirmarImpersonation(${a.id}, 'aluno', '${_esc(a.nome)}')">
@@ -223,6 +284,46 @@ function renderAlunos(lista) {
             </td>
         </tr>
     `).join('');
+}
+
+// PERFIL COMPORTAMENTAL — detalhe de respostas
+async function abrirRespostasComportamentais(alunoId, nome) {
+    document.getElementById('pcRespostasNome').textContent = nome;
+    const body = document.getElementById('pcRespostasBody');
+    body.innerHTML = '<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRespostasComportamentais')).show();
+    try {
+        const res = await fetch(`${ADMIN_API}/admin/alunos/${alunoId}/avaliacao-comportamental`, {
+            headers: { 'x-admin-token': _adminToken }
+        });
+        const data = await res.json();
+        if (!data.respondido_em || !data.respostas.length) {
+            body.innerHTML = '<p class="text-muted text-center py-3 mb-0">Este aluno ainda não respondeu o Mapeamento de Perfil Comportamental.</p>';
+            return;
+        }
+        const dataFmt = new Date(data.respondido_em).toLocaleString('pt-BR');
+        const validoFmt = new Date(data.valido_ate).toLocaleDateString('pt-BR');
+        body.innerHTML = `
+            <div class="alert alert-light border small mb-3">
+                Respondido em <strong>${dataFmt}</strong> — válido até <strong>${validoFmt}</strong>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead><tr><th>#</th><th>Pergunta</th><th>Resposta</th></tr></thead>
+                    <tbody>
+                        ${data.respostas.map(r => `
+                            <tr>
+                                <td class="text-muted small">${r.ordem}</td>
+                                <td class="small">${_esc(r.enunciado)}</td>
+                                <td class="small fw-semibold">${_esc(r.resposta)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    } catch (e) {
+        body.innerHTML = '<p class="text-danger text-center py-3 mb-0">Erro ao carregar as respostas.</p>';
+    }
 }
 
 function renderProfessores(lista) {
@@ -284,7 +385,237 @@ async function carregarEmpresas() {
     }
 }
 
-// ─── FILTRO / BUSCA ───────────────────────────────────────────────────────────
+// CONTRATAÇÕES — acompanhamento cruzado de desfecho de indicação
+let _contratacoes = [];
+
+async function carregarContratacoes() {
+    const tbody = document.getElementById('tabelaContratacoes');
+    try {
+        _contratacoes = await _apiGet('/admin/contratacoes');
+        document.getElementById('contratacoesCount').textContent = `${_contratacoes.length} registro(s)`;
+        renderContratacoes(_contratacoes);
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">
+            <i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar contratações.
+        </td></tr>`;
+    }
+}
+
+function renderContratacoes(lista) {
+    const tbody = document.getElementById('tabelaContratacoes');
+    if (!lista.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Nenhuma contratação registrada ainda.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = lista.map(c => {
+        const dataContratacao = new Date(c.marcado_contratado_em).toLocaleDateString('pt-BR');
+        let status;
+        if (c.pendente) status = '<span class="badge bg-warning text-dark">Check-in pendente</span>';
+        else if (!c.respondido_em) status = '<span class="badge bg-light text-dark border">Aguardando próximo check-in</span>';
+        else status = c.continua_na_empresa ? '<span class="badge bg-success">Continua na empresa</span>' : '<span class="badge bg-secondary">Não continua mais</span>';
+        return `
+        <tr>
+            <td class="small">${_esc(c.empresa_nome)}</td>
+            <td class="small fw-semibold">${_esc(c.aluno_nome)}</td>
+            <td class="text-muted small">${dataContratacao}</td>
+            <td>${status}</td>
+            <td class="text-muted small">${new Date(c.proximo_checkin_em).toLocaleDateString('pt-BR')}</td>
+        </tr>`;
+    }).join('');
+}
+
+function _exportarContratacoesCSV() {
+    const cabecalho = ['Empresa', 'Aluno', 'Contratado em', 'Continua na empresa', 'Respondido em', 'Próximo check-in'];
+    const linhas = _contratacoes.map(c => [
+        c.empresa_nome, c.aluno_nome,
+        new Date(c.marcado_contratado_em).toLocaleDateString('pt-BR'),
+        c.respondido_em ? (c.continua_na_empresa ? 'Sim' : 'Não') : '—',
+        c.respondido_em ? new Date(c.respondido_em).toLocaleDateString('pt-BR') : '—',
+        new Date(c.proximo_checkin_em).toLocaleDateString('pt-BR')
+    ]);
+    _baixarCSV([cabecalho, ...linhas], 'contratacoes-rankingplus.csv');
+}
+
+function _exportarChamadosCSV() {
+    const cabecalho = ['ID', 'Assunto', 'Nome', 'E-mail', 'Categoria', 'Prioridade', 'Status', 'Criado em'];
+    const linhas = _chamados.map(c => [
+        c.id, c.assunto, c.nome, c.email,
+        CATEGORIA_LABELS[c.categoria] || c.categoria,
+        (PRIORIDADE_META[c.prioridade] || ['—'])[0],
+        STATUS_FAVORITO_LABELS_ADMIN[c.status] || c.status,
+        new Date(c.criado_em).toLocaleString('pt-BR')
+    ]);
+    _baixarCSV([cabecalho, ...linhas], 'chamados-rankingplus.csv');
+}
+const STATUS_FAVORITO_LABELS_ADMIN = { aberto: 'Aberto', em_andamento: 'Em andamento', concluido: 'Concluído' };
+
+// Helper genérico de export CSV — mesmo padrão (aspas + escape) usado em talentos.js
+function _baixarCSV(linhas, nomeArquivo) {
+    const csv = linhas.map(l => l.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nomeArquivo;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// CHAMADOS DE SUPORTE (KANBAN)
+const CATEGORIA_LABELS = {
+    technical: 'Problema Técnico', ranking: 'Dúvida sobre Ranking',
+    benefits: 'Benefícios', account: 'Conta', other: 'Outros'
+};
+const PRIORIDADE_META = {
+    low:    ['Baixa',   'secondary'],
+    medium: ['Média',   'info'],
+    high:   ['Alta',    'warning'],
+    urgent: ['Urgente', 'danger'],
+};
+const STATUS_COL = { aberto: 'colAberto', em_andamento: 'colEmAndamento', concluido: 'colConcluido' };
+const PROXIMO_STATUS = { aberto: 'em_andamento', em_andamento: 'concluido', concluido: null };
+const ANTERIOR_STATUS = { aberto: null, em_andamento: 'aberto', concluido: 'em_andamento' };
+const PROXIMO_LABEL = { aberto: 'Iniciar atendimento', em_andamento: 'Marcar concluído' };
+
+async function carregarChamados() {
+    const errorBox = document.getElementById('kanbanError');
+    errorBox.classList.add('d-none');
+    // O esqueleto do quadro (colunas + ids) nunca é destruído — só o conteúdo interno muda.
+    // Assim, uma falha aqui nunca impede uma nova tentativa depois.
+    Object.values(STATUS_COL).forEach(id => {
+        const col = document.getElementById(id);
+        if (col) col.innerHTML = '<div class="text-center text-muted small py-4"><div class="spinner-border spinner-border-sm me-2"></div>Carregando...</div>';
+    });
+    try {
+        _chamados = await _apiGet('/admin/chamados');
+        renderChamados();
+    } catch (e) {
+        errorBox.classList.remove('d-none');
+        errorBox.classList.add('d-flex');
+        Object.values(STATUS_COL).forEach(id => {
+            const col = document.getElementById(id);
+            if (col) col.innerHTML = '';
+        });
+    }
+}
+
+function renderChamados() {
+    const porStatus = { aberto: [], em_andamento: [], concluido: [] };
+    _chamados.forEach(c => (porStatus[c.status] || porStatus.aberto).push(c));
+
+    Object.entries(porStatus).forEach(([status, lista]) => {
+        const col = document.getElementById(STATUS_COL[status]);
+        document.getElementById('count' + _pascal(status)).textContent = lista.length;
+        col.innerHTML = lista.length
+            ? lista.map(c => _chamadoCardHtml(c)).join('')
+            : '<div class="kanban-empty">Nenhum chamado aqui.</div>';
+    });
+
+    const abertos = porStatus.aberto.length + porStatus.em_andamento.length;
+    const badge = document.getElementById('navChamadosBadge');
+    badge.textContent = abertos;
+    badge.classList.toggle('d-none', abertos === 0);
+}
+
+function _pascal(status) {
+    return status.split('_').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+}
+
+function _chamadoCardHtml(c) {
+    const [prLabel, prCor] = PRIORIDADE_META[c.prioridade] || ['—', 'secondary'];
+    const data = new Date(c.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const proximo  = PROXIMO_STATUS[c.status];
+    const anterior = ANTERIOR_STATUS[c.status];
+    return `
+    <div class="kanban-card">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+            <strong class="small">${_esc(c.assunto)}</strong>
+            <span class="badge bg-${prCor}" style="font-size:.65rem;">${prLabel}</span>
+        </div>
+        <div class="text-muted" style="font-size:.75rem;">${_esc(c.nome)} · ${_esc(c.email)}</div>
+        <span class="badge bg-light text-dark border mt-2" style="font-size:.68rem;">${CATEGORIA_LABELS[c.categoria] || c.categoria}</span>
+        <p class="kanban-card-desc">${_esc(c.descricao)}</p>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted" style="font-size:.7rem;"><i class="bi bi-clock me-1"></i>${data} · #${c.id}</small>
+            <div class="d-flex gap-1">
+                ${anterior ? `<button type="button" class="btn btn-xs btn-outline-secondary" title="Voltar" onclick="moverChamado(${c.id}, '${anterior}')"><i class="bi bi-arrow-left"></i></button>` : ''}
+                ${proximo ? `<button type="button" class="btn btn-xs btn-outline-primary" title="${PROXIMO_LABEL[c.status]}" onclick="moverChamado(${c.id}, '${proximo}')"><i class="bi bi-arrow-right"></i></button>` : ''}
+            </div>
+        </div>
+    </div>`;
+}
+
+async function moverChamado(id, novoStatus) {
+    const chamado = _chamados.find(c => c.id === id);
+    if (!chamado) return;
+    const statusAntigo = chamado.status;
+    chamado.status = novoStatus; // otimista
+    renderChamados();
+    try {
+        await _apiPut(`/admin/chamados/${id}/status`, { status: novoStatus });
+    } catch (e) {
+        chamado.status = statusAntigo; // desfaz em caso de falha
+        renderChamados();
+        if (_adminToken) alert('Não foi possível mover o chamado. Tente novamente.'); // sessão expirada já tem seu próprio aviso
+    }
+}
+
+// BUSCA GLOBAL
+function _buscaGlobal() {
+    const q = document.getElementById('globalSearch').value.trim().toLowerCase();
+    const resultsEl = document.getElementById('globalSearchResults');
+    if (!q) { resultsEl.classList.add('d-none'); return; }
+
+    const matchAluno = a => (a.nome || '').toLowerCase().includes(q) || (a.email || '').toLowerCase().includes(q) || (a.matricula || '').toLowerCase().includes(q);
+    const matchProf  = p => (p.nome || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q);
+    const matchEmp   = e => (e.razao_social || '').toLowerCase().includes(q) || (e.nome_fantasia || '').toLowerCase().includes(q) || (e.email_corporativo || '').toLowerCase().includes(q) || (e.cnpj || '').toLowerCase().includes(q);
+
+    const rAlunos = _alunos.filter(matchAluno).slice(0, 5);
+    const rProfs  = _professores.filter(matchProf).slice(0, 5);
+    const rEmps   = _empresas.filter(matchEmp).slice(0, 5);
+
+    if (!rAlunos.length && !rProfs.length && !rEmps.length) {
+        resultsEl.innerHTML = '<div class="global-search-empty">Nenhum resultado para "' + _esc(q) + '".</div>';
+        resultsEl.classList.remove('d-none');
+        return;
+    }
+
+    const grupo = (titulo, lista, render) => lista.length
+        ? `<div class="global-search-group-title">${titulo}</div>` + lista.map(render).join('')
+        : '';
+
+    resultsEl.innerHTML =
+        grupo('Alunos', rAlunos, a => `
+            <div class="global-search-item" onclick="_irParaResultado('secAlunos', 'searchAlunos', '${_esc(a.nome).replace(/'/g, "\\'")}')">
+                <i class="bi bi-mortarboard-fill text-primary"></i>
+                <div><div class="fw-semibold small">${_esc(a.nome)}</div><div class="text-muted" style="font-size:.72rem;">${_esc(a.email || a.matricula || '')}</div></div>
+            </div>`) +
+        grupo('Professores', rProfs, p => `
+            <div class="global-search-item" onclick="_irParaResultado('secProfessores', 'searchProfessores', '${_esc(p.nome).replace(/'/g, "\\'")}')">
+                <i class="bi bi-person-video3" style="color:#1565c0;"></i>
+                <div><div class="fw-semibold small">${_esc(p.nome)}</div><div class="text-muted" style="font-size:.72rem;">${_esc(p.email || '')}</div></div>
+            </div>`) +
+        grupo('Empresas', rEmps, e => `
+            <div class="global-search-item" onclick="_irParaResultado('secEmpresas', 'searchEmpresas', '${_esc(e.nome_fantasia || e.razao_social).replace(/'/g, "\\'")}')">
+                <i class="bi bi-building" style="color:#7b1fa2;"></i>
+                <div><div class="fw-semibold small">${_esc(e.nome_fantasia || e.razao_social)}</div><div class="text-muted" style="font-size:.72rem;">${_esc(e.email_corporativo || e.cnpj || '')}</div></div>
+            </div>`);
+    resultsEl.classList.remove('d-none');
+}
+
+// Rola até a seção e aplica o mesmo termo como filtro da tabela local
+function _irParaResultado(secaoId, inputId, termo) {
+    document.getElementById('globalSearchResults').classList.add('d-none');
+    document.getElementById('globalSearch').value = '';
+    irParaSecao(secaoId);
+    const input = document.getElementById(inputId);
+    if (input) {
+        input.value = termo;
+        input.dispatchEvent(new Event('input'));
+        setTimeout(() => input.focus(), 400);
+    }
+}
+
+// FILTRO / BUSCA
 function filtrarAlunos() {
     const q = document.getElementById('searchAlunos').value.toLowerCase();
     const filtrado = _alunos.filter(a =>
@@ -318,13 +649,13 @@ function filtrarEmpresas() {
     renderEmpresas(filtrado);
 }
 
-// ─── IMPERSONATION ────────────────────────────────────────────────────────────
+// IMPERSONATION
 // 1. Abre modal de confirmação
 function confirmarImpersonation(id, tipo, nome) {
     _pendingImpersonate = { id, tipo, nome };
 
     const meta = {
-        aluno:     { icone: '🎓',  label: 'Aluno',   cor: 'var(--primary)', dest: 'área do aluno' },
+        aluno:     { icone: '🎓',  label: 'Aluno',   cor: 'var(--accent)', dest: 'área do aluno' },
         professor: { icone: '👨‍🏫', label: 'Professor', cor: '#1565c0',        dest: 'área do professor' },
         empresa:   { icone: '🏢',  label: 'Empresa',  cor: '#7b1fa2',        dest: 'Portal de Talentos' },
     };
@@ -366,14 +697,19 @@ async function executarImpersonation() {
 
         let destino;
 
+        // Token de sessão do usuário impersonado (achado S1) — sem isto, toda
+        // rota protegida do aluno/professor/empresa dá 401 assim que a página
+        // impersonada carrega, mesmo com o localStorage "logado" preenchido.
+        if (data.token) localStorage.setItem('unirank_token', data.token);
+
         if (tipo === 'empresa') {
-            // ── Replica o que handleLoginEmpresa faz em talentos.js ──
+            // Replica o que handleLoginEmpresa faz em talentos.js
             // talentos.js usa sessionStorage, mas o Edge bloqueia em file://
             // então usamos localStorage como fallback — talentos.js lê ambos
             localStorage.setItem('empresa_logada', JSON.stringify(data.empresa));
             destino = '../html/talentos.html';
         } else {
-            // ── Replica EXATAMENTE o que o login normal faz em index.js ──
+            // Replica EXATAMENTE o que o login normal faz em index.js
             const usuario = data.usuario; // { id, nome, tipo }
             localStorage.setItem('unirank_user', JSON.stringify(usuario));
             if (usuario.tipo === 'aluno') {
@@ -396,11 +732,29 @@ async function executarImpersonation() {
     }
 }
 
-// ─── HELPERS DE API ───────────────────────────────────────────────────────────
+// HELPERS DE API
+// Sessões admin vivem em memória no servidor (Map, sem persistência) — um restart
+// do backend invalida todos os tokens já emitidos, mas o localStorage do navegador
+// continua com o token antigo. Sem essa checagem, cada seção do painel mostraria
+// "Erro ao carregar X" separadamente em vez de indicar o motivo real (sessão expirada).
+let _sessaoExpiradaDisparada = false;
+function _tratarSessaoExpirada() {
+    if (_sessaoExpiradaDisparada) return;
+    _sessaoExpiradaDisparada = true;
+    _adminToken = null;
+    _adminInfo  = null;
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_info');
+    document.getElementById('painelScreen').classList.add('d-none');
+    document.getElementById('loginScreen').classList.remove('d-none');
+    _showAlerta(document.getElementById('loginAlerta'), 'Sua sessão expirou. Faça login novamente.', 'warning');
+}
+
 async function _apiGet(path) {
     const res = await fetch(`${ADMIN_API}${path}`, {
         headers: { 'X-Admin-Token': _adminToken }
     });
+    if (res.status === 401) { _tratarSessaoExpirada(); throw new Error('Sessão expirada.'); }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
@@ -414,10 +768,25 @@ async function _apiPost(path, body = {}) {
         },
         body: JSON.stringify(body)
     });
+    if (res.status === 401) { _tratarSessaoExpirada(); throw new Error('Sessão expirada.'); }
     return res.json();
 }
 
-// ─── HELPERS DE UI ────────────────────────────────────────────────────────────
+async function _apiPut(path, body = {}) {
+    const res = await fetch(`${ADMIN_API}${path}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Token': _adminToken || ''
+        },
+        body: JSON.stringify(body)
+    });
+    if (res.status === 401) { _tratarSessaoExpirada(); throw new Error('Sessão expirada.'); }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+// HELPERS DE UI
 function _mostrarToast(icone, titulo, desc) {
     const toast = document.getElementById('impersonateToast');
     document.getElementById('toastIcon').textContent  = icone;
@@ -444,19 +813,362 @@ function _badgeSituacao(s) {
     return `<span class="badge bg-${color}"><i class="bi bi-${icon} me-1"></i>${s || 'N/A'}</span>`;
 }
 
-function _capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-// Escapa HTML para evitar XSS ao inserir nomes/emails na tabela
-function _esc(str) {
-    return String(str ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
 function _atualizarRelogio() {
     const el = document.getElementById('statHora');
     if (el) el.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// AUDITORIA — resumo, integridade da cadeia, alertas e trilha de eventos
+// (RF018, RF019, RNF009). Endpoints: /admin/auditoria*, /admin/alertas*
+// Todo texto vindo da API passa por _esc() antes de entrar no HTML.
+// ═══════════════════════════════════════════════════════════════════
+const AUD_LIMITE = 20;
+let _audPagina  = 1;
+let _audEventos = [];      // eventos da página atual (usados pelo modal de detalhes)
+let _audAlertas = [];
+let _audSeqEventos = 0;    // descarta respostas antigas se o usuário filtrar rápido
+let _audSeqAlertas = 0;
+
+const AUD_TIPOS = {
+    nota_alterada:    'Nota alterada',
+    matricula_criada: 'Matrícula criada',
+    login:            'Login',
+    impersonacao:     'Impersonação'
+};
+const AUD_ATORES = { professor: 'Professor', admin: 'Admin', aluno: 'Aluno', empresa: 'Empresa' };
+const AUD_CAMPOS = {
+    mencao: 'Menção',
+    faltas: 'Faltas',
+    nota_avaliacao: 'Nota da avaliação',
+    atividades_entregues: 'Atividades entregues',
+    participacao_nota: 'Participação'
+};
+const AUD_REGRAS = {
+    ALT_RAPIDAS_PROFESSOR: 'Alterações rápidas por professor',
+    ALT_MESMO_ALUNO:       'Muitas alterações no mesmo aluno',
+    IPS_DISTINTOS:         'IPs distintos em curto intervalo'
+};
+
+// "2026-10-07 20:51:12" -> "07/10/2026 20:51:12" (sem passar por Date, para não deslocar fuso)
+function _audFormatarData(s) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)/.exec(String(s || ''));
+    return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}` : (s ? String(s) : '—');
+}
+
+function _audValor(v) {
+    if (v === null || v === undefined || v === '') return '—';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+}
+
+function _audBadgeTipo(tipo) {
+    const rotulo = AUD_TIPOS[tipo] || tipo || '—';
+    return `<span class="aud-badge aud-tipo-${_esc(tipo)}">${_esc(rotulo)}</span>`;
+}
+
+// Resumo curto da alteração para a tabela (campo: antes → depois)
+function _audResumoAlteracao(e) {
+    const antes  = (e.dados_antes  && typeof e.dados_antes  === 'object') ? e.dados_antes  : {};
+    const depois = (e.dados_depois && typeof e.dados_depois === 'object') ? e.dados_depois : {};
+    if (e.tipo === 'nota_alterada') {
+        const linhas = Object.keys(AUD_CAMPOS)
+            .filter(c => (c in antes || c in depois) && _audValor(antes[c]) !== _audValor(depois[c]))
+            .map(c => `<div class="aud-diff"><span class="aud-diff-campo">${_esc(AUD_CAMPOS[c])}:</span> `
+                    + `<span class="aud-diff-antes">${_esc(_audValor(antes[c]))}</span> `
+                    + `<i class="bi bi-arrow-right" aria-label="para"></i> `
+                    + `<span class="aud-diff-depois">${_esc(_audValor(depois[c]))}</span></div>`);
+        return linhas.length ? linhas.join('') : '<span class="text-muted">—</span>';
+    }
+    // Outros tipos: mostra até 3 pares chave: valor de dados_depois, se existirem
+    const pares = Object.entries(depois).slice(0, 3)
+        .map(([k, v]) => `<div class="aud-diff"><span class="aud-diff-campo">${_esc(k)}:</span> ${_esc(_audValor(v))}</div>`);
+    return pares.length ? pares.join('') : '<span class="text-muted">—</span>';
+}
+
+// ── Carregamento ────────────────────────────────────────────────────
+async function carregarAuditoria() {
+    document.getElementById('audErro').classList.add('d-none');
+    document.getElementById('audErro').classList.remove('d-flex');
+    await Promise.all([carregarAuditoriaResumo(), carregarAlertas(), carregarEventosAuditoria()]);
+}
+
+function _audMostrarErro() {
+    const el = document.getElementById('audErro');
+    el.classList.remove('d-none');
+    el.classList.add('d-flex');
+}
+
+async function carregarAuditoriaResumo() {
+    try {
+        const r = await _apiGet('/admin/auditoria/resumo');
+        document.getElementById('audTotal').textContent         = r.total_eventos ?? 0;
+        document.getElementById('aud24h').textContent           = r.eventos_24h ?? 0;
+        document.getElementById('audNotas').textContent         = r.notas_alteradas ?? 0;
+        document.getElementById('audAlertasAbertos').textContent = r.alertas_abertos ?? 0;
+        document.getElementById('audCardAlertas').classList.toggle('aud-card-alerta', (r.alertas_abertos || 0) > 0);
+        document.getElementById('audRetencao').innerHTML =
+            `<i class="bi bi-hourglass-split me-1"></i>Retenção de IP e user-agent: <strong>${_esc(r.retencao_ip_dias ?? '—')} dias</strong> `
+            + '(após o prazo são anonimizados, conforme a LGPD).';
+        const badge = document.getElementById('navAlertasBadge');
+        badge.textContent = r.alertas_abertos || 0;
+        badge.classList.toggle('d-none', !(r.alertas_abertos > 0));
+    } catch (_) { _audMostrarErro(); }
+}
+
+// ── Verificação de integridade ──────────────────────────────────────
+async function verificarIntegridadeAuditoria() {
+    const btn = document.getElementById('btnVerificarIntegridade');
+    const box = document.getElementById('audIntegridade');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Verificando...';
+    try {
+        const r = await _apiGet('/admin/auditoria/verificar');
+        box.classList.remove('d-none', 'aud-ok', 'aud-falha');
+        if (r.ok) {
+            box.classList.add('aud-ok');
+            box.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i><span>Cadeia íntegra: ${_esc(r.total_verificados)} eventos verificados</span>`;
+        } else {
+            box.classList.add('aud-falha');
+            box.innerHTML = `<i class="bi bi-x-octagon-fill me-2"></i><span>Cadeia adulterada a partir do evento #${_esc(r.primeiro_invalido)}: ${_esc(r.motivo || 'motivo não informado')}</span>`;
+        }
+    } catch (_) {
+        box.classList.remove('d-none', 'aud-ok');
+        box.classList.add('aud-falha');
+        box.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i><span>Não foi possível verificar a integridade. Tente novamente.</span>';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-patch-check me-1"></i>Verificar integridade';
+    }
+}
+
+// ── Alertas de segurança ────────────────────────────────────────────
+async function carregarAlertas() {
+    const lista = document.getElementById('audAlertasLista');
+    const status = document.getElementById('audAlertaStatus').value;
+    const seq = ++_audSeqAlertas;
+    lista.innerHTML = '<div class="text-center text-muted small py-4"><div class="spinner-border spinner-border-sm me-2"></div>Carregando...</div>';
+    try {
+        const dados = await _apiGet(`/admin/alertas?status=${encodeURIComponent(status)}`);
+        if (seq !== _audSeqAlertas) return;
+        _audAlertas = Array.isArray(dados) ? dados : [];
+        document.getElementById('audAlertasCount').textContent =
+            `${_audAlertas.length} alerta(s) ${status === 'aberto' ? 'aberto(s)' : 'resolvido(s)'}`;
+        renderAlertas();
+    } catch (_) {
+        if (seq !== _audSeqAlertas) return;
+        lista.innerHTML = '<div class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar alertas.</div>';
+        document.getElementById('audAlertasCount').textContent = 'Erro ao carregar';
+        _audMostrarErro();
+    }
+}
+
+function renderAlertas() {
+    const lista = document.getElementById('audAlertasLista');
+    const status = document.getElementById('audAlertaStatus').value;
+    if (!_audAlertas.length) {
+        lista.innerHTML = status === 'aberto'
+            ? '<div class="aud-vazio"><i class="bi bi-shield-check"></i><div class="fw-semibold">Nenhum alerta aberto</div><div class="small">Tudo tranquilo por aqui. Nenhuma regra de segurança foi disparada.</div></div>'
+            : '<div class="aud-vazio"><i class="bi bi-inbox"></i><div class="fw-semibold">Nenhum alerta resolvido</div><div class="small">Os alertas marcados como resolvidos aparecerão aqui.</div></div>';
+        return;
+    }
+    lista.innerHTML = _audAlertas.map(_audAlertaHtml).join('');
+}
+
+function _audAlertaHtml(a) {
+    const alta = a.severidade === 'alta';
+    const resolvido = a.status === 'resolvido';
+    const ator = a.ator_tipo ? `${AUD_ATORES[a.ator_tipo] || a.ator_tipo}${a.ator_id ? ' #' + a.ator_id : ''}` : '—';
+    const aluno = a.aluno_nome ? a.aluno_nome : (a.aluno_id ? 'Aluno #' + a.aluno_id : '—');
+    const evid = (a.evidencia && typeof a.evidencia === 'object')
+        ? `<details class="aud-evidencia"><summary>Ver evidência</summary><pre>${_esc(JSON.stringify(a.evidencia, null, 2))}</pre></details>` : '';
+    const rotuloBtn = resolvido ? 'Reabrir' : 'Marcar como resolvido';
+    return `
+    <div class="aud-alerta ${alta ? 'aud-sev-alta' : 'aud-sev-media'}${resolvido ? ' aud-alerta-resolvido' : ''}">
+        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-1">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="aud-badge ${alta ? 'aud-sev-badge-alta' : 'aud-sev-badge-media'}"><i class="bi bi-exclamation-triangle-fill me-1"></i>${alta ? 'Alta' : 'Média'}</span>
+                <strong class="aud-alerta-regra">${_esc(AUD_REGRAS[a.regra] || a.regra)}</strong>
+                <span class="text-muted small">#${_esc(a.id)}</span>
+            </div>
+            <button type="button" class="btn btn-sm ${resolvido ? 'btn-outline-secondary' : 'btn-outline-success'}"
+                    data-aud-alerta="${_esc(a.id)}" data-aud-novo="${resolvido ? 'aberto' : 'resolvido'}"
+                    aria-label="${rotuloBtn} o alerta ${_esc(a.id)}">
+                <i class="bi ${resolvido ? 'bi-arrow-counterclockwise' : 'bi-check2-circle'} me-1"></i>${rotuloBtn}
+            </button>
+        </div>
+        <p class="aud-alerta-desc mb-2">${_esc(a.descricao)}</p>
+        <div class="aud-alerta-meta">
+            <span><i class="bi bi-person-badge me-1"></i>Ator: ${_esc(ator)}</span>
+            <span><i class="bi bi-mortarboard me-1"></i>Aluno: ${_esc(aluno)}</span>
+            <span><i class="bi bi-clock me-1"></i>${_esc(_audFormatarData(a.criado_em))}</span>
+            ${resolvido ? `<span><i class="bi bi-check2-circle me-1"></i>Resolvido em ${_esc(_audFormatarData(a.resolvido_em))}${a.resolvido_por ? ' por ' + _esc(a.resolvido_por) : ''}</span>` : ''}
+        </div>
+        ${evid}
+    </div>`;
+}
+
+async function _audAlterarStatusAlerta(id, novoStatus, btn) {
+    btn.disabled = true;
+    try {
+        await _apiPut(`/admin/alertas/${encodeURIComponent(id)}/status`, { status: novoStatus });
+        _mostrarToast(novoStatus === 'resolvido' ? '✅' : '↩️',
+            novoStatus === 'resolvido' ? 'Alerta resolvido' : 'Alerta reaberto', `Alerta #${id} atualizado.`);
+        await Promise.all([carregarAlertas(), carregarAuditoriaResumo()]);
+    } catch (_) {
+        btn.disabled = false;
+        if (_adminToken) _mostrarToast('⚠️', 'Não foi possível atualizar', 'Tente novamente em instantes.');
+    }
+}
+
+// ── Trilha de eventos ───────────────────────────────────────────────
+function _audParametrosFiltro() {
+    const p = new URLSearchParams();
+    const add = (k, id) => { const v = document.getElementById(id).value.trim(); if (v) p.set(k, v); };
+    add('tipo', 'audFiltroTipo');
+    add('ator_tipo', 'audFiltroAtor');
+    add('aluno_id', 'audFiltroAluno');
+    add('de', 'audFiltroDe');
+    add('ate', 'audFiltroAte');
+    return p;
+}
+
+async function carregarEventosAuditoria(pagina) {
+    if (pagina) _audPagina = pagina;
+    const corpo = document.getElementById('audEventosCorpo');
+    const seq = ++_audSeqEventos;
+    corpo.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Carregando...</td></tr>';
+    const p = _audParametrosFiltro();
+    p.set('pagina', _audPagina);
+    p.set('limite', AUD_LIMITE);
+    try {
+        const r = await _apiGet(`/admin/auditoria?${p.toString()}`);
+        if (seq !== _audSeqEventos) return;
+        _audEventos = r.eventos || [];
+        const total = r.total || 0;
+        const totalPaginas = Math.max(1, Math.ceil(total / (r.limite || AUD_LIMITE)));
+        // Página fora do intervalo (ex.: dados mudaram): volta para a última existente
+        if (_audPagina > totalPaginas) { _audPagina = totalPaginas; return carregarEventosAuditoria(); }
+        document.getElementById('audEventosCount').textContent = `${total} evento(s) encontrado(s)`;
+        renderEventosAuditoria();
+        renderPaginacaoAuditoria(total, totalPaginas);
+    } catch (_) {
+        if (seq !== _audSeqEventos) return;
+        corpo.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar eventos.</td></tr>';
+        document.getElementById('audEventosCount').textContent = 'Erro ao carregar';
+        document.getElementById('audPaginacao').innerHTML = '';
+        _audMostrarErro();
+    }
+}
+
+function renderEventosAuditoria() {
+    const corpo = document.getElementById('audEventosCorpo');
+    if (!_audEventos.length) {
+        const filtrado = _audParametrosFiltro().toString() !== '';
+        corpo.innerHTML = `<tr><td colspan="7"><div class="aud-vazio"><i class="bi bi-journal-x"></i>
+            <div class="fw-semibold">Nenhum evento encontrado</div>
+            <div class="small">${filtrado ? 'Nenhum evento corresponde aos filtros. Tente limpar os filtros.' : 'Ainda não há eventos registrados.'}</div></div></td></tr>`;
+        return;
+    }
+    corpo.innerHTML = _audEventos.map(e => {
+        const alvo = [e.aluno_nome || (e.aluno_id ? 'Aluno #' + e.aluno_id : ''), e.disciplina_nome].filter(Boolean);
+        return `<tr>
+            <td class="text-nowrap">${_esc(_audFormatarData(e.criado_em))}</td>
+            <td>${_audBadgeTipo(e.tipo)}</td>
+            <td><div>${_esc(e.ator_nome || '—')}</div><div class="text-muted small">${_esc(AUD_ATORES[e.ator_tipo] || e.ator_tipo || '')}</div></td>
+            <td>${alvo.length ? alvo.map((t, i) => i === 0 ? `<div>${_esc(t)}</div>` : `<div class="text-muted small">${_esc(t)}</div>`).join('') : '<span class="text-muted">—</span>'}</td>
+            <td>${_audResumoAlteracao(e)}</td>
+            <td class="aud-ip">${_esc(e.ip || '—')}</td>
+            <td><button type="button" class="btn btn-xs btn-outline-secondary" data-aud-evento="${_esc(e.id)}" aria-label="Ver detalhes do evento ${_esc(e.id)}"><i class="bi bi-eye me-1"></i>Detalhes</button></td>
+        </tr>`;
+    }).join('');
+}
+
+function renderPaginacaoAuditoria(total, totalPaginas) {
+    const el = document.getElementById('audPaginacao');
+    if (total <= AUD_LIMITE) { el.innerHTML = total ? `<span class="small text-muted">Exibindo todos os ${total} evento(s)</span>` : ''; return; }
+    const ini = (_audPagina - 1) * AUD_LIMITE + 1;
+    const fim = Math.min(_audPagina * AUD_LIMITE, total);
+    el.innerHTML = `
+        <span class="small text-muted">Exibindo ${ini}–${fim} de ${total}</span>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-aud-pagina="${_audPagina - 1}" ${_audPagina <= 1 ? 'disabled' : ''} aria-label="Página anterior"><i class="bi bi-chevron-left"></i> Anterior</button>
+            <span class="small">Página ${_audPagina} de ${totalPaginas}</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-aud-pagina="${_audPagina + 1}" ${_audPagina >= totalPaginas ? 'disabled' : ''} aria-label="Próxima página">Próxima <i class="bi bi-chevron-right"></i></button>
+        </div>`;
+}
+
+function _audLimparFiltros() {
+    ['audFiltroTipo', 'audFiltroAtor', 'audFiltroAluno', 'audFiltroDe', 'audFiltroAte']
+        .forEach(id => { document.getElementById(id).value = ''; });
+    _audPagina = 1;
+    carregarEventosAuditoria();
+}
+
+// ── Modal de detalhes ───────────────────────────────────────────────
+function abrirDetalheEvento(id) {
+    const e = _audEventos.find(x => String(x.id) === String(id));
+    if (!e) return;
+    const linha = (rotulo, valor, mono) =>
+        `<dt class="col-sm-3">${_esc(rotulo)}</dt><dd class="col-sm-9${mono ? ' aud-mono' : ''}">${valor}</dd>`;
+    const json = v => (v === null || v === undefined)
+        ? '<span class="text-muted">—</span>'
+        : `<pre class="aud-json">${_esc(JSON.stringify(v, null, 2))}</pre>`;
+    document.getElementById('audDetalheId').textContent = '#' + e.id;
+    document.getElementById('audDetalheCorpo').innerHTML = `
+        <dl class="row aud-detalhes mb-0">
+            ${linha('Data/hora', _esc(_audFormatarData(e.criado_em)))}
+            ${linha('Tipo', _audBadgeTipo(e.tipo))}
+            ${linha('Ator', `${_esc(e.ator_nome || '—')} <span class="text-muted">(${_esc(AUD_ATORES[e.ator_tipo] || e.ator_tipo || '—')}${e.ator_id ? ' #' + _esc(e.ator_id) : ''})</span>`)}
+            ${linha('Entidade', `${_esc(e.entidade || '—')}${e.entidade_id ? ' #' + _esc(e.entidade_id) : ''}`)}
+            ${linha('Aluno', _esc(e.aluno_nome || (e.aluno_id ? '#' + e.aluno_id : '—')))}
+            ${linha('Disciplina', _esc(e.disciplina_nome || (e.disciplina_id ? '#' + e.disciplina_id : '—')))}
+            ${linha('IP', _esc(e.ip || '—'), true)}
+            ${linha('User-agent', _esc(e.user_agent || '—'), true)}
+            ${linha('Hash do evento', _esc(e.hash || '—'), true)}
+            ${linha('Dados antes', json(e.dados_antes))}
+            ${linha('Dados depois', json(e.dados_depois))}
+        </dl>`;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAuditoria')).show();
+}
+
+// ── Eventos da interface (delegação; não mexe nos handlers existentes) ──
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btnVerificarIntegridade')?.addEventListener('click', verificarIntegridadeAuditoria);
+    document.getElementById('btnAtualizarAuditoria')?.addEventListener('click', carregarAuditoria);
+    document.getElementById('btnAudTentarDeNovo')?.addEventListener('click', carregarAuditoria);
+    document.getElementById('audAlertaStatus')?.addEventListener('change', carregarAlertas);
+    document.getElementById('btnAudLimparFiltros')?.addEventListener('click', _audLimparFiltros);
+
+    document.getElementById('audFiltros')?.addEventListener('submit', ev => {
+        ev.preventDefault();
+        const de = document.getElementById('audFiltroDe').value;
+        const ate = document.getElementById('audFiltroAte').value;
+        if (de && ate && de > ate) {
+            _mostrarToast('⚠️', 'Período inválido', 'A data "De" deve ser anterior ou igual a "Até".');
+            return;
+        }
+        _audPagina = 1;
+        carregarEventosAuditoria();
+    });
+
+    document.getElementById('audAlertasLista')?.addEventListener('click', ev => {
+        const btn = ev.target.closest('[data-aud-alerta]');
+        if (btn) _audAlterarStatusAlerta(btn.dataset.audAlerta, btn.dataset.audNovo, btn);
+    });
+    document.getElementById('audEventosCorpo')?.addEventListener('click', ev => {
+        const btn = ev.target.closest('[data-aud-evento]');
+        if (btn) abrirDetalheEvento(btn.dataset.audEvento);
+    });
+    document.getElementById('audPaginacao')?.addEventListener('click', ev => {
+        const btn = ev.target.closest('[data-aud-pagina]');
+        if (btn && !btn.disabled) carregarEventosAuditoria(Number(btn.dataset.audPagina));
+    });
+
+    // Itens da sidebar não são <button>: Enter/Espaço também navegam (teclado)
+    document.querySelectorAll('.sidebar-nav .nav-item[tabindex]').forEach(el => {
+        el.addEventListener('keydown', ev => {
+            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); irParaSecao(el.dataset.secao); }
+        });
+    });
+});

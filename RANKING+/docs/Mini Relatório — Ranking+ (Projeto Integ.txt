@@ -1,0 +1,117 @@
+Mini Relatório — Ranking+ (Projeto Integrador IV)
+
+O que é
+
+Plataforma web universitária que transforma o desempenho acadêmico de alunos de TI em ativo de empregabilidade. O conceito central: alunos constroem um perfil profissional integrado ao seu histórico de notas/menções, e empresas recrutam diretamente pela plataforma.
+
+---
+Como está funcionando agora
+
+Stack confirmada:
+- Frontend: HTML5 + Bootstrap 5.3 + Frappe Charts + Chart.js, servido pelo próprio Express
+- Backend: Node.js/Express na porta 4000 — arquivo único api2.js com 1.550 linhas e 35+ rotas REST
+- Banco: MySQL 8.4.3 via Laragon local — banco universidade_ranking, 17 tabelas
+- E-mail: Nodemailer + Gmail SMTP (2FA por OTP de 6 dígitos, TTL 10min, armazenado em Map RAM)
+
+O que funciona:
+
+┌────────────────────────────────────────────────────────┬────────┐
+│                     Funcionalidade                     │ Status │
+├────────────────────────────────────────────────────────┼────────┤
+│ Login/cadastro + 2FA por e-mail                        │ ✅     │
+├────────────────────────────────────────────────────────┼────────┤
+│ Ranking público com anonimização LGPD                  │ ✅     │
+├────────────────────────────────────────────────────────┼────────┤
+│ Perfil ATS com import de PDF do LinkedIn               │ ✅     │
+├────────────────────────────────────────────────────────┼────────┤
+│ PDF do boletim gerado no cliente (html2canvas + jsPDF) │ ✅     │
+├────────────────────────────────────────────────────────┼────────┤
+│ Portal B2B — empresas buscam talentos                  │ ✅     │
+├────────────────────────────────────────────────────────┼────────┤
+│ Admin com impersonation de usuário                     │ ✅     │
+├────────────────────────────────────────────────────────┼────────┤
+│ VLibras + alto contraste + controle de fonte           │ ✅     │
+└────────────────────────────────────────────────────────┴────────┘
+
+Estado geral: 7.5/10 — para apresentação acadêmica está sólido. Os problemas existem mas não travam a demo.
+
+---
+Análise de Melhorias para a Apresentação Final
+
+Separei em três camadas: obrigatório (resolve o que te fará perder ponto), alto impacto visual (impressiona a banca) e diferencial técnico (mostra maturidade de 8º semestre).
+
+---
+Camada 1 — Obrigatório (corrigir antes de apresentar)
+
+1. Senhas em plain text no banco
+O problema mais óbvio que qualquer professor de segurança vai perguntar. Resolve em 2 horas:
+npm install bcrypt
+Trocar req.body.senha direto no INSERT/SELECT por bcrypt.hash() e bcrypt.compare(). Atingindo todas as tabelas: alunos, professores, administradores, empresas.
+
+2. Dados hardcoded em areaprofessor.js
+Existe um array de alunos fictícios no JS do frontend. Se a banca inspecionar o código-fonte no browser vai aparecer. Deletar o array e carregar via a rota /professores/:id/alunos que já existe na API.
+
+3. Rate limiting no login
+Fácil de adicionar, fácil de demonstrar que você pensou em segurança:
+npm install express-rate-limit
+5 tentativas por IP a cada 15 minutos — 3 linhas de código.
+
+---
+Camada 2 — Alto Impacto Visual (impressiona a banca)
+
+4. Dashboard de métricas do professor melhorado
+O dashboard já tem gráficos, mas se você alimentar com dados reais do banco (média de menções por disciplina, evolução ao longo do tempo, comparativo de turmas) fica muito mais convincente na demo. Os dados já estão no banco, é só montar as queries.
+
+5. Match automático empresa × aluno
+O portal B2B já tem filtros, mas se ao fazer login a empresa visualizar um score de compatibilidade com cada aluno ("Compatibilidade: 87% — Backend, Estágio, 6º semestre") fica uma feature de produto de verdade. A lógica é simples: cruzar empresa_interesses com perfil_profissional + semestre atual.
+
+6. Histórico de interações no portal
+A tabela interacoes_empresas_alunos já existe mas provavelmente está pouco exibida. Mostrar para o aluno "3 empresas visualizaram seu perfil esta semana" é uma feature que justifica toda a arquitetura B2B do projeto.
+
+7. Paginação no ranking
+Se a banca pedir para você mostrar todos os alunos e o ranking carregar 200 linhas de uma vez trava a demo. Paginar com LIMIT/OFFSET no backend e botões Próximo/Anterior no frontend — 1 hora de trabalho.
+
+---
+Camada 3 — Diferencial Técnico (mostra maturidade)
+
+8. Validação de entrada no backend
+Hoje qualquer string cabe em qualquer campo. Adicionar validação básica:
+npm install joi
+# ou express-validator
+Valida email (formato), CPF (11 dígitos), CNPJ (14 dígitos), tamanho de strings. Roda em middleware antes das rotas.
+
+9. Parser PDF do LinkedIn mais robusto
+O parser atual é regex heurístico — vai quebrar com PDFs de perfis em inglês ou com layouts diferentes. Alternativa: usar a [API pública do LinkedIn com OAuth] ou mostrar um formulário manual de fallback quando o parser não encontrar campos. Isso evita o risco de a demo falhar na hora H.
+
+10. Documentação da API (Swagger/OpenAPI)
+npm install swagger-ui-express swagger-jsdoc
+Rota /api-docs que exibe toda a API documentada interativamente. Impressiona muito — parece projeto profissional, não trabalho de faculdade.
+
+---
+Prioridade Recomendada por Esforço/Impacto
+
+┌─────┬──────────────────────────┬─────────┬────────────┐
+│  #  │         Melhoria         │ Esforço │  Impacto   │
+├─────┼──────────────────────────┼─────────┼────────────┤
+│ 1   │ bcrypt nas senhas        │ 2h      │ Crítico    │
+├─────┼──────────────────────────┼─────────┼────────────┤
+│ 2   │ Remover dados hardcoded  │ 30min   │ Alto       │
+├─────┼──────────────────────────┼─────────┼────────────┤
+│ 3   │ Rate limiting            │ 30min   │ Alto       │
+├─────┼──────────────────────────┼─────────┼────────────┤
+│ 4   │ Match empresa × aluno    │ 4h      │ Muito alto │
+├─────┼──────────────────────────┼─────────┼────────────┤
+│ 5   │ Histórico de interações  │ 2h      │ Alto       │
+├─────┼──────────────────────────┼─────────┼────────────┤
+│ 6   │ Paginação no ranking     │ 1h      │ Alto       │
+├─────┼──────────────────────────┼─────────┼────────────┤
+│ 7   │ Validação de entrada     │ 3h      │ Alto       │
+├─────┼──────────────────────────┼─────────┼────────────┤
+│ 8   │ Swagger/docs             │ 3h      │ Médio      │
+├─────┼──────────────────────────┼─────────┼────────────┤
+│ 9   │ Parser PDF fallback      │ 4h      │ Médio      │
+├─────┼──────────────────────────┼─────────┼────────────┤
+│ 10  │ Dashboard professor real │ 3h      │ Médio      │
+└─────┴──────────────────────────┴─────────┴────────────┘
+
+Minha sugestão: faça 1, 2 e 3 antes de qualquer outra coisa (4 horas no total). Depois, se tiver tempo, o item 4 (match automático) é o que mais vai impressionar a banca — transforma o portal B2B de "lista de talentos" em "sistema de recomendação".
