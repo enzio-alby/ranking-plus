@@ -1,0 +1,338 @@
+Table administradores {
+  id int [pk, increment]
+  nome varchar(100) [not null]
+  email varchar(150) [not null, unique]
+  senha varchar(255) [not null]
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+}
+Table professores {
+  id int [pk, increment]
+  nome varchar(100) [not null]
+  email varchar(100) [not null, unique]
+  senha varchar(255)
+  idade int
+  turno varchar(20)
+  campus varchar(50)
+  telefone varchar(20)
+  titulacao varchar(30)
+  area_atuacao varchar(100)
+  idioma_preferido varchar(10) [not null, default: 'pt-BR']
+  notif_notas tinyint [not null, default: 1]
+  notif_faltas tinyint [not null, default: 1]
+  notif_ranking tinyint [not null, default: 0]
+  notif_eventos tinyint [not null, default: 1]
+  avatar_base64 mediumtext
+}
+Table alunos {
+  id int [pk, increment]
+  nome varchar(100) [not null]
+  senha varchar(255) [not null]
+  matricula varchar(20) [not null, unique]
+  email varchar(100) [not null]
+  curso varchar(100)
+  telefone varchar(20)
+  idade int
+  turno varchar(20)
+  cpf varchar(14) [unique]
+  data_nascimento date
+  campus varchar(50)
+  semestre_atual int
+  periodo_curso varchar(20)
+  data_matricula date
+  situacao varchar(20)
+  termos_aceitos_em timestamp
+  contato_emergencia_nome varchar(100)
+  contato_emergencia_telefone varchar(20)
+  contato_emergencia_parentesco varchar(50)
+  contato_emergencia_email varchar(100)
+  endereco_rua varchar(150)
+  endereco_numero varchar(20)
+  endereco_complemento varchar(100)
+  endereco_bairro varchar(100)
+  endereco_cep varchar(10)
+  endereco_cidade varchar(100)
+  endereco_estado varchar(2)
+  permitir_exibicao_ranking tinyint [default: '1']
+  permitir_contato tinyint [not null, default: 1]
+  compartilhar_progresso tinyint [not null, default: 0]
+  ultima_posicao_ranking int
+  github varchar(255) [default: '']
+  linkedin varchar(255) [default: '']
+  avatar_base64 mediumtext
+  nome_alteracoes_restantes tinyint [not null, default: 1]
+  email_alteracoes_restantes tinyint [not null, default: 1]
+}
+Table disciplinas {
+  id int [pk, increment]
+  nome_materia varchar(100) [not null]
+  professor_id int
+  sala varchar(20)
+  dia_semana varchar(20)
+  horario varchar(20)
+  campus varchar(50)
+  curso varchar(100)
+  semestre tinyint
+}
+Table boletim {
+  id int [pk, increment]
+  aluno_id int
+  disciplina_id int
+  faltas int [default: '0']
+  mencao varchar(5)
+  nota_avaliacao decimal(4,2)
+  data_avaliacao date
+  atividades_entregues int
+  participacao_nota decimal(4,2)
+  semestre_cursado varchar(10) [default: '2026.1']
+  nota_participacao decimal(4,1)
+}
+Table perfil_profissional {
+  aluno_id int [pk]
+  resumo text
+  area_interesse_id int
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+Table pp_experiencias {
+  id int [pk, increment]
+  aluno_id int [not null]
+  empresa varchar(200)
+  cargo varchar(200)
+  periodo_inicio varchar(50)
+  periodo_fim varchar(50)
+  descricao text
+}
+Table pp_formacoes {
+  id int [pk, increment]
+  aluno_id int [not null]
+  curso varchar(200)
+  instituicao varchar(200)
+  periodo_inicio varchar(50)
+  periodo_fim varchar(50)
+}
+Table pp_habilidades {
+  id int [pk, increment]
+  aluno_id int [not null]
+  habilidade varchar(150)
+}
+Table pp_idiomas {
+  id int [pk, increment]
+  aluno_id int [not null]
+  idioma varchar(100)
+  nivel varchar(50)
+}
+Table pp_certificacoes {
+  id int [pk, increment]
+  aluno_id int [not null]
+  nome varchar(300) [not null]
+  instituicao varchar(200)
+  data_emissao varchar(50)
+}
+Table projetos_aluno {
+  id int [pk, increment]
+  aluno_id int [not null]
+  titulo varchar(150) [not null]
+  descricao text
+  data_conclusao date
+}
+Table dom_setores {
+  id int [pk, increment]
+  nome varchar(100) [not null]
+}
+Table dom_areas_foco {
+  id int [pk, increment]
+  nome varchar(100) [not null]
+}
+Table dom_tipos_vaga {
+  id int [pk, increment]
+  nome varchar(100) [not null]
+}
+Table empresas {
+  id int [pk, increment]
+  razao_social varchar(200) [not null]
+  nome_fantasia varchar(200)
+  cnpj varchar(20) [not null, unique]
+  setor_id int
+  email_corporativo varchar(200) [not null, unique]
+  telefone varchar(20)
+  site_empresa varchar(300)
+  linkedin_empresa varchar(300)
+  senha varchar(255) [not null]
+  verificada tinyint [default: 0]
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+  avatar_base64 mediumtext
+}
+Table empresa_interesses {
+  id int [pk, increment]
+  empresa_id int [not null]
+  area_foco_id int
+  tipo_vaga_id int
+  curso_preferido varchar(200)
+  semestre_minimo int [default: 1]
+}
+Table empresa_vagas {
+  id int [pk, increment]
+  empresa_id int [not null]
+  titulo varchar(150) [not null]
+  descricao text
+  area_foco_id int
+  tipo_vaga_id int
+  curso_preferido varchar(100)
+  semestre_minimo int
+  status varchar(20) [not null, default: 'aberta']
+  criado_em timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  atualizado_em timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+Table empresa_favoritos {
+  id int [pk, increment]
+  empresa_id int [not null]
+  aluno_id int [not null]
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+  status varchar(20) [not null, default: 'novo']
+  entrevista_data_hora datetime
+  entrevista_observacao text
+  notas text
+  indexes {
+    (empresa_id, aluno_id) [unique]
+  }
+}
+Table vaga_interesses {
+  id int [pk, increment]
+  vaga_id int [not null]
+  aluno_id int [not null]
+  criado_em timestamp [default: `CURRENT_TIMESTAMP`]
+  indexes {
+    (vaga_id, aluno_id) [unique]
+  }
+}
+Table interacoes_empresas_alunos {
+  id int [pk, increment]
+  empresa_id int [not null]
+  aluno_id int [not null]
+  tipo_interacao varchar(50) [default: 'VISUALIZACAO']
+  data_interacao timestamp [default: `CURRENT_TIMESTAMP`]
+}
+Table conversas {
+  id int [pk, increment]
+  participante1_tipo varchar(30) [not null, note: 'ENUM: aluno | professor | empresa']
+  participante1_id int [not null]
+  participante2_tipo varchar(30) [not null, note: 'ENUM: aluno | professor | empresa']
+  participante2_id int [not null]
+  ultima_mensagem_em timestamp
+  criado_em timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  vaga_id int
+  oculta_p1_desde timestamp
+  oculta_p2_desde timestamp
+  indexes {
+    (participante1_tipo, participante1_id, participante2_tipo, participante2_id, vaga_id) [unique]
+  }
+}
+Table mensagens {
+  id int [pk, increment]
+  conversa_id int [not null]
+  remetente_tipo varchar(30) [not null, note: 'ENUM: aluno | professor | empresa']
+  remetente_id int [not null]
+  texto_cifrado text
+  iv varchar(32)
+  auth_tag varchar(32)
+  anexo_id int
+  lida tinyint [not null, default: 0]
+  criado_em timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+Table mensagem_anexos {
+  id int [pk, increment]
+  nome_original varchar(255) [not null]
+  caminho_arquivo varchar(255) [not null]
+  iv varchar(32) [not null]
+  auth_tag varchar(32) [not null]
+  tamanho_bytes int [not null]
+  expira_em timestamp [not null]
+  removido_em timestamp
+  criado_em timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+Table notificacoes {
+  id int [pk, increment]
+  destinatario_tipo varchar(10) [not null]
+  destinatario_id int [not null]
+  tipo varchar(40) [not null]
+  titulo varchar(150) [not null]
+  mensagem varchar(300) [not null]
+  referencia_id int
+  lida tinyint [not null, default: 0]
+  criado_em timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+Table chamados_suporte {
+  id int [pk, increment]
+  nome varchar(100) [not null]
+  email varchar(100) [not null]
+  categoria varchar(30) [not null]
+  prioridade varchar(20) [not null, default: 'medium']
+  assunto varchar(200) [not null]
+  descricao text [not null]
+  origem varchar(20) [not null, default: 'formulario']
+  status varchar(20) [not null, default: 'aberto']
+  criado_em timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+Table auditoria_eventos {
+  id bigint [pk, increment]
+  criado_em datetime(3) [not null]
+  tipo varchar(40) [not null]
+  ator_tipo varchar(20) [not null]
+  ator_id varchar(40)
+  ator_nome varchar(150)
+  entidade varchar(40) [not null]
+  entidade_id varchar(80)
+  aluno_id int
+  disciplina_id int
+  dados_antes longtext
+  dados_depois longtext
+  ip varchar(64)
+  user_agent varchar(255)
+  hash_anterior char(64) [not null]
+  hash char(64) [not null]
+}
+Table alertas_seguranca {
+  id bigint [pk, increment]
+  criado_em datetime(3) [not null, default: `CURRENT_TIMESTAMP`]
+  regra varchar(40) [not null]
+  severidade varchar(10) [not null, default: 'media']
+  ator_tipo varchar(20)
+  ator_id varchar(40)
+  aluno_id int
+  descricao varchar(400) [not null]
+  evidencia longtext
+  status varchar(12) [not null, default: 'aberto']
+  resolvido_em datetime(3)
+  resolvido_por varchar(150)
+}
+Table cursos_duracao {
+  curso varchar(100) [pk]
+  duracao_semestres tinyint [not null]
+  tipo varchar(20) [not null, default: 'bacharelado']
+}
+Ref: boletim.aluno_id > alunos.id
+Ref: boletim.disciplina_id > disciplinas.id
+Ref: conversas.vaga_id > empresa_vagas.id [delete: set null]
+Ref: disciplinas.professor_id > professores.id
+Ref: empresa_favoritos.aluno_id > alunos.id [delete: cascade]
+Ref: empresa_favoritos.empresa_id > empresas.id [delete: cascade]
+Ref: empresa_interesses.area_foco_id > dom_areas_foco.id
+Ref: empresa_interesses.empresa_id > empresas.id [delete: cascade]
+Ref: empresa_interesses.tipo_vaga_id > dom_tipos_vaga.id
+Ref: empresa_vagas.area_foco_id > dom_areas_foco.id
+Ref: empresa_vagas.empresa_id > empresas.id [delete: cascade]
+Ref: empresa_vagas.tipo_vaga_id > dom_tipos_vaga.id
+Ref: empresas.setor_id > dom_setores.id
+Ref: interacoes_empresas_alunos.aluno_id > alunos.id [delete: cascade]
+Ref: interacoes_empresas_alunos.empresa_id > empresas.id [delete: cascade]
+Ref: mensagens.anexo_id > mensagem_anexos.id [delete: set null]
+Ref: mensagens.conversa_id > conversas.id [delete: cascade]
+Ref: perfil_profissional.aluno_id > alunos.id [delete: cascade]
+Ref: perfil_profissional.area_interesse_id > dom_areas_foco.id [delete: set null]
+Ref: pp_certificacoes.aluno_id > alunos.id [delete: cascade]
+Ref: pp_experiencias.aluno_id > alunos.id [delete: cascade]
+Ref: pp_formacoes.aluno_id > alunos.id [delete: cascade]
+Ref: pp_habilidades.aluno_id > alunos.id [delete: cascade]
+Ref: pp_idiomas.aluno_id > alunos.id [delete: cascade]
+Ref: projetos_aluno.aluno_id > alunos.id [delete: cascade]
+Ref: vaga_interesses.aluno_id > alunos.id [delete: cascade]
+Ref: vaga_interesses.vaga_id > empresa_vagas.id [delete: cascade]
