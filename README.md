@@ -27,6 +27,7 @@ A plataforma transforma o histórico acadêmico bruto — notas por menção, fr
 | Imagem do modelo (PNG, 37 tabelas) | [modelo-ranking-completo.png](https://github.com/enzio-alby/ranking-plus/blob/main/RANKING%2B/docs/modelo-ranking-completo.png) · [trecho ampliado](https://github.com/enzio-alby/ranking-plus/blob/main/RANKING%2B/docs/modelo-ranking-trecho.png) |
 | Modelo em texto (DBML, mesmo conteúdo do diagrama) | [`RANKING+/banco_sql/modelo-ranking.dbml`](https://github.com/enzio-alby/ranking-plus/blob/main/RANKING%2B/banco_sql/modelo-ranking.dbml) |
 | Scripts SQL (migrations) | [`RANKING+/banco_sql`](https://github.com/enzio-alby/ranking-plus/tree/main/RANKING%2B/banco_sql) |
+| App Android 1.3.1 (Teste interno da Play Store) | [Link de instalação para testadores](https://play.google.com/apps/internaltest/4701469415586420585) |
 | Casos de teste (Qase.io, projeto RP) | [app.qase.io/project/RP](https://app.qase.io/project/RP) (acesso por convite) |
 
 ---
